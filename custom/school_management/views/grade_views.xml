@@ -1,0 +1,50 @@
+<odoo>
+    <record id="view_grade_tree" model="ir.ui.view">
+        <field name="name">school.grade.tree</field>
+        <field name="model">school.grade</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="student_id"/>
+                <field name="exam_id"/>
+                <field name="subject_id"/>
+                <field name="marks_obtained"/>
+                <field name="total_marks"/>
+                <field name="percentage"/>
+                <field name="grade_letter"/>
+                <field name="result"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_grade_form" model="ir.ui.view">
+        <field name="name">school.grade.form</field>
+        <field name="model">school.grade</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="exam_id"/>
+                            <field name="subject_id"/>
+                        </group>
+                        <group>
+                            <field name="marks_obtained"/>
+                            <field name="total_marks"/>
+                            <field name="percentage"/>
+                            <field name="grade_letter"/>
+                            <field name="result"/>
+                        </group>
+                    </group>
+                    <field name="remarks"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_grade" model="ir.actions.act_window">
+        <field name="name">Grades</field>
+        <field name="res_model">school.grade</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

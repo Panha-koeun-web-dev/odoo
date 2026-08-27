@@ -1,0 +1,13 @@
+<odoo>
+    <record id="group_school_admin" model="res.groups">
+        <field name="name">School Administrator</field>
+    </record>
+
+    <record id="group_school_teacher" model="res.groups">
+        <field name="name">School Teacher</field>
+    </record>
+
+    <record id="group_school_student" model="res.groups">
+        <field name="name">School Student</field>
+    </record>
+</odoo>

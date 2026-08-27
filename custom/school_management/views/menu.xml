@@ -1,0 +1,48 @@
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_school_root" name="School" sequence="20"/>
+
+    <!-- Students -->
+    <menuitem id="menu_school_student_parent" name="Students"
+              parent="menu_school_root" sequence="10"/>
+    <menuitem id="menu_school_student" name="All Students"
+              parent="menu_school_student_parent"
+              action="action_student" sequence="10"/>
+
+    <!-- Teachers -->
+    <menuitem id="menu_school_teacher_parent" name="Teachers"
+              parent="menu_school_root" sequence="20"/>
+    <menuitem id="menu_school_teacher" name="All Teachers"
+              parent="menu_school_teacher_parent"
+              action="action_teacher" sequence="10"/>
+
+    <!-- Academics -->
+    <menuitem id="menu_school_academic_parent" name="Academics"
+              parent="menu_school_root" sequence="30"/>
+    <menuitem id="menu_school_class" name="Classes"
+              parent="menu_school_academic_parent"
+              action="action_class" sequence="10"/>
+    <menuitem id="menu_school_subject" name="Subjects"
+              parent="menu_school_academic_parent"
+              action="action_subject" sequence="20"/>
+
+    <!-- Examinations -->
+    <menuitem id="menu_school_exam_parent" name="Examinations"
+              parent="menu_school_root" sequence="40"/>
+    <menuitem id="menu_school_exam" name="Exams"
+              parent="menu_school_exam_parent"
+              action="action_exam" sequence="10"/>
+    <menuitem id="menu_school_grade" name="Grades"
+              parent="menu_school_exam_parent"
+              action="action_grade" sequence="20"/>
+
+    <!-- Attendance -->
+    <menuitem id="menu_school_attendance" name="Attendance"
+              parent="menu_school_root"
+              action="action_attendance" sequence="50"/>
+
+    <!-- Fees -->
+    <menuitem id="menu_school_fee" name="Fees"
+              parent="menu_school_root"
+              action="action_fee" sequence="60"/>
+</odoo>

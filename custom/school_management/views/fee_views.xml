@@ -1,0 +1,81 @@
+<odoo>
+    <record id="view_fee_list" model="ir.ui.view">
+        <field name="name">school.fee.list</field>
+        <field name="model">school.fee</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="status == 'overdue'" decoration-success="status == 'paid'">
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="fee_type"/>
+                <field name="amount"/>
+                <field name="paid_amount"/>
+                <field name="balance"/>
+                <field name="due_date"/>
+                <field name="status"/>
+                <button name="action_mark_paid" type="object" string="Mark Paid"
+                        class="btn-success" icon="fa-check"
+                        column_invisible="status == 'paid'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fee_form" model="ir.ui.view">
+        <field name="name">school.fee.form</field>
+        <field name="model">school.fee</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="class_id"/>
+                            <field name="fee_type"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="paid_amount"/>
+                            <field name="balance"/>
+                            <field name="status"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="due_date"/>
+                            <field name="paid_date"/>
+                            <field name="payment_method"/>
+                        </group>
+                        <group>
+                            <field name="receipt_number"/>
+                        </group>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_fee_search" model="ir.ui.view">
+        <field name="name">school.fee.search</field>
+        <field name="model">school.fee</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="student_id"/>
+                <field name="fee_type"/>
+                <filter name="filter_pending" string="Pending" domain="[('status','=','pending')]"/>
+                <filter name="filter_paid" string="Paid" domain="[('status','=','paid')]"/>
+                <filter name="filter_overdue" string="Overdue" domain="[('status','=','overdue')]"/>
+                <separator/>
+                <filter string="Student" name="group_student" domain="[]" context="{'group_by':'student_id'}"/>
+                <filter string="Fee Type" name="group_type" domain="[]" context="{'group_by':'fee_type'}"/>
+                <filter string="Status" name="group_status" domain="[]" context="{'group_by':'status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee" model="ir.actions.act_window">
+        <field name="name">Fees</field>
+        <field name="res_model">school.fee</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_fee_search"/>
+    </record>
+</odoo>
