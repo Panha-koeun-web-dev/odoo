@@ -1,6 +1,12 @@
 from odoo import models, fields, api, _
 
 
+def _open_records(self, model_name, domain):
+    action = self.env['ir.actions.act_window']._for_xml_id(f'school_management.action_{model_name}')
+    action['domain'] = domain
+    return action
+
+
 class SchoolStudent(models.Model):
     _name = 'school.student'
     _description = 'School Student'
@@ -41,3 +47,12 @@ class SchoolStudent(models.Model):
                 )
             else:
                 rec.age = 0
+
+    def open_attendance(self):
+        return _open_records(self, 'attendance', [('student_id', '=', self.id)])
+
+    def open_grades(self):
+        return _open_records(self, 'grade', [('student_id', '=', self.id)])
+
+    def open_fees(self):
+        return _open_records(self, 'fee', [('student_id', '=', self.id)])

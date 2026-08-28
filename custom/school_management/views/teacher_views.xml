@@ -1,41 +1,102 @@
 <odoo>
+    <!-- ======================= LIST VIEW ======================= -->
     <record id="view_teacher_tree" model="ir.ui.view">
         <field name="name">school.teacher.tree</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
-            <list>
+            <list decoration-muted="not active">
                 <field name="employee_id"/>
                 <field name="name"/>
                 <field name="email"/>
                 <field name="phone"/>
-                <field name="gender"/>
-                <field name="hire_date"/>
+                <field name="gender" widget="badge"/>
+                <field name="hire_date" optional="show"/>
+                <field name="active" optional="hide"/>
             </list>
         </field>
     </record>
 
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_teacher_kanban" model="ir.ui.view">
+        <field name="name">school.teacher.kanban</field>
+        <field name="model">school.teacher</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="photo"/>
+                <field name="gender"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="subject_ids"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-if="record.photo.raw" t-attf-src="data:image/png;base64,#{record.photo.raw}"
+                                     class="o_image_64_cover" alt="Teacher Photo"/>
+                                <span t-else="" class="o_kanban_avatar">
+                                    <span class="o_kanban_avatar_letter">T</span>
+                                </span>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                <div class="text-muted">
+                                    <i class="fa fa-hashtag me-1"/>
+                                    <field name="employee_id"/>
+                                </div>
+                                <div class="text-muted">
+                                    <i class="fa fa-envelope me-1"/>
+                                    <field name="email"/>
+                                </div>
+                                <div class="text-muted">
+                                    <i class="fa fa-phone me-1"/>
+                                    <field name="phone"/>
+                                </div>
+                            </div>
+                            <div class="oe_kanban_footer">
+                                <field name="subject_ids" widget="many2many_tags"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
     <record id="view_teacher_form" model="ir.ui.view">
         <field name="name">school.teacher.form</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Teacher Name"/>
-                        </h1>
+                    <div class="row">
+                        <div class="col-2">
+                            <field name="photo" widget="image" class="oe_avatar"/>
+                        </div>
+                        <div class="col-10">
+                            <div class="oe_title">
+                                <h1>
+                                    <field name="name" placeholder="Teacher Name"/>
+                                </h1>
+                            </div>
+                            <div class="mt-2">
+                                <field name="gender" widget="badge" bg_color="gender == 'male' ? 'bg-indigo-200 text-indigo-900' : gender == 'female' ? 'bg-pink-200 text-pink-900' : 'bg-gray-200 text-gray-900'"/>
+                                <span class="text-muted ms-1">Employee: <field name="employee_id" class="d-inline"/></span>
+                            </div>
+                        </div>
                     </div>
-                    <group>
-                        <group string="Personal Information">
-                            <field name="employee_id"/>
-                            <field name="gender"/>
+                    <group string="Personal Information">
+                        <group>
                             <field name="date_of_birth"/>
+                            <field name="phone"/>
                         </group>
                         <group string="Employment Information">
                             <field name="hire_date"/>
                             <field name="email"/>
-                            <field name="phone"/>
                             <field name="user_id"/>
+                            <field name="active"/>
                         </group>
                     </group>
                     <notebook>
@@ -54,9 +115,29 @@
         </field>
     </record>
 
+    <!-- ======================= SEARCH VIEW ======================= -->
+    <record id="view_teacher_search" model="ir.ui.view">
+        <field name="name">school.teacher.search</field>
+        <field name="model">school.teacher</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="email"/>
+                <filter name="filter_male" string="Male" domain="[('gender','=','male')]"/>
+                <filter name="filter_female" string="Female" domain="[('gender','=','female')]"/>
+                <separator/>
+                <filter string="Gender" name="group_gender" domain="[]" context="{'group_by':'gender'}"/>
+                <filter string="Hire Date" name="group_hire" domain="[]" context="{'group_by':'hire_date'}"/>
+                <filter string="Subject" name="group_subject" domain="[]" context="{'group_by':'subject_ids'}"/>
+            </search>
+        </field>
+    </record>
+
     <record id="action_teacher" model="ir.actions.act_window">
         <field name="name">Teachers</field>
         <field name="res_model">school.teacher</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_teacher_search"/>
     </record>
 </odoo>

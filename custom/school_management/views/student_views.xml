@@ -1,53 +1,142 @@
 <odoo>
+    <!-- ======================= LIST VIEW ======================= -->
     <record id="view_student_tree" model="ir.ui.view">
         <field name="name">school.student.list</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
-            <list>
+            <list decoration-info="age &lt; 13" decoration-muted="not active">
                 <field name="student_id"/>
                 <field name="name"/>
                 <field name="class_id"/>
-                <field name="gender"/>
-                <field name="age"/>
-                <field name="parent_phone"/>
-                <field name="enrollment_date"/>
+                <field name="gender" widget="badge"/>
+                <field name="age" optional="hide"/>
+                <field name="email" optional="hide"/>
+                <field name="phone" optional="show"/>
+                <field name="parent_phone" optional="hide"/>
+                <field name="enrollment_date" optional="show"/>
+                <field name="active" optional="hide"/>
             </list>
         </field>
     </record>
 
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_student_kanban" model="ir.ui.view">
+        <field name="name">school.student.kanban</field>
+        <field name="model">school.student</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="photo"/>
+                <field name="gender"/>
+                <field name="parent_phone"/>
+                <field name="age"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-if="record.photo.raw" t-attf-src="data:image/png;base64,#{record.photo.raw}"
+                                     class="o_image_64_cover" alt="Student Photo"/>
+                                <span t-else="" class="o_kanban_avatar">
+                                    <span class="o_kanban_avatar_letter">S</span>
+                                </span>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                <div class="text-muted">
+                                    <i class="fa fa-id-badge me-1"/>
+                                    <field name="student_id"/>
+                                </div>
+                                <div class="text-muted">
+                                    <i class="fa fa-tags me-1"/>
+                                    <field name="class_id"/>
+                                </div>
+                                <div class="text-muted">
+                                    <i class="fa fa-phone me-1"/>
+                                    <field name="parent_phone"/>
+                                </div>
+                            </div>
+                            <div class="oe_kanban_footer">
+                                <field name="gender" widget="badge"/>
+                                <span t-attf-class="badge bg-light text-dark ms-1">
+                                    <i class="fa fa-user-o me-1"/><t t-esc="record.age.raw"/> yrs
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
     <record id="view_student_form" model="ir.ui.view">
         <field name="name">school.student.form</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Student Name"/>
-                        </h1>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="open_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                            <div class="o_stat_info"><span class="o_stat_text">Attendance</span></div>
+                        </button>
+                        <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                            <div class="o_stat_info"><span class="o_stat_text">Grades</span></div>
+                        </button>
+                        <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money">
+                            <div class="o_stat_info"><span class="o_stat_text">Fees</span></div>
+                        </button>
                     </div>
-                    <group>
-                        <group string="Personal Information">
-                            <field name="student_id"/>
-                            <field name="gender"/>
+                    <div class="row">
+                        <div class="col-2">
+                            <field name="photo" widget="image" class="oe_avatar"/>
+                        </div>
+                        <div class="col-10">
+                            <div class="oe_title">
+                                <h1>
+                                    <field name="name" placeholder="Student Name"/>
+                                </h1>
+                            </div>
+                            <div class="mt-2">
+                                <field name="gender" widget="badge" bg_color="gender == 'male' ? 'bg-teal-200 text-teal-900' : gender == 'female' ? 'bg-pink-200 text-pink-900' : 'bg-purple-200 text-purple-900'"/>
+                                <span class="text-muted ms-1">ID: <field name="student_id" class="d-inline"/></span>
+                            </div>
+                        </div>
+                    </div>
+                    <group string="Personal Information">
+                        <group>
                             <field name="date_of_birth"/>
-                            <field name="age"/>
+                            <field name="age" string="Age" readonly="1"/>
+                            <field name="gender"/>
+                            <field name="address"/>
                         </group>
                         <group string="Academic Information">
                             <field name="class_id"/>
                             <field name="enrollment_date"/>
                             <field name="email"/>
                             <field name="phone"/>
+                            <field name="active"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Parent/Guardian" name="parent">
-                            <group>
-                                <field name="parent_name"/>
-                                <field name="parent_phone"/>
-                                <field name="parent_email"/>
-                                <field name="address"/>
+                        <page string="Parent / Guardian" name="parent">
+                            <group string="Contact Details">
+                                <group>
+                                    <field name="parent_name"/>
+                                    <field name="parent_phone"/>
+                                </group>
+                                <group>
+                                    <field name="parent_email"/>
+                                    <field name="user_id"/>
+                                </group>
                             </group>
+                        </page>
+                        <page string="Attendance" name="attendance">
+                            <field name="attendance_ids"/>
+                        </page>
+                        <page string="Grades" name="grades">
+                            <field name="grade_ids"/>
                         </page>
                         <page string="Fees" name="fees">
                             <field name="fee_ids"/>
@@ -61,6 +150,7 @@
         </field>
     </record>
 
+    <!-- ======================= SEARCH VIEW ======================= -->
     <record id="view_student_search" model="ir.ui.view">
         <field name="name">school.student.search</field>
         <field name="model">school.student</field>
@@ -69,11 +159,13 @@
                 <field name="name"/>
                 <field name="student_id"/>
                 <field name="class_id"/>
-                <filter name="filter_male" string="Male" domain="[('gender','=','male')]"/>
-                <filter name="filter_female" string="Female" domain="[('gender','=','female')]"/>
+                <field name="email"/>
+                <filter name="filter_male" string="Male" domain="[('gender','=','male')]" help="Only male students"/>
+                <filter name="filter_female" string="Female" domain="[('gender','=','female')]" help="Only female students"/>
                 <separator/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
                 <filter string="Gender" name="group_gender" domain="[]" context="{'group_by':'gender'}"/>
+                <filter string="Enrollment Date" name="group_enroll" domain="[]" context="{'group_by':'enrollment_date'}"/>
             </search>
         </field>
     </record>
@@ -81,7 +173,7 @@
     <record id="action_student" model="ir.actions.act_window">
         <field name="name">Students</field>
         <field name="res_model">school.student</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_student_search"/>
     </record>
 </odoo>
