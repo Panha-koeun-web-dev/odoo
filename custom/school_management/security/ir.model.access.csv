@@ -7,3 +7,4 @@ access_attendance_user,attendance.user,model_school_attendance,base.group_user,1
 access_exam_user,exam.user,model_school_exam,base.group_user,1,1,1,1
 access_grade_user,grade.user,model_school_grade,base.group_user,1,1,1,1
 access_fee_user,fee.user,model_school_fee,base.group_user,1,1,1,1
+access_dashboard_user,dashboard.user,model_school_dashboard,base.group_user,1,1,1,1

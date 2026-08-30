@@ -41,21 +41,21 @@
                             <div class="oe_kanban_details">
                                 <strong class="o_kanban_record_title"><field name="student_id"/></strong>
                                 <div class="text-muted">
-                                    <i class="fa fa-tags me-1"/><field name="fee_type"/>
+                                    <i class="fa fa-tags me-1" title="Fee type"/><field name="fee_type"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-calendar-o me-1"/>Due: <field name="due_date"/>
+                                    <i class="fa fa-calendar-o me-1" title="Due date"/>Due: <field name="due_date"/>
                                 </div>
                                 <div t-if="record.balance.raw">
                                     <span class="text-danger">
-                                        <i class="fa fa-exclamation-circle me-1"/>Balance:
+                                        <i class="fa fa-exclamation-circle me-1" title="Balance"/>Balance:
                                         <field name="balance"/>
                                     </span>
                                 </div>
                             </div>
                             <div class="oe_kanban_footer">
                                 <span t-attf-class="badge bg-light text-dark me-1">
-                                    <i class="fa fa-money me-1"/>
+                                    <i class="fa fa-money me-1" title="Amount"/>
                                     <t t-esc="record.amount.raw"/>
                                 </span>
                 <field name="status" widget="badge"/>

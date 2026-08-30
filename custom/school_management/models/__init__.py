@@ -6,3 +6,4 @@ from . import attendance
 from . import exam
 from . import grade
 from . import fee
+from . import dashboard

@@ -35,7 +35,7 @@
                             <div class="d-flex align-items-center mb-2">
                                 <span class="o_kanban_avatar">
                                     <span class="o_kanban_avatar_letter bg-primary">
-                                        <i class="fa fa-university"/>
+                                        <i class="fa fa-university" title="Class"/>
                                     </span>
                                 </span>
                                 <div>
@@ -43,12 +43,12 @@
                                         <field name="name"/>
                                         <t t-if="record.section.raw"> - <field name="section"/></t>
                                     </strong>
-                                    <span class="text-muted"><i class="fa fa-map-marker me-1"/><field name="room"/></span>
+                                    <span class="text-muted"><i class="fa fa-map-marker me-1" title="Room"/><field name="room"/></span>
                                 </div>
                             </div>
                             <div class="oe_kanban_details">
                                 <div class="text-muted">
-                                    <i class="fa fa-user-circle-o me-1"/>Class Teacher:
+                                    <i class="fa fa-user-circle-o me-1" title="Class teacher"/>Class Teacher:
                                     <field name="teacher_id" placeholder="Not assigned"/>
                                 </div>
                             </div>

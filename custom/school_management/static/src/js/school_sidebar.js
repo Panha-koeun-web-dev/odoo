@@ -1,0 +1,3 @@
+/** @odoo-module **/
+
+// Kept as a no-op asset so older cached School Management bundles can load.

@@ -39,10 +39,10 @@
                                     <field name="result" widget="badge"/>
                                 </strong>
                                 <div class="text-muted">
-                                    <i class="fa fa-book me-1"/><field name="subject_id"/>
+                                    <i class="fa fa-book me-1" title="Subject"/><field name="subject_id"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-file-text-o me-1"/><field name="exam_id"/>
+                                    <i class="fa fa-file-text-o me-1" title="Exam"/><field name="exam_id"/>
                                 </div>
                             </div>
                             <div class="oe_kanban_footer mt-2">

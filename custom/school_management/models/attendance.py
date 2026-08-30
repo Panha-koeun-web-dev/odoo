@@ -18,7 +18,7 @@ class SchoolAttendance(models.Model):
     ], string='Status', required=True, default='present')
     notes = fields.Text(string='Notes')
 
-    _sql_constraints = [
-        ('unique_attendance', 'unique(student_id, date)',
-         'Attendance already recorded for this student on this date!'),
-    ]
+    _unique_attendance = models.Constraint(
+        'unique(student_id, date)',
+        'Attendance already recorded for this student on this date!',
+    )

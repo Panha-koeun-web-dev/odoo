@@ -32,15 +32,15 @@
                             <div class="oe_kanban_details">
                                 <strong class="o_kanban_record_title"><field name="student_id"/></strong>
                                 <div class="text-muted">
-                                    <i class="fa fa-tags me-1"/>
+                                    <i class="fa fa-tags me-1" title="Class"/>
                                     <field name="class_id"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-calendar me-1"/>
+                                    <i class="fa fa-calendar me-1" title="Date"/>
                                     <field name="date"/>
                                 </div>
                                 <div t-if="record.notes.raw" class="text-muted small">
-                                    <i class="fa fa-commenting-o me-1"/>
+                                    <i class="fa fa-commenting-o me-1" title="Notes"/>
                                     <field name="notes"/>
                                 </div>
                             </div>

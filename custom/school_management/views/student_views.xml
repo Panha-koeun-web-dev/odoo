@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <list decoration-info="age &lt; 13" decoration-muted="not active">
                 <field name="student_id"/>
+                <field name="photo" widget="image" class="o_image_64_cover" options="{'no_attachment_counter': True}"/>
                 <field name="name"/>
                 <field name="class_id"/>
                 <field name="gender" widget="badge"/>
@@ -45,22 +46,22 @@
                             <div class="oe_kanban_details">
                                 <strong class="o_kanban_record_title"><field name="name"/></strong>
                                 <div class="text-muted">
-                                    <i class="fa fa-id-badge me-1"/>
+                                    <i class="fa fa-id-badge me-1" title="Student ID"/>
                                     <field name="student_id"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-tags me-1"/>
+                                    <i class="fa fa-tags me-1" title="Class"/>
                                     <field name="class_id"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-phone me-1"/>
+                                    <i class="fa fa-phone me-1" title="Parent phone"/>
                                     <field name="parent_phone"/>
                                 </div>
                             </div>
                             <div class="oe_kanban_footer">
                                 <field name="gender" widget="badge"/>
                                 <span t-attf-class="badge bg-light text-dark ms-1">
-                                    <i class="fa fa-user-o me-1"/><t t-esc="record.age.raw"/> yrs
+                                    <i class="fa fa-user-o me-1" title="Age"/><t t-esc="record.age.raw"/> yrs
                                 </span>
                             </div>
                         </div>
