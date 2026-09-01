@@ -11,6 +11,24 @@
               action="action_school_dashboard_server"
               sequence="5"/>
 
+    <!-- ================= Enrollments ================= -->
+    <menuitem id="menu_school_enrollment"
+              name="Enrollments"
+              parent="menu_school_root"
+              sequence="12"/>
+
+    <menuitem id="menu_school_enrollment_list"
+              name="All Enrollments"
+              parent="menu_school_enrollment"
+              action="action_enrollment"
+              sequence="10"/>
+
+    <menuitem id="menu_school_enroll_wizard"
+              name="Enroll Student(s)"
+              parent="menu_school_enrollment"
+              action="action_enroll_students"
+              sequence="20"/>
+
     <!-- ================= Students ================= -->
     <menuitem id="menu_school_student_parent" name="Students"
               parent="menu_school_root" sequence="10"/>

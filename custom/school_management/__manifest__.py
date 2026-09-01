@@ -18,8 +18,16 @@
         'views/grade_views.xml',
         'views/fee_views.xml',
         'views/dashboard_views.xml',
+        'views/enrollment_views.xml',
+        'wizards/enroll_students_views.xml',
         'views/menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'school_management/static/src/sidebar/sidebar.js',
+            'school_management/static/src/sidebar/sidebar.scss',
+        ],
+    },
     'demo': ['data/demo_data.xml'],
     'installable': True,
     'application': True,

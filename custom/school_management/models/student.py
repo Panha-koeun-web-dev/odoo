@@ -23,7 +23,7 @@ class SchoolStudent(models.Model):
     ], string='Gender', required=True)
     date_of_birth = fields.Date(string='Date of Birth', required=True)
     age = fields.Integer(string='Age', compute='_compute_age', store=True)
-    class_id = fields.Many2one('school.class', string='Class', required=True)
+    class_id = fields.Many2one('school.class', string='Class')
     parent_name = fields.Char(string='Parent/Guardian Name')
     parent_phone = fields.Char(string='Parent Phone')
     parent_email = fields.Char(string='Parent Email')
@@ -35,6 +35,7 @@ class SchoolStudent(models.Model):
     attendance_ids = fields.One2many('school.attendance', 'student_id', string='Attendance')
     grade_ids = fields.One2many('school.grade', 'student_id', string='Grades')
     fee_ids = fields.One2many('school.fee', 'student_id', string='Fees')
+    enrollment_ids = fields.One2many('school.enrollment', 'student_id', string='Enrollments')
     notes = fields.Text(string='Notes')
 
     @api.depends('date_of_birth')
@@ -56,3 +57,18 @@ class SchoolStudent(models.Model):
 
     def open_fees(self):
         return _open_records(self, 'fee', [('student_id', '=', self.id)])
+
+    def open_enrollments(self):
+        return _open_records(self, 'enrollment', [('student_id', '=', self.id)])
+
+    def action_bulk_enroll(self):
+        return {
+            'name': 'Bulk Enroll Students',
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.enroll.students.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_student_ids': self.ids,
+            },
+        }

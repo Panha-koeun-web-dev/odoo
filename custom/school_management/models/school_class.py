@@ -11,6 +11,7 @@ class SchoolClass(models.Model):
     teacher_id = fields.Many2one('school.teacher', string='Class Teacher')
     subject_ids = fields.Many2many('school.subject', string='Subjects')
     student_ids = fields.One2many('school.student', 'class_id', string='Students')
+    enrollment_ids = fields.One2many('school.enrollment', 'class_id', string='Enrollments')
     student_count = fields.Integer(string='Student Count', compute='_compute_student_count')
     capacity = fields.Integer(string='Capacity', default=40)
     room = fields.Char(string='Room Number')

@@ -4,6 +4,8 @@ access_teacher_user,teacher.user,model_school_teacher,base.group_user,1,1,1,1
 access_class_user,school.class.user,model_school_class,base.group_user,1,1,1,1
 access_subject_user,subject.user,model_school_subject,base.group_user,1,1,1,1
 access_attendance_user,attendance.user,model_school_attendance,base.group_user,1,1,1,1
+access_enrollment_user,enrollment.user,model_school_enrollment,base.group_user,1,1,1,1
+access_enroll_students_wizard,enroll.students.wizard,model_school_enroll_students_wizard,base.group_user,1,1,1,1
 access_exam_user,exam.user,model_school_exam,base.group_user,1,1,1,1
 access_grade_user,grade.user,model_school_grade,base.group_user,1,1,1,1
 access_fee_user,fee.user,model_school_fee,base.group_user,1,1,1,1

@@ -1,0 +1,50 @@
+<odoo>
+    <record id="view_enroll_students_wizard_form" model="ir.ui.view">
+        <field name="name">school.enroll.students.wizard.form</field>
+        <field name="model">school.enroll.students.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Enroll Student(s)">
+                <group>
+                    <field name="enrollment_type" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                <group>
+                    <group string="Placement">
+                        <field name="class_id"/>
+                        <field name="semester" widget="radio"/>
+                        <field name="academic_year"/>
+                        <field name="enrollment_date"/>
+
+                    </group>
+                    <group string="Subjects to Learn">
+                        <field name="subject_ids" widget="many2many_tags"
+                               placeholder="Optional - defaults to the class subjects"/>
+                    </group>
+                </group>
+                <group string="Student" invisible="enrollment_type != 'single'">
+                    <field name="student_id" required="enrollment_type == 'single'"/>
+                </group>
+                <group string="Students (select as many as you want - or add new ones)" invisible="enrollment_type != 'bulk'">
+                    <field name="student_ids" nolabel="1"
+                           placeholder="Select students, no limit..." required="enrollment_type == 'bulk'"/>
+                    <p class="text-muted fst-italic">
+                        <i class="fa fa-users me-1" title="Students"/>
+                        <field name="student_count"/> student(s) selected - one separate
+                        enrollment record will be created for each.
+                    </p>
+                </group>
+                <footer>
+                    <button name="action_enroll" type="object" string="Enroll Students"
+                            class="btn-primary" icon="fa-check"/>
+                    <button special="cancel" string="Cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_enroll_students" model="ir.actions.act_window">
+        <field name="name">Enroll Student(s)</field>
+        <field name="res_model">school.enroll.students.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

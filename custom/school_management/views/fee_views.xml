@@ -16,7 +16,7 @@
                 <field name="status" widget="badge"/>
                 <button name="action_mark_paid" type="object" string="Mark Paid"
                         class="btn-success" icon="fa-check"
-                        column_invisible="status == 'paid'"/>
+                        invisible="status == 'paid'"/>
             </list>
         </field>
     </record>

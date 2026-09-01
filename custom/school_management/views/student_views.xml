@@ -4,12 +4,13 @@
         <field name="name">school.student.list</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
-            <list decoration-info="age &lt; 13" decoration-muted="not active">
+            <list decoration-info="age &lt; 13" decoration-muted="not active" editable="bottom" multi_edit="1">
                 <field name="student_id"/>
                 <field name="photo" widget="image" class="o_image_64_cover" options="{'no_attachment_counter': True}"/>
                 <field name="name"/>
                 <field name="class_id"/>
                 <field name="gender" widget="badge"/>
+                <field name="date_of_birth" optional="show"/>
                 <field name="age" optional="hide"/>
                 <field name="email" optional="hide"/>
                 <field name="phone" optional="show"/>
@@ -88,6 +89,9 @@
                         <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money">
                             <div class="o_stat_info"><span class="o_stat_text">Fees</span></div>
                         </button>
+                        <button name="open_enrollments" type="object" class="oe_stat_button" icon="fa-user-plus">
+                            <div class="o_stat_info"><span class="o_stat_text">Enrollments</span></div>
+                        </button>
                     </div>
                     <div class="row">
                         <div class="col-2">
@@ -142,6 +146,9 @@
                         <page string="Fees" name="fees">
                             <field name="fee_ids"/>
                         </page>
+                        <page string="Enrollments" name="enrollments">
+                            <field name="enrollment_ids"/>
+                        </page>
                         <page string="Notes" name="notes">
                             <field name="notes" placeholder="Additional notes..."/>
                         </page>
@@ -176,5 +183,14 @@
         <field name="res_model">school.student</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_student_search"/>
+    </record>
+
+    <record id="action_bulk_enroll_students" model="ir.actions.server">
+        <field name="name">Bulk Enroll</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_bulk_enroll()</field>
     </record>
 </odoo>

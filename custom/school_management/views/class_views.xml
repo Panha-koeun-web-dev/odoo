@@ -95,6 +95,9 @@
                         <page string="Students" name="students">
                             <field name="student_ids"/>
                         </page>
+                        <page string="Enrollments" name="enrollments">
+                            <field name="enrollment_ids"/>
+                        </page>
                         <page string="Subjects" name="subjects">
                             <field name="subject_ids"/>
                         </page>
