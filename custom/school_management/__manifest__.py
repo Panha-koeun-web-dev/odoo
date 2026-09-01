@@ -21,6 +21,8 @@
         'views/enrollment_views.xml',
         'wizards/enroll_students_views.xml',
         'views/menu.xml',
+        'report/fee_report.xml',
+        'report/attendance_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
