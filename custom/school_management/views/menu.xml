@@ -8,7 +8,7 @@
     <menuitem id="menu_school_dashboard"
               name="Dashboard"
               parent="menu_school_root"
-              action="action_school_dashboard_server"
+              action="action_school_dashboard"
               sequence="5"/>
 
     <!-- ================= Enrollments ================= -->

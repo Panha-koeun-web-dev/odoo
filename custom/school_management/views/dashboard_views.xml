@@ -1,35 +1,9 @@
 <odoo>
-
-    <!-- ======================= FORM VIEW ======================= -->
-    <record id="view_school_dashboard_form" model="ir.ui.view">
-        <field name="name">school.dashboard.form</field>
-        <field name="model">school.dashboard</field>
-        <field name="arch" type="xml">
-            <form string="Dashboard" create="0" edit="0" delete="0" class="school_dashboard_form">
-                <field name="dashboard_html" readonly="1" nolabel="1"/>
-            </form>
-        </field>
-    </record>
-
-    <!-- ======================= SERVER ACTION ======================= -->
-    <record id="action_school_dashboard_server" model="ir.actions.server">
+    <!-- ======================= CLIENT ACTION ======================= -->
+    <record id="action_school_dashboard" model="ir.actions.client">
         <field name="name">Dashboard</field>
-        <field name="model_id" ref="model_school_dashboard"/>
-        <field name="state">code</field>
-        <field name="code">
-dashboard = env['school.dashboard'].create({})
-action = {
-    'type': 'ir.actions.act_window',
-    'name': 'Dashboard',
-    'display_name': 'Dashboard',
-    'res_model': 'school.dashboard',
-    'res_id': dashboard.id,
-    'view_mode': 'form',
-    'view_id': env.ref('school_management.view_school_dashboard_form').id,
-    'context': {'no_breadcrumbs': True},
-    'target': 'main',
-}
-        </field>
+        <field name="tag">school_dashboard</field>
+        <field name="target">main</field>
     </record>
-
 </odoo>
+
