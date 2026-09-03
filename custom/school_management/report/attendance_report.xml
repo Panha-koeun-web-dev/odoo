@@ -19,27 +19,28 @@
 
     <template id="attendance_report_document">
         <t t-call="web.external_layout">
-            <div class="page">
-                <div class="row" style="border-bottom: 3px solid #1a4d7c; padding-bottom: 8px; margin-bottom: 14px;">
+            <div class="page o_school_report o_attendance_report">
+                <div class="row o_school_report_header">
                     <div class="col-2">
-                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 60px;" alt="School Logo"/>
+                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                             class="o_school_report_logo" alt="School Logo"/>
                     </div>
                     <div class="col-10 text-center">
-                        <h2 style="margin: 0; color: #1a4d7c; font-weight: bold;">School Management System</h2>
-                        <div t-if="company.name" style="color: #555; font-size: 13px;">Company: <span t-esc="company.name"/></div>
-                        <h3 style="margin: 4px 0 0; color: #333;">Attendance Report</h3>
+                        <h2 class="o_school_report_title">School Management System</h2>
+                        <div t-if="company.name" class="o_school_report_subtitle">Company: <span t-esc="company.name"/></div>
+                        <h3 class="o_school_report_section_title mt-1">Attendance Report</h3>
                     </div>
                 </div>
 
-                <div class="row" style="margin-bottom: 12px;">
+                <div class="row mb-2">
                     <div class="col-12">
                         <strong>Total attendance records: </strong><span t-esc="total_records"/>
                     </div>
                 </div>
 
-                <table class="table table-sm table-bordered" style="font-size: 11px;">
+                <table class="table table-sm table-bordered o_school_report_table">
                     <thead>
-                        <tr style="background-color: #1a4d7c; color: #fff;">
+                        <tr class="o_school_report_table_head">
                             <th>#</th>
                             <th>Student</th>
                             <th>Student ID</th>
@@ -68,19 +69,19 @@
                     </tbody>
                 </table>
 
-                <div class="row" style="margin-top: 12px;">
+                <div class="row mt-2">
                     <div class="col-12">
-                        <h5 style="color: #1a4d7c; margin: 0 0 6px;">Summary</h5>
-                        <table class="table table-sm table-bordered" style="font-size: 11px;">
+                        <h5 class="o_school_report_summary_title">Summary</h5>
+                        <table class="table table-sm table-bordered o_school_report_table">
                             <tbody>
                                 <tr>
-                                    <td style="font-weight: bold; background: #f0f4f8; width: 20%;">Present</td>
+                                    <td class="o_school_report_summary_label">Present</td>
                                     <td t-esc="status_counts.get('present', 0)"/>
-                                    <td style="font-weight: bold; background: #f0f4f8; width: 20%;">Absent</td>
+                                    <td class="o_school_report_summary_label">Absent</td>
                                     <td t-esc="status_counts.get('absent', 0)"/>
-                                    <td style="font-weight: bold; background: #f0f4f8; width: 20%;">Late</td>
+                                    <td class="o_school_report_summary_label">Late</td>
                                     <td t-esc="status_counts.get('late', 0)"/>
-                                    <td style="font-weight: bold; background: #f0f4f8; width: 20%;">Excused</td>
+                                    <td class="o_school_report_summary_label">Excused</td>
                                     <td t-esc="status_counts.get('excused', 0)"/>
                                 </tr>
                             </tbody>
@@ -88,7 +89,7 @@
                     </div>
                 </div>
 
-                <div style="margin-top: 22px; border-top: 1px solid #ccc; padding-top: 8px; font-size: 11px; color: #777;">
+                <div class="o_school_report_footer_note">
                     Generated on <span t-esc="generated_on"/> by <span t-esc="user.name"/>.
                 </div>
             </div>

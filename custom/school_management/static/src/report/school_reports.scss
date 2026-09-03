@@ -1,0 +1,593 @@
+.o_school_report {
+  color: #333333;
+
+  .o_school_report_header {
+    border-bottom: 3px solid #1a4d7c;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
+  .o_school_report_logo {
+    max-height: 60px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .o_school_report_logo_large {
+    max-height: 70px;
+  }
+
+  .o_school_report_title {
+    margin: 0;
+    color: #1a4d7c;
+    font-weight: 700;
+  }
+
+  .o_school_report_subtitle {
+    color: #555555;
+    font-size: 13px;
+  }
+
+  .o_school_report_muted {
+    color: #777777;
+    font-size: 11px;
+  }
+
+  .o_school_report_contact {
+    color: #666666;
+    font-size: 11px;
+  }
+
+  .o_school_report_label {
+    color: #1a4d7c;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .o_school_report_section_title {
+    color: #333333;
+    font-weight: 600;
+  }
+
+  .o_school_report_table {
+    font-size: 11px;
+  }
+
+  .o_school_report_table thead th,
+  .o_school_report_table .o_school_report_table_head {
+    background-color: #1a4d7c !important;
+    color: #ffffff !important;
+    border-color: #1a4d7c !important;
+    font-weight: 600;
+  }
+
+  .o_school_report_summary_title {
+    color: #1a4d7c;
+    margin: 0 0 6px;
+  }
+
+  .o_school_report_summary_label {
+    width: 20%;
+    background-color: #f0f4f8;
+    font-weight: 700;
+  }
+
+  .o_school_report_footer_note {
+    margin-top: 22px;
+    border-top: 1px solid #cccccc;
+    padding-top: 8px;
+    color: #777777;
+    font-size: 11px;
+  }
+}
+
+.o_fee_report {
+  background-image: linear-gradient(180deg, #f0f6fc 0%, #ffffff 40%);
+
+  .o_fee_report_missing_bg {
+    margin-top: 40px;
+  }
+
+  .o_fee_report_missing_bg h3 {
+    color: #b02a37;
+  }
+
+  .o_fee_report_brand {
+    letter-spacing: 0.5px;
+  }
+
+  .o_fee_report_type {
+    color: #888888;
+    font-size: 11px;
+  }
+
+  .o_fee_report_generated {
+    color: #666666;
+    font-size: 11px;
+  }
+
+  .o_fee_report_table tbody tr:nth-child(even) {
+    background-color: #f4f7fb;
+  }
+
+  .o_fee_report_table tbody tr.o_fee_overdue td {
+    background-color: #fdeaea;
+  }
+
+  .o_fee_report_table tfoot td {
+    background-color: #eaf0f8;
+    border-top: 2px solid #1a4d7c;
+    color: #1a4d7c;
+    font-weight: 700;
+  }
+
+  .o_fee_notes_block {
+    margin-top: 10px;
+    font-size: 11px;
+  }
+
+  .o_fee_notes {
+    border: 1px solid #d7dee8;
+    background-color: #f7f9fc;
+    border-radius: 4px;
+    padding: 6px 10px;
+  }
+
+  .o_fee_notes_text {
+    margin-top: 2px;
+  }
+
+  .o_fee_signature_line {
+    border-top: 1px solid #999999;
+    padding-top: 4px;
+    color: #555555;
+    font-size: 11px;
+  }
+
+  .o_fee_report_footer {
+    border-top: 1px solid #dddddd;
+    color: #777777;
+    font-size: 10px;
+  }
+}
+
+.o_certificate_report {
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+  }
+
+  .o_cert_page {
+    position: relative;
+    margin: 0;
+    padding: 0 !important;
+    width: 210mm;
+    height: 297mm;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+    overflow: hidden;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #2b2b2b;
+    background-color: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  // Equal spacing between the top/bottom accent bands and the border frame.
+  .o_cert_band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 18mm;
+    z-index: 1;
+  }
+
+  .o_cert_band_top { top: 0; }
+  .o_cert_band_bottom { bottom: 0; }
+
+  .o_cert_border_outer {
+    position: relative;
+    box-sizing: border-box;
+    margin: 26mm 18mm 26mm;
+    height: 245mm;
+    border: 3px double;
+    border-radius: 4mm;
+    z-index: 0;
+    box-shadow: inset 0 0 0 1.4mm rgba(255, 255, 255, 0.78);
+  }
+
+  .o_cert_border_inner {
+    box-sizing: border-box;
+    position: relative;
+    height: 100%;
+    border: 1px solid;
+    border-radius: 2.5mm;
+    margin: 5mm;
+    padding: 14mm 16mm 8mm;
+    text-align: center;
+  }
+
+  .o_cert_empty {
+    margin-top: 80mm;
+    font-size: 6mm;
+    color: #8a6d1f;
+  }
+
+  .o_cert_corner {
+    position: absolute;
+    width: 5mm;
+    height: 5mm;
+    border: 1px solid;
+    transform: rotate(45deg);
+    background-color: #ffffff;
+  }
+
+  .o_cert_corner.tl { top: -1.5mm; left: -1.5mm; }
+  .o_cert_corner.tr { top: -1.5mm; right: -1.5mm; }
+  .o_cert_corner.bl { bottom: -1.5mm; left: -1.5mm; }
+  .o_cert_corner.br { right: -1.5mm; bottom: -1.5mm; }
+
+  .o_cert_header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4mm;
+  }
+
+  .o_cert_logo {
+    max-height: 16mm;
+    max-width: 24mm;
+    object-fit: contain;
+  }
+
+  .o_cert_school_name {
+    font-size: 6mm;
+    font-weight: 700;
+    letter-spacing: 1.2mm;
+    text-transform: uppercase;
+    line-height: 1.15;
+  }
+
+  .o_cert_school_sub {
+    margin-top: 1mm;
+    font-size: 2.6mm;
+    letter-spacing: 1.8mm;
+    text-transform: uppercase;
+  }
+
+  .o_cert_divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4mm;
+    margin: 2.5mm 0 3mm;
+  }
+
+  .o_cert_divider > span {
+    width: 30%;
+    border-top: 0.4mm solid;
+  }
+
+  .o_cert_diamond {
+    display: inline-block;
+    width: 2.4mm;
+    height: 2.4mm;
+    border: 0.4mm double;
+    transform: rotate(45deg);
+  }
+
+  .o_cert_type_subtitle {
+    margin: 0;
+    font-size: 3.2mm;
+    letter-spacing: 2.4mm;
+    text-transform: uppercase;
+  }
+
+  .o_cert_title {
+    margin: 1.5mm 0 0;
+    font-size: 10mm;
+    font-weight: 700;
+    letter-spacing: 1.6mm;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .o_cert_body {
+    margin-top: 4mm;
+  }
+
+  .o_cert_prelude {
+    font-size: 3.8mm;
+    font-style: italic;
+  }
+
+  .o_cert_student_name {
+    margin: 3.5mm 0 1.5mm;
+    font-size: 12mm;
+    font-weight: 700;
+    letter-spacing: 0.8mm;
+    line-height: 1.15;
+  }
+
+  .o_cert_student_details {
+    display: inline-block;
+    margin: 1.5mm auto 2mm;
+    border: 0.3mm solid;
+    border-radius: 2mm;
+    padding: 2mm 4mm;
+    font-size: 3.1mm;
+    line-height: 1.7;
+  }
+
+  .o_cert_student_details span {
+    display: inline-block;
+    margin: 0 2mm;
+    white-space: nowrap;
+  }
+
+  .o_cert_student_details b {
+    color: inherit;
+  }
+
+  .o_cert_meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3mm;
+    font-size: 4mm;
+    font-weight: 600;
+  }
+
+  .o_cert_meta b {
+    color: inherit;
+  }
+
+  .o_cert_sep {
+    font-size: 3mm;
+    color: #8a8a8a;
+  }
+
+  .o_cert_dec {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3mm;
+    margin: 2.5mm 0;
+  }
+
+  .o_cert_dec_line {
+    width: 14%;
+    border-top: 0.3mm solid;
+  }
+
+  .o_cert_dec_leaf {
+    font-size: 4mm;
+    line-height: 1;
+  }
+
+  .o_cert_avg {
+    display: inline-flex;
+    align-items: center;
+    gap: 4mm;
+    margin-top: 1mm;
+    border: 0.3mm solid;
+    border-radius: 999px;
+    padding: 1.6mm 7mm;
+    font-size: 3.4mm;
+  }
+
+  .o_cert_avg b {
+    font-size: 4mm;
+  }
+
+  .o_cert_prelude_mid {
+    margin-top: 3mm;
+    line-height: 1.6;
+  }
+
+  .o_cert_photo_wrap {
+    margin-top: 3mm;
+    text-align: center;
+  }
+
+  .o_cert_photo {
+    width: 26mm;
+    height: 30mm;
+    object-fit: cover;
+    border: 0.6mm solid #dddddd;
+    border-radius: 2.5mm;
+    box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.15);
+  }
+
+  .o_cert_signatures {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8mm;
+    margin-top: 6mm;
+    padding: 0 10mm;
+  }
+
+  .o_cert_signature {
+    width: 52mm;
+    text-align: center;
+  }
+
+  .o_cert_sign_line {
+    height: 6mm;
+    border-top: 0.5mm solid;
+  }
+
+  .o_cert_sign_name {
+    margin-top: 1mm;
+    font-size: 3.6mm;
+    font-weight: 700;
+  }
+
+  .o_cert_sign_label {
+    margin-top: 0.6mm;
+    font-size: 3mm;
+    letter-spacing: 0.8mm;
+    text-transform: uppercase;
+  }
+
+  .o_cert_seal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .o_cert_seal_ring {
+    position: relative;
+    display: inline-block;
+    width: 22mm;
+    height: 22mm;
+    border: 0.8mm double;
+    border-radius: 50%;
+  }
+
+  .o_cert_seal_star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6mm;
+    height: 6mm;
+    margin: -3mm 0 0 -3mm;
+    border: 0.4mm double;
+    transform: rotate(45deg);
+  }
+
+  .o_cert_footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4mm;
+    margin-top: 6mm;
+    border-top: 0.3mm solid;
+    padding-top: 2mm;
+    font-size: 3.2mm;
+  }
+
+  .o_cert_footer b {
+    color: inherit;
+  }
+
+  .cert-template-elegant {
+    .o_cert_band {
+      background: linear-gradient(135deg, #b08d2f 0%, #d9b95c 60%, #8a6d1f 100%);
+    }
+    .o_cert_border_outer {
+      border-color: #b08d2f;
+      background-color: #fffaf0;
+      background-image:
+        linear-gradient(0deg, rgba(176, 141, 47, 0.08), rgba(176, 141, 47, 0.08)),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 250, 240, 0.95));
+    }
+    .o_cert_border_inner { border-color: #d8c58a; }
+    .o_cert_corner,
+    .o_cert_student_details,
+    .o_cert_seal_ring,
+    .o_cert_diamond,
+    .o_cert_dec_line,
+    .o_cert_sign_line,
+    .o_cert_footer {
+      border-color: #c9ab5a;
+    }
+    .o_cert_school_name,
+    .o_cert_type_subtitle,
+    .o_cert_title,
+    .o_cert_student_name,
+    .o_cert_seal_ring,
+    .o_cert_avg,
+    .o_cert_dec_leaf {
+      color: #8a6d1f;
+    }
+    .o_cert_divider > span { border-color: #d8c58a; }
+    .o_cert_avg { background-color: #fbf1d8; }
+    .o_cert_student_details { background-color: rgba(250, 243, 224, 0.92); }
+    .o_cert_body,
+    .o_cert_prelude,
+    .o_cert_meta,
+    .o_cert_footer { color: #5a4a2a; }
+  }
+
+  .cert-template-classic {
+    .o_cert_band {
+      background: linear-gradient(135deg, #1a4d7c 0%, #3d74a8 60%, #123a5e 100%);
+    }
+    .o_cert_border_outer {
+      border-color: #1a4d7c;
+      background-color: #f3f8fc;
+      background-image:
+        linear-gradient(0deg, rgba(26, 77, 124, 0.06), rgba(26, 77, 124, 0.06)),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(243, 248, 252, 0.95));
+    }
+    .o_cert_border_inner { border-color: #7ea3c2; }
+    .o_cert_corner,
+    .o_cert_student_details,
+    .o_cert_seal_ring,
+    .o_cert_diamond,
+    .o_cert_dec_line,
+    .o_cert_sign_line,
+    .o_cert_footer {
+      border-color: #5d86ac;
+    }
+    .o_cert_school_name,
+    .o_cert_type_subtitle,
+    .o_cert_title,
+    .o_cert_student_name,
+    .o_cert_seal_ring,
+    .o_cert_avg,
+    .o_cert_dec_leaf {
+      color: #1a4d7c;
+    }
+    .o_cert_divider > span { border-color: #7ea3c2; }
+    .o_cert_avg { background-color: #edf4fb; }
+    .o_cert_student_details { background-color: rgba(237, 244, 251, 0.92); }
+    .o_cert_body,
+    .o_cert_prelude,
+    .o_cert_meta,
+    .o_cert_footer { color: #22384e; }
+  }
+
+  .cert-template-modern {
+    .o_cert_band {
+      background: linear-gradient(135deg, #0f766e 0%, #2dd4bf 60%, #0b5f59 100%);
+    }
+    .o_cert_border_outer {
+      border-color: #0f766e;
+      background-color: #effbf8;
+      background-image:
+        linear-gradient(0deg, rgba(15, 118, 110, 0.06), rgba(15, 118, 110, 0.06)),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(239, 251, 248, 0.95));
+    }
+    .o_cert_border_inner { border-color: #5eead4; }
+    .o_cert_corner,
+    .o_cert_student_details,
+    .o_cert_seal_ring,
+    .o_cert_diamond,
+    .o_cert_dec_line,
+    .o_cert_sign_line,
+    .o_cert_footer {
+      border-color: #3ecfbb;
+    }
+    .o_cert_school_name,
+    .o_cert_type_subtitle,
+    .o_cert_title,
+    .o_cert_student_name,
+    .o_cert_seal_ring,
+    .o_cert_avg,
+    .o_cert_dec_leaf {
+      color: #0f766e;
+    }
+    .o_cert_divider > span { border-color: #5eead4; }
+    .o_cert_avg { background-color: #e6f8f5; }
+    .o_cert_student_details { background-color: rgba(230, 248, 245, 0.92); }
+    .o_cert_body,
+    .o_cert_prelude,
+    .o_cert_meta,
+    .o_cert_footer { color: #144846; }
+  }
+}

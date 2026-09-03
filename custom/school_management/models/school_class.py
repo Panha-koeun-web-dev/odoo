@@ -8,6 +8,7 @@ class SchoolClass(models.Model):
 
     name = fields.Char(string='Class Name', required=True)
     section = fields.Char(string='Section')
+    major_id = fields.Many2one('school.major', string='Major')
     teacher_id = fields.Many2one('school.teacher', string='Class Teacher')
     subject_ids = fields.Many2many('school.subject', string='Subjects')
     student_ids = fields.One2many('school.student', 'class_id', string='Students')

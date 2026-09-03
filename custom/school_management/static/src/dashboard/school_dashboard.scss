@@ -1,0 +1,466 @@
+.o_school_dashboard {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+  overflow-y: auto;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+
+  .school_dash_container {
+    padding: 24px 32px 48px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Colors */
+  .text-teal {
+    color: #0f766e !important;
+  }
+  .bg-teal {
+    background-color: #0f766e !important;
+  }
+
+  /* Header */
+  .dash_header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .dash_title {
+      font-size: 26px;
+      font-weight: 800;
+      margin: 0;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .dash_subtitle {
+      margin: 4px 0 0;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .dash_controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .live_badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        background-color: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* 4-Card Top Metrics Grid */
+  .metric_cards_grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+
+    .metric_card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
+        border-color: #cbd5e1;
+      }
+
+      .metric_label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+      }
+
+      .metric_value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 8px 0 4px;
+        line-height: 1.1;
+      }
+
+      .metric_sub {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+
+      .metric_icon_box {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 20px;
+        flex-shrink: 0;
+
+        &.icon_blue {
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        &.icon_cyan {
+          background: linear-gradient(135deg, #06b6d4, #0e7490);
+        }
+        &.icon_teal {
+          background: linear-gradient(135deg, #14b8a6, #0f766e);
+        }
+        &.icon_amber {
+          background: linear-gradient(135deg, #f59e0b, #b45309);
+        }
+      }
+    }
+  }
+
+  /* 4-Card Health Grid */
+  .health_grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .health_card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left-width: 4px;
+      border-radius: 10px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+      }
+
+      &.health_academic {
+        border-left-color: #2563eb;
+      }
+      &.health_attendance {
+        border-left-color: #0891b2;
+      }
+      &.health_fees {
+        border-left-color: #0f766e;
+      }
+      &.health_capacity {
+        border-left-color: #d97706;
+      }
+
+      .health_top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+      }
+
+      .health_value {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 8px 0 4px;
+      }
+
+      .health_desc {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  /* Section Heading */
+  .section_heading {
+    margin: 28px 0 14px;
+    h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+  }
+
+  /* Layout Grids */
+  .charts_row_3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .charts_row_2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  /* Chart Panels */
+  .chart_panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    .panel_header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+
+      h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+      }
+
+      .panel_tag {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        background-color: #f1f5f9;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+    }
+
+    .chart_canvas_wrapper {
+      position: relative;
+      width: 100%;
+
+      &.doughnut_wrapper {
+        height: 200px;
+      }
+
+      &.bar_wrapper {
+        height: 220px;
+      }
+    }
+
+    .panel_footer_stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 13px;
+
+      .p_stat {
+        span {
+          color: #64748b;
+          margin-right: 4px;
+        }
+      }
+    }
+
+    .panel_subgrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+
+      .subgrid_item {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 12px;
+
+        span {
+          display: block;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        b {
+          display: block;
+          font-size: 16px;
+          font-weight: 800;
+          margin-top: 4px;
+          color: #0f172a;
+        }
+      }
+    }
+
+    .trend_stat_pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+
+      .pill_stat {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        text-align: center;
+
+        span {
+          display: block;
+          font-size: 11px;
+          color: #64748b;
+        }
+        b {
+          display: block;
+          font-size: 16px;
+          font-weight: 800;
+          margin-top: 2px;
+        }
+      }
+    }
+
+    .class_occupancy_list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .class_row {
+        .class_info {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13px;
+          margin-bottom: 4px;
+
+          .class_name {
+            font-weight: 700;
+            color: #1e293b;
+          }
+          .class_counts {
+            color: #64748b;
+            font-size: 12px;
+          }
+        }
+
+        .progress_bar_container {
+          height: 8px;
+          border-radius: 4px;
+          background-color: #e2e8f0;
+        }
+      }
+    }
+  }
+
+  /* Operational Summary Panel */
+  .ops_panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .panel_header h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 16px;
+    }
+
+    .ops_grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+
+      .ops_box {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease;
+
+        &:hover {
+          background-color: #f1f5f9;
+          border-color: #cbd5e1;
+        }
+
+        span {
+          display: block;
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        b {
+          display: block;
+          font-size: 22px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+
+  /* Responsive Breakpoints */
+  @media (max-width: 1200px) {
+    .metric_cards_grid,
+    .health_grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .charts_row_3,
+    .charts_row_2 {
+      grid-template-columns: 1fr;
+    }
+    .ops_panel .ops_grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .school_dash_container {
+      padding: 16px;
+    }
+    .dash_header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .metric_cards_grid,
+    .health_grid,
+    .ops_panel .ops_grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

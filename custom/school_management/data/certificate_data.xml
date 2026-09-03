@@ -1,0 +1,9 @@
+<odoo>
+    <record id="seq_school_certificate" model="ir.sequence">
+        <field name="name">School Certificate Number</field>
+        <field name="code">school.certificate</field>
+        <field name="prefix">CERT/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

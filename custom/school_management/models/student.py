@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-
+from odoo.exceptions import ValidationError
 
 def _open_records(self, model_name, domain):
     action = self.env['ir.actions.act_window']._for_xml_id(f'school_management.action_{model_name}')
@@ -29,6 +29,9 @@ class SchoolStudent(models.Model):
     parent_email = fields.Char(string='Parent Email')
     address = fields.Text(string='Address')
     enrollment_date = fields.Date(string='Enrollment Date', default=fields.Date.today)
+    study_start_date = fields.Date(string='Study Start Date', default=fields.Date.today)
+    study_end_date = fields.Date(string='Study End Date')
+    study_period = fields.Char(string='Study Period', compute='_compute_study_period', store=True)
     photo = fields.Image(string='Photo')
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', string='Related User')
@@ -36,7 +39,22 @@ class SchoolStudent(models.Model):
     grade_ids = fields.One2many('school.grade', 'student_id', string='Grades')
     fee_ids = fields.One2many('school.fee', 'student_id', string='Fees')
     enrollment_ids = fields.One2many('school.enrollment', 'student_id', string='Enrollments')
+    major_enrollment_ids = fields.One2many('school.major.enrollment', 'student_id', string='Major Enrollments')
+    major_ids = fields.Many2many(
+        'school.major',
+        'school_major_student_rel',
+        'student_id',
+        'major_id',
+        string='Majors',
+        compute='_compute_majors',
+    )
+    certificate_ids = fields.One2many('school.certificate', 'student_id', string='Certificates')
     notes = fields.Text(string='Notes')
+
+    @api.depends('major_enrollment_ids.major_id')
+    def _compute_majors(self):
+        for rec in self:
+            rec.major_ids = rec.major_enrollment_ids.mapped('major_id')
 
     @api.depends('date_of_birth')
     def _compute_age(self):
@@ -49,6 +67,24 @@ class SchoolStudent(models.Model):
             else:
                 rec.age = 0
 
+    @api.depends('study_start_date', 'study_end_date')
+    def _compute_study_period(self):
+        for rec in self:
+            start_year = rec.study_start_date.year if rec.study_start_date else ''
+            end_year = rec.study_end_date.year if rec.study_end_date else ''
+            if start_year and end_year:
+                rec.study_period = f'{start_year}-{end_year}'
+            elif start_year:
+                rec.study_period = str(start_year)
+            else:
+                rec.study_period = ''
+
+    @api.constrains('study_start_date', 'study_end_date')
+    def _check_study_dates(self):
+        for rec in self:
+            if rec.study_start_date and rec.study_end_date and rec.study_end_date < rec.study_start_date:
+                raise ValidationError(_('Study End Date must be after Study Start Date.'))
+
     def open_attendance(self):
         return _open_records(self, 'attendance', [('student_id', '=', self.id)])
 
@@ -60,6 +96,35 @@ class SchoolStudent(models.Model):
 
     def open_enrollments(self):
         return _open_records(self, 'enrollment', [('student_id', '=', self.id)])
+
+    def open_major_enrollments(self):
+        return _open_records(self, 'major_enrollment', [('student_id', '=', self.id)])
+
+    def action_generate_certificate(self):
+        self.ensure_one()
+        certs = self.env['school.certificate'].generate_certificates(self)
+        cert = certs[:1]
+        if not cert:
+            return {
+                'type': 'ir.actions.act_window_close',
+            }
+        return {
+            'name': _('Certificate'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.certificate',
+            'view_mode': 'form',
+            'res_id': cert.id,
+            'target': 'current',
+        }
+
+    def action_print_student_certificates(self):
+        certs = self.env['school.certificate'].generate_certificates(self)
+        if not certs:
+            return {
+                'type': 'ir.actions.act_window_close',
+            }
+        return self.env.ref('school_management.action_report_school_certificate').report_action(
+            certs)
 
     def action_bulk_enroll(self):
         return {

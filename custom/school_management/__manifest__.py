@@ -9,6 +9,7 @@
     'data': [
         'security/school_security.xml',
         'security/ir.model.access.csv',
+        'data/certificate_data.xml',
         'views/student_views.xml',
         'views/teacher_views.xml',
         'views/class_views.xml',
@@ -17,17 +18,29 @@
         'views/exam_views.xml',
         'views/grade_views.xml',
         'views/fee_views.xml',
+        'views/major_views.xml',
         'views/dashboard_views.xml',
         'views/enrollment_views.xml',
+        'views/certificate_views.xml',
         'wizards/enroll_students_views.xml',
         'views/menu.xml',
         'report/fee_report.xml',
         'report/attendance_report.xml',
+        'report/certificate_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'school_management/static/src/sidebar/sidebar.js',
             'school_management/static/src/sidebar/sidebar.scss',
+            'school_management/static/src/dashboard/school_dashboard.js',
+            'school_management/static/src/dashboard/school_dashboard.scss',
+            'school_management/static/src/dashboard/school_dashboard.xml',
+        ],
+        'web.report_assets_common': [
+            'school_management/static/src/report/school_reports.scss',
+        ],
+        'web.report_assets_pdf': [
+            'school_management/static/src/report/school_reports.scss',
         ],
     },
     'demo': ['data/demo_data.xml'],

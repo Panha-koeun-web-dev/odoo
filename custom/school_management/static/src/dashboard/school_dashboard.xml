@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="school_management.SchoolDashboardMain">
+        <div class="o_school_dashboard">
+            <!-- Loading State -->
+            <div t-if="state.loading" class="o_dashboard_loader text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading dashboard...</span>
+                </div>
+                <p class="mt-3 text-muted">Aggregating school metrics...</p>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div t-if="!state.loading and state.data" class="school_dash_container">
+                
+                <!-- 1. Header & Actions -->
+                <div class="dash_header">
+                    <div class="dash_title_area">
+                        <h1 class="dash_title">School Dashboard</h1>
+                        <p class="dash_subtitle">Live overview of student activities, attendance, academics, fees, and operations.</p>
+                    </div>
+                    <div class="dash_controls">
+                        <span class="live_badge">
+                            <i class="fa fa-clock-o me-1"></i> Updated at <t t-esc="state.lastUpdated"/>
+                        </span>
+                        <button class="btn btn-sm btn-outline-secondary btn_refresh ms-2" t-on-click="onRefresh" title="Refresh data">
+                            <i class="fa fa-refresh me-1"></i> Refresh
+                        </button>
+                        <div class="quick_action_buttons ms-2">
+                            <button class="btn btn-sm btn-light border" t-on-click="() => this.openStudents()">
+                                <i class="fa fa-graduation-cap text-primary me-1"></i> Students
+                            </button>
+                            <button class="btn btn-sm btn-light border ms-1" t-on-click="() => this.openAttendance()">
+                                <i class="fa fa-calendar-check-o text-success me-1"></i> Attendance
+                            </button>
+                            <button class="btn btn-sm btn-light border ms-1" t-on-click="() => this.openFees()">
+                                <i class="fa fa-credit-card text-warning me-1"></i> Fees
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Top Metric Cards (4 Columns) -->
+                <div class="metric_cards_grid">
+                    <div class="metric_card card_students" t-on-click="() => this.openStudents()">
+                        <div class="metric_data">
+                            <span class="metric_label">Students</span>
+                            <h2 class="metric_value"><t t-esc="state.data.summary.student_count"/></h2>
+                            <span class="metric_sub"><t t-esc="state.data.summary.active_students"/> active enrollment</span>
+                        </div>
+                        <div class="metric_icon_box icon_blue">
+                            <i class="fa fa-graduation-cap"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric_card card_teachers" t-on-click="() => this.openTeachers()">
+                        <div class="metric_data">
+                            <span class="metric_label">Teachers</span>
+                            <h2 class="metric_value"><t t-esc="state.data.summary.teacher_count"/></h2>
+                            <span class="metric_sub">Faculty records</span>
+                        </div>
+                        <div class="metric_icon_box icon_cyan">
+                            <i class="fa fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric_card card_classes" t-on-click="() => this.openClasses()">
+                        <div class="metric_data">
+                            <span class="metric_label">Classes</span>
+                            <h2 class="metric_value"><t t-esc="state.data.summary.class_count"/></h2>
+                            <span class="metric_sub"><t t-esc="state.data.summary.avg_students_per_class"/> avg / class</span>
+                        </div>
+                        <div class="metric_icon_box icon_teal">
+                            <i class="fa fa-building"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric_card card_subjects" t-on-click="() => this.openSubjects()">
+                        <div class="metric_data">
+                            <span class="metric_label">Subjects</span>
+                            <h2 class="metric_value"><t t-esc="state.data.summary.subject_count"/></h2>
+                            <span class="metric_sub">Academic curriculum</span>
+                        </div>
+                        <div class="metric_icon_box icon_amber">
+                            <i class="fa fa-book"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Health & Analytics Highlights Grid (4 Columns) -->
+                <div class="health_grid">
+                    <div class="health_card health_academic" t-on-click="() => this.openGrades()">
+                        <div class="health_top">
+                            <span>Academic Health</span>
+                            <i class="fa fa-line-chart text-primary"></i>
+                        </div>
+                        <div class="health_value text-primary"><t t-esc="state.data.academics.pass_rate"/>%</div>
+                        <div class="health_desc">
+                            <t t-esc="state.data.academics.passed_count"/> passing records out of <t t-esc="state.data.summary.grade_count"/> total.
+                        </div>
+                    </div>
+
+                    <div class="health_card health_attendance" t-on-click="() => this.openAttendance()">
+                        <div class="health_top">
+                            <span>Attendance Health</span>
+                            <i class="fa fa-calendar text-info"></i>
+                        </div>
+                        <div class="health_value text-info"><t t-esc="state.data.attendance.attendance_rate"/>%</div>
+                        <div class="health_desc">
+                            <t t-esc="state.data.attendance.absence_rate"/>% absence rate across attendance entries.
+                        </div>
+                    </div>
+
+                    <div class="health_card health_fees" t-on-click="() => this.openFees()">
+                        <div class="health_top">
+                            <span>Fee Collection</span>
+                            <i class="fa fa-money text-teal"></i>
+                        </div>
+                        <div class="health_value text-teal"><t t-esc="state.data.fees.collection_rate"/>%</div>
+                        <div class="health_desc">
+                            <t t-esc="state.data.fees.open_count"/> fee records pending or overdue.
+                        </div>
+                    </div>
+
+                    <div class="health_card health_capacity" t-on-click="() => this.openClasses()">
+                        <div class="health_top">
+                            <span>Capacity Utilization</span>
+                            <i class="fa fa-sitemap text-warning"></i>
+                        </div>
+                        <div class="health_value text-warning"><t t-esc="state.data.classes.capacity_rate"/>%</div>
+                        <div class="health_desc">
+                            Top: <t t-esc="state.data.classes.top_class_name"/> (<t t-esc="state.data.classes.top_class_students"/> students)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Section: Visual Analytics -->
+                <div class="section_heading">
+                    <h3><i class="fa fa-pie-chart text-teal me-2"></i> Distribution &amp; Overview</h3>
+                </div>
+
+                <!-- Row 1: 3 Doughnut Panels -->
+                <div class="charts_row_3">
+                    <!-- Demographics -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4>Student Demographics</h4>
+                            <span class="panel_tag">Gender</span>
+                        </div>
+                        <div class="chart_canvas_wrapper doughnut_wrapper">
+                            <canvas t-ref="genderChartCanvas"></canvas>
+                        </div>
+                        <div class="panel_footer_stats">
+                            <div class="p_stat"><span>Male:</span> <b><t t-esc="state.data.demographics.male"/> (<t t-esc="state.data.demographics.male_pct"/>%)</b></div>
+                            <div class="p_stat"><span>Female:</span> <b><t t-esc="state.data.demographics.female"/> (<t t-esc="state.data.demographics.female_pct"/>%)</b></div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4>Attendance Status</h4>
+                            <span class="panel_tag">Distribution</span>
+                        </div>
+                        <div class="chart_canvas_wrapper doughnut_wrapper">
+                            <canvas t-ref="attendanceChartCanvas"></canvas>
+                        </div>
+                        <div class="panel_footer_stats">
+                            <div class="p_stat text-success"><span>Present:</span> <b><t t-esc="state.data.attendance.present"/></b></div>
+                            <div class="p_stat text-danger"><span>Absent:</span> <b><t t-esc="state.data.attendance.absent"/></b></div>
+                        </div>
+                    </div>
+
+                    <!-- Fees -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4>Fee Status</h4>
+                            <span class="panel_tag">Invoicing</span>
+                        </div>
+                        <div class="chart_canvas_wrapper doughnut_wrapper">
+                            <canvas t-ref="feeStatusChartCanvas"></canvas>
+                        </div>
+                        <div class="panel_footer_stats">
+                            <div class="p_stat text-success"><span>Paid:</span> <b><t t-esc="state.data.fees.paid_count"/></b></div>
+                            <div class="p_stat text-warning"><span>Pending:</span> <b><t t-esc="state.data.fees.pending_count"/></b></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: 2 Bar Charts -->
+                <div class="charts_row_2 mt-4">
+                    <!-- Academic Performance -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4><i class="fa fa-graduation-cap text-primary me-2"></i> Academic Performance</h4>
+                            <span class="panel_tag">Grade Bands</span>
+                        </div>
+                        <div class="chart_canvas_wrapper bar_wrapper">
+                            <canvas t-ref="gradeBandsChartCanvas"></canvas>
+                        </div>
+                        <div class="panel_subgrid mt-3">
+                            <div class="subgrid_item">
+                                <span>Average Score</span>
+                                <b class="text-success"><t t-esc="state.data.academics.avg_percentage"/>%</b>
+                            </div>
+                            <div class="subgrid_item">
+                                <span>Passed vs Failed</span>
+                                <b><span class="text-success"><t t-esc="state.data.academics.passed_count"/></span> / <span class="text-danger"><t t-esc="state.data.academics.failed_count"/></span></b>
+                            </div>
+                            <div class="subgrid_item">
+                                <span>Total Graded</span>
+                                <b><t t-esc="state.data.summary.grade_count"/></b>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Revenue by Type -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4><i class="fa fa-credit-card text-teal me-2"></i> Fee Revenue by Type</h4>
+                            <span class="panel_tag">Billed vs Collected</span>
+                        </div>
+                        <div class="chart_canvas_wrapper bar_wrapper">
+                            <canvas t-ref="feeTypeChartCanvas"></canvas>
+                        </div>
+                        <div class="panel_subgrid mt-3">
+                            <div class="subgrid_item">
+                                <span>Total Billed</span>
+                                <b><t t-esc="this.formatCurrency(state.data.fees.total_amount)"/></b>
+                            </div>
+                            <div class="subgrid_item">
+                                <span>Collected</span>
+                                <b class="text-teal"><t t-esc="this.formatCurrency(state.data.fees.total_paid)"/></b>
+                            </div>
+                            <div class="subgrid_item">
+                                <span>Outstanding</span>
+                                <b class="text-danger"><t t-esc="this.formatCurrency(state.data.fees.total_balance)"/></b>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Monthly Trend & Class Capacity -->
+                <div class="charts_row_2 mt-4">
+                    <!-- Monthly Trend -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4><i class="fa fa-line-chart text-teal me-2"></i> Attendance Monthly Trend</h4>
+                            <span class="panel_tag">Rate Over Time</span>
+                        </div>
+                        <div class="chart_canvas_wrapper bar_wrapper">
+                            <canvas t-ref="attendanceTrendChartCanvas"></canvas>
+                        </div>
+                        <div class="trend_stat_pills mt-3">
+                            <div class="pill_stat"><span>Overall Rate</span><b class="text-teal"><t t-esc="state.data.attendance.attendance_rate"/>%</b></div>
+                            <div class="pill_stat"><span>Absent</span><b class="text-danger"><t t-esc="state.data.attendance.absent"/></b></div>
+                            <div class="pill_stat"><span>Late</span><b class="text-warning"><t t-esc="state.data.attendance.late"/></b></div>
+                            <div class="pill_stat"><span>Excused</span><b class="text-info"><t t-esc="state.data.attendance.excused"/></b></div>
+                        </div>
+                    </div>
+
+                    <!-- Class Capacity & Occupancy -->
+                    <div class="chart_panel">
+                        <div class="panel_header">
+                            <h4><i class="fa fa-building-o text-warning me-2"></i> Class Occupancy</h4>
+                            <span class="panel_tag">Capacity Usage</span>
+                        </div>
+                        <div class="class_occupancy_list mt-2">
+                            <t t-foreach="state.data.classes.top_classes" t-as="c" t-key="c.id">
+                                <div class="class_row">
+                                    <div class="class_info">
+                                        <span class="class_name"><t t-esc="c.name"/></span>
+                                        <span class="class_counts"><t t-esc="c.students"/> / <t t-esc="c.capacity"/> students (<t t-esc="c.rate"/>%)</span>
+                                    </div>
+                                    <div class="progress progress_bar_container">
+                                        <div class="progress-bar"
+                                             t-attf-class="{{ c.rate >= 90 ? 'bg-danger' : (c.rate >= 75 ? 'bg-warning' : 'bg-success') }}"
+                                             role="progressbar"
+                                             t-attf-style="width: {{ Math.min(c.rate, 100) }}%;"
+                                             t-att-aria-valuenow="c.rate"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            <t t-if="!state.data.classes.top_classes.length">
+                                <p class="text-muted p-3">No classes registered yet.</p>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Operational Activity Summary Grid -->
+                <div class="ops_panel mt-4">
+                    <div class="panel_header">
+                        <h4><i class="fa fa-tasks text-muted me-2"></i> Operational Record Summary</h4>
+                    </div>
+                    <div class="ops_grid">
+                        <div class="ops_box" t-on-click="() => this.openStudents([['active', '=', true]])">
+                            <span>Active Students</span>
+                            <b><t t-esc="state.data.summary.active_students"/></b>
+                        </div>
+                        <div class="ops_box" t-on-click="() => this.openExams()">
+                            <span>Exams Scheduled</span>
+                            <b><t t-esc="state.data.summary.exam_count"/></b>
+                        </div>
+                        <div class="ops_box" t-on-click="() => this.openGrades()">
+                            <span>Grade Records</span>
+                            <b><t t-esc="state.data.summary.grade_count"/></b>
+                        </div>
+                        <div class="ops_box" t-on-click="() => this.openAttendance()">
+                            <span>Attendance Logs</span>
+                            <b><t t-esc="state.data.summary.attendance_count"/></b>
+                        </div>
+                        <div class="ops_box" t-on-click="() => this.openFees()">
+                            <span>Fee Records</span>
+                            <b><t t-esc="state.data.summary.fee_count"/></b>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

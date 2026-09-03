@@ -7,6 +7,7 @@
             <list>
                 <field name="name"/>
                 <field name="section"/>
+                <field name="major_id"/>
                 <field name="room"/>
                 <field name="teacher_id"/>
                 <field name="student_count"/>
@@ -24,6 +25,7 @@
             <kanban class="o_kanban_mobile" group_create="false">
                 <field name="name"/>
                 <field name="section"/>
+                <field name="major_id"/>
                 <field name="room"/>
                 <field name="teacher_id"/>
                 <field name="student_count"/>
@@ -81,6 +83,7 @@
                     <group class="mt-3">
                         <group string="Class Details">
                             <field name="section"/>
+                            <field name="major_id"/>
                             <field name="room"/>
                             <field name="teacher_id"/>
                         </group>
@@ -114,11 +117,13 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="major_id"/>
                 <field name="teacher_id"/>
                 <field name="room"/>
                 <separator/>
                 <filter string="Class Teacher" name="group_teacher" domain="[]" context="{'group_by':'teacher_id'}"/>
                 <filter string="Section" name="group_section" domain="[]" context="{'group_by':'section'}"/>
+                <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_id'}"/>
             </search>
         </field>
     </record>

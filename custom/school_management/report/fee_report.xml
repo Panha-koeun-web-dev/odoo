@@ -21,73 +21,45 @@
         <t t-if="not background_image">
             <t t-call="web.external_layout">
                 <div class="page">
-                    <div class="text-center" style="margin-top: 40px;">
-                        <h3 style="color: #b02a37;">Report background image could not be loaded.</h3>
+                    <div class="text-center o_fee_report o_fee_report_missing_bg">
+                        <h3>Report background image could not be loaded.</h3>
                     </div>
                 </div>
             </t>
         </t>
         <t t-else="">
-            <style>
-                .o_fee_report_table thead th {
-                    background-color: #1a4d7c !important;
-                    color: #ffffff !important;
-                    border-color: #1a4d7c !important;
-                    font-weight: 600;
-                }
-                .o_fee_report_table tbody tr:nth-child(even) {
-                    background-color: #f4f7fb;
-                }
-                .o_fee_report_table tbody tr.o_fee_overdue td {
-                    background-color: #fdeaea;
-                }
-                .o_fee_report_table tfoot td {
-                    background-color: #eaf0f8;
-                    font-weight: 700;
-                    color: #1a4d7c;
-                    border-top: 2px solid #1a4d7c;
-                }
-                .o_fee_notes {
-                    border: 1px solid #d7dee8;
-                    background-color: #f7f9fc;
-                    border-radius: 4px;
-                    padding: 6px 10px;
-                }
-            </style>
             <div t-att-class="'header o_company_%d_layout' % (company.id or 0)">
                 <div class="container">
-                    <div class="row o_report_layout_header align-items-center py-2"
-                         style="border-bottom: 3px solid #1a4d7c;">
+                    <div class="row o_report_layout_header o_school_report o_school_report_header align-items-center py-2">
                         <div class="col-4">
                             <img t-if="background_image" t-att-src="background_image"
-                                 style="max-height: 70px; max-width: 100%; object-fit: contain;" alt="School logo"/>
+                                 class="o_school_report_logo o_school_report_logo_large" alt="School logo"/>
                             <img t-elif="has_company_logo" t-att-src="company_logo"
-                                 style="max-height: 70px; max-width: 100%;" alt="Company logo"/>
+                                 class="o_school_report_logo o_school_report_logo_large" alt="Company logo"/>
                         </div>
                         <div class="col-4 text-center">
-                            <h1 class="h3 mb-0" style="color: #1a4d7c; font-weight: 700; letter-spacing: 0.5px; margin: 0;">
+                            <h1 class="h3 mb-0 o_school_report_title o_fee_report_brand">
                                 School Management System
                             </h1>
-                            <div t-if="company.name" class="mt-1" style="color: #555; font-size: 12px;">
+                            <div t-if="company.name" class="mt-1 o_school_report_subtitle">
                                 <span t-esc="company.name"/>
                             </div>
-                            <div class="mt-1" style="color: #888; font-size: 11px;">
+                            <div class="mt-1 o_fee_report_type">
                                 Official Fee Statement
                             </div>
                         </div>
                         <div class="col-4 text-right">
-                            <div style="color: #1a4d7c; font-weight: 600; font-size: 11px;">FEE REPORT</div>
-                            <div t-if="company.email" style="color: #666; font-size: 11px;" t-esc="company.email"/>
-                            <div t-if="company.phone" style="color: #666; font-size: 11px;" t-esc="company.phone"/>
-                            <div t-if="company.website" style="color: #666; font-size: 11px;" t-esc="company.website"/>
+                            <div class="o_school_report_label">FEE REPORT</div>
+                            <div t-if="company.email" class="o_school_report_contact" t-esc="company.email"/>
+                            <div t-if="company.phone" class="o_school_report_contact" t-esc="company.phone"/>
+                            <div t-if="company.website" class="o_school_report_contact" t-esc="company.website"/>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="article o_report_layout_standard o_table_standard"
-                 t-att-class="'article o_report_layout_standard o_table_standard o_company_%d_layout' % (company.id or 0)"
-                 style="background-image: linear-gradient(180deg, #f0f6fc 0%, #ffffff 40%);"
+                 t-att-class="'article o_report_layout_standard o_table_standard o_school_report o_fee_report o_company_%d_layout' % (company.id or 0)"
                  t-att-data-oe-model="'school.fee'"
                  t-att-data-oe-id="docs and docs.ids[:1][0]"
                  t-att-data-oe-lang="docs and docs.env.context.get('lang') or 'en_US'">
@@ -95,19 +67,19 @@
                     <div class="row mb-2">
                         <div class="col-12 d-flex justify-content-between align-items-end">
                             <div>
-                                <h3 class="mb-1" style="color: #333; font-weight: 600;">Fee Report</h3>
-                                <div style="color: #777; font-size: 11px;">
+                                <h3 class="mb-1 o_school_report_section_title">Fee Report</h3>
+                                <div class="o_school_report_muted">
                                     Compiled for the current academic period ·
                                     <span t-esc="total_fees"/> fee record(s)
                                 </div>
                             </div>
-                            <div class="text-right" style="color: #666; font-size: 11px;">
+                            <div class="text-right o_fee_report_generated">
                                 Generated on <span t-esc="generated_on"/> by <span t-esc="user.name"/>
                             </div>
                         </div>
                     </div>
 
-                    <table class="table table-sm table-bordered o_fee_report_table" style="font-size: 11px;">
+                    <table class="table table-sm table-bordered o_school_report_table o_fee_report_table">
                         <thead>
                             <tr class="o_fee_head">
                                 <th width="3%">#</th>
@@ -155,21 +127,21 @@
                         </tfoot>
                     </table>
 
-                    <div t-foreach="fee_rows" t-as="row" t-if="row.get('notes')" style="margin-top: 10px; font-size: 11px;">
+                    <div t-foreach="fee_rows" t-as="row" t-if="row.get('notes')" class="o_fee_notes_block">
                         <div class="o_fee_notes">
                             <strong>Notes (<span t-esc="row.get('student_name')"/>):</strong>
-                            <div style="margin-top: 2px;"><span t-esc="row.get('notes')"/></div>
+                            <div class="o_fee_notes_text"><span t-esc="row.get('notes')"/></div>
                         </div>
                     </div>
 
                     <div class="row mt-4 o_fee_signature">
                         <div class="col-6">
-                            <div style="border-top: 1px solid #999; padding-top: 4px; color: #555; font-size: 11px;">
+                            <div class="o_fee_signature_line">
                                 Authorized Signature
                             </div>
                         </div>
                         <div class="col-6 text-right">
-                            <div style="border-top: 1px solid #999; padding-top: 4px; color: #555; font-size: 11px;">
+                            <div class="o_fee_signature_line">
                                 Date
                             </div>
                         </div>
@@ -179,8 +151,7 @@
 
             <div t-att-class="'footer o_company_%d_layout' % (company.id or 0)">
                 <div class="container">
-                    <div class="o_footer_content d-flex justify-content-between align-items-center py-2"
-                         style="border-top: 1px solid #ddd; color: #777; font-size: 10px;">
+                    <div class="o_footer_content o_fee_report o_fee_report_footer d-flex justify-content-between align-items-center py-2">
                         <div>
                             <t t-if="has_company_logo"><span t-esc="company.name"/> · </t>
                             Fee Report

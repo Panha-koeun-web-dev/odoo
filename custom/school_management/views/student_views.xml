@@ -16,6 +16,9 @@
                 <field name="phone" optional="show"/>
                 <field name="parent_phone" optional="hide"/>
                 <field name="enrollment_date" optional="show"/>
+                <field name="study_start_date" optional="show"/>
+                <field name="study_end_date" optional="show"/>
+                <field name="study_period" optional="show"/>
                 <field name="active" optional="hide"/>
             </list>
         </field>
@@ -92,6 +95,12 @@
                         <button name="open_enrollments" type="object" class="oe_stat_button" icon="fa-user-plus">
                             <div class="o_stat_info"><span class="o_stat_text">Enrollments</span></div>
                         </button>
+                        <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                            <div class="o_stat_info"><span class="o_stat_text">Majors</span></div>
+                        </button>
+                        <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-trophy">
+                            <div class="o_stat_info"><span class="o_stat_text">Certificate</span></div>
+                        </button>
                     </div>
                     <div class="row">
                         <div class="col-2">
@@ -119,6 +128,10 @@
                         <group string="Academic Information">
                             <field name="class_id"/>
                             <field name="enrollment_date"/>
+                            <field name="study_start_date"/>
+                            <field name="study_end_date"/>
+                            <field name="study_period" readonly="1"/>
+                            <field name="major_ids" widget="many2many_tags"/>
                             <field name="email"/>
                             <field name="phone"/>
                             <field name="active"/>
@@ -149,6 +162,12 @@
                         <page string="Enrollments" name="enrollments">
                             <field name="enrollment_ids"/>
                         </page>
+                        <page string="Major Enrollments" name="major_enrollments">
+                            <field name="major_enrollment_ids"/>
+                        </page>
+                        <page string="Certificates" name="certificates">
+                            <field name="certificate_ids"/>
+                        </page>
                         <page string="Notes" name="notes">
                             <field name="notes" placeholder="Additional notes..."/>
                         </page>
@@ -172,6 +191,7 @@
                 <filter name="filter_female" string="Female" domain="[('gender','=','female')]" help="Only female students"/>
                 <separator/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
+                <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_ids'}"/>
                 <filter string="Gender" name="group_gender" domain="[]" context="{'group_by':'gender'}"/>
                 <filter string="Enrollment Date" name="group_enroll" domain="[]" context="{'group_by':'enrollment_date'}"/>
             </search>
@@ -190,7 +210,18 @@
         <field name="model_id" ref="model_school_student"/>
         <field name="binding_model_id" ref="model_school_student"/>
         <field name="binding_type">action</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
         <field name="state">code</field>
         <field name="code">action = records.action_bulk_enroll()</field>
+    </record>
+
+    <record id="action_print_students_certificate" model="ir.actions.server">
+        <field name="name">Print Certificate</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">action</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_print_student_certificates()</field>
     </record>
 </odoo>

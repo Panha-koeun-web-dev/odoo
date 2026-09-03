@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_certificate" model="report.paperformat">
+        <field name="name">A4 Certificate</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+        <field name="css_margins" eval="False"/>
+        <field name="disable_shrinking" eval="True"/>
+    </record>
+
+    <record id="action_report_school_certificate" model="ir.actions.report">
+        <field name="name">Student Certificate</field>
+        <field name="model">school.certificate</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.certificate_report</field>
+        <field name="report_file">school_management.certificate_report</field>
+        <field name="print_report_name">'Certificate-%s' % (object.name,)</field>
+        <field name="binding_model_id" ref="model_school_certificate"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="school_management.paperformat_certificate"/>
+    </record>
+
+    <template id="certificate_report">
+        <t t-call="web.html_container">
+            <div class="o_certificate_report">
+                <t t-call="school_management.certificate_report_document"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="certificate_report_document">
+        <t t-if="not rows">
+            <div class="page" style="width:210mm; height:297mm; padding:20mm; box-sizing:border-box; font-family:Georgia,'Times New Roman',serif;">
+                <div style="height:100%; border:1mm double #9a6a14; text-align:center; padding-top:100mm; box-sizing:border-box; color:#62430d; font-size:7mm;">
+                     No certificate records were selected.
+                </div>
+            </div>
+        </t>
+        <t t-foreach="rows" t-as="row">
+            <div class="article page o_cert_page"
+                 data-oe-model="school.certificate"
+                 t-att-data-oe-id="row['cert'].id"
+                 t-att-data-oe-lang="row['cert'].env.context.get('lang') or 'en_US'">
+                <t t-call="school_management.certificate_page">
+                    <t t-set="row" t-value="row"/>
+                    <t t-set="company" t-value="company"/>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <template id="certificate_page">
+        <t t-set="accent" t-value="row.get('accent_color') or ('#0f766e' if row.get('template') == 'modern' else '#1a4d7c' if row.get('template') == 'classic' else '#9a6a14')"/>
+        <t t-set="accent_dark" t-value="'#0b5f59' if row.get('template') == 'modern' else '#123a5e' if row.get('template') == 'classic' else '#62430d'"/>
+        <t t-set="paper" t-value="'#effbf8' if row.get('template') == 'modern' else '#f3f8fc' if row.get('template') == 'classic' else '#fff8e8'"/>
+
+        <div t-attf-style="width:210mm; height:297mm; margin:0; padding:0; box-sizing:border-box; overflow:hidden; position:relative; background:#{paper}; font-family:Georgia,'Times New Roman',serif; color:#28323a;">
+            <div t-attf-style="position:absolute; left:0; top:0; width:100%; height:18mm; background:#{accent};"></div>
+            <div t-attf-style="position:absolute; left:0; bottom:0; width:100%; height:18mm; background:#{accent};"></div>
+
+            <div t-attf-style="position:absolute; left:14mm; top:24mm; width:182mm; height:249mm; box-sizing:border-box; border:2.2mm double #{accent}; background:#fffdf7;">
+                <div t-attf-style="position:absolute; left:4mm; top:4mm; right:4mm; bottom:4mm; border:0.45mm solid #{accent};"></div>
+                <div style="position:absolute; left:8mm; top:8mm; right:8mm; bottom:8mm; border:0.22mm solid #d8c58a;"></div>
+
+                <div style="position:relative; padding:16mm 17mm 10mm; text-align:center;">
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:5mm;">
+                        <tr>
+                            <td style="width:28mm; text-align:left; vertical-align:middle;">
+                                <img t-if="company.logo and not company.uses_default_logo"
+                                     t-att-src="image_data_uri(company.logo)"
+                                     style="max-width:24mm; max-height:18mm; object-fit:contain;"
+                                     alt="Logo"/>
+                            </td>
+                            <td style="text-align:center; vertical-align:middle;">
+                                <div t-attf-style="font-size:6.4mm; font-weight:700; color:#{accent_dark}; text-transform:uppercase; letter-spacing:1mm; line-height:1.15;">
+                                    <span>Passerelles Numeriques Cambodia</span>
+                                </div>
+                                <div style="font-size:2.7mm; color:#78684a; text-transform:uppercase; letter-spacing:1.4mm; margin-top:1mm;">
+                                    Excellence &#183; Integrity &#183; Knowledge
+                                </div>
+                            </td>
+                            <td style="width:28mm; text-align:right; vertical-align:middle;">
+                                <div t-attf-style="display:inline-block; width:18mm; height:18mm; border:0.7mm double #{accent}; border-radius:50%; color:#{accent}; font-size:8mm; line-height:17mm; text-align:center;">&#10022;</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="font-size:3.1mm; color:#6c5b38; text-transform:uppercase; letter-spacing:2mm; margin-top:2mm;">
+                        <span t-esc="row.get('type_label')"/>
+                    </div>
+                    <div t-attf-style="width:92mm; margin:3mm auto 4mm; border-top:0.45mm solid #{accent};"></div>
+
+                    <h1 t-attf-style="margin:0; color:#{accent_dark}; font-size:10.5mm; font-weight:700; line-height:1.15; letter-spacing:0.6mm; text-transform:uppercase;">
+                        <span t-esc="row.get('custom_title') or 'Certificate'"/>
+                    </h1>
+
+                    <div style="margin-top:8mm; font-size:3.9mm; font-style:italic; color:#3f4a54;">
+                        <span t-esc="row.get('custom_prelude') or 'This is to proudly certify that'"/>
+                    </div>
+
+                    <div t-attf-style="margin:3mm auto 1.5mm; color:#{accent}; font-size:12.5mm; font-weight:700; line-height:1.05; border-bottom:0.35mm solid #{accent}; display:inline-block; min-width:95mm; padding:0 6mm 1.2mm;">
+                        <span t-esc="row.get('student_name')"/>
+                    </div>
+
+                    <table style="width:100%; border-collapse:separate; border-spacing:2.2mm; margin:3mm 0 2mm; font-family:Arial, sans-serif;">
+                        <tr>
+                            <td t-if="row.get('student_code')" t-attf-style="border:0.25mm solid #{accent}; background:#{paper}; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>ID</b><br/><span t-esc="row.get('student_code')"/>
+                            </td>
+                            <td t-if="row.get('class_name')" t-attf-style="border:0.25mm solid #{accent}; background:#{paper}; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>Class</b><br/><span t-esc="row.get('class_name')"/>
+                            </td>
+                            <td t-if="row.get('gender')" t-attf-style="border:0.25mm solid #{accent}; background:#{paper}; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>Gender</b><br/><span t-esc="row.get('gender')"/>
+                            </td>
+                            <td t-if="row.get('dob')" t-attf-style="border:0.25mm solid #{accent}; background:#{paper}; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>Date of Birth</b><br/><span t-esc="row.get('dob')"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table t-if="row.get('study_start_date') or row.get('study_end_date') or row.get('study_period')"
+                           style="width:100%; border-collapse:separate; border-spacing:2.2mm; margin:0 0 3mm; font-family:Arial, sans-serif;">
+                        <tr>
+                            <td t-if="row.get('study_start_date')" t-attf-style="border:0.25mm solid #{accent}; background:#ffffff; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>Start Date</b><br/><span t-esc="row.get('study_start_date')"/>
+                            </td>
+                            <td t-if="row.get('study_end_date')" t-attf-style="border:0.25mm solid #{accent}; background:#ffffff; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>End Date</b><br/><span t-esc="row.get('study_end_date')"/>
+                            </td>
+                            <td t-if="row.get('study_period')" t-attf-style="border:0.25mm solid #{accent}; background:#ffffff; padding:1.8mm; font-size:3mm; color:#2d3b45;">
+                                <b>Study Period</b><br/><span t-esc="row.get('study_period')"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div t-if="row.get('majors')" style="font-size:3.6mm; color:#35434d; margin-bottom:2mm;">
+                        Major: <b><t t-esc="row.get('majors')"/></b>
+                    </div>
+
+                    <table style="width:100%; border-collapse:collapse; margin-top:3mm;">
+                        <tr>
+                            <td style="width:31mm; vertical-align:top; text-align:left;">
+                                <div t-if="row.get('has_photo') and row.get('photo_uri')" t-attf-style="width:27mm; height:32mm; padding:1.2mm; border:0.35mm solid #{accent}; background:#ffffff;">
+                                    <img t-att-src="row.get('photo_uri')" style="width:100%; height:100%; object-fit:cover;" alt="Student"/>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle; text-align:center;">
+                                <div style="font-size:3.8mm; line-height:1.65; color:#303b44; padding:0 4mm;">
+                                    <span t-esc="row.get('custom_statement') or 'having successfully completed all the academic requirements for the academic period'"/>
+                                    <b><t t-esc="row.get('study_period') or row.get('academic_year')"/></b>
+                                    <span> and is hereby awarded this certificate.</span>
+                                </div>
+                                <div t-if="row.get('subject_count')" t-attf-style="display:inline-block; margin-top:4mm; border:0.3mm solid #{accent}; background:#{paper}; padding:1.7mm 6mm; color:#{accent_dark}; font-size:3.3mm; font-family:Arial, sans-serif;">
+                                    Subjects Completed: <b><t t-esc="row.get('subject_count')"/></b>
+                                    <span t-if="row.get('show_avg') and row.get('has_avg')">
+                                        &#183; Academic Average: <b><t t-esc="row.get('avg_percentage')"/></b>
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="width:31mm;"></td>
+                        </tr>
+                    </table>
+
+                    <table style="width:100%; border-collapse:collapse; margin-top:15mm;">
+                        <tr>
+                            <td style="width:38%; text-align:center; vertical-align:bottom;">
+                                <div t-attf-style="border-top:0.4mm solid #{accent_dark}; height:1mm;"></div>
+                                <div style="font-size:3.4mm; font-weight:700; color:#2f3942;"><t t-esc="row.get('sign_one_name') or ''"/></div>
+                                <div style="font-size:2.9mm; text-transform:uppercase; letter-spacing:0.8mm; color:#69737b;"><t t-esc="row.get('sign_one_title') or 'Principal'"/></div>
+                            </td>
+                            <td style="width:24%; text-align:center; vertical-align:middle;">
+                                <div t-attf-style="width:25mm; height:25mm; margin:0 auto; border:0.8mm double #{accent}; border-radius:50%; color:#{accent}; font-size:5.4mm; line-height:7mm; text-align:center; padding-top:5mm; box-sizing:border-box;">
+                                    OFFICIAL<br/>SEAL
+                                </div>
+                            </td>
+                            <td style="width:38%; text-align:center; vertical-align:bottom;">
+                                <div t-attf-style="border-top:0.4mm solid #{accent_dark}; height:1mm;"></div>
+                                <div style="font-size:3.4mm; font-weight:700; color:#2f3942;"><t t-esc="row.get('sign_two_name') or ''"/></div>
+                                <div style="font-size:2.9mm; text-transform:uppercase; letter-spacing:0.8mm; color:#69737b;"><t t-esc="row.get('sign_two_title') or 'Director'"/></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table t-attf-style="width:100%; border-collapse:collapse; margin-top:10mm; border-top:0.3mm solid #{accent}; padding-top:2mm; font-family:Arial, sans-serif; color:#59646d; font-size:2.9mm;">
+                        <tr>
+                            <td style="text-align:left; padding-top:2mm;">Certificate No. <b><t t-esc="row.get('cert_name')"/></b></td>
+                            <td style="text-align:center; padding-top:2mm;">Issued on <b><t t-esc="row.get('issue_date')"/></b></td>
+                            <td style="text-align:right; padding-top:2mm;"><t t-esc="row.get('reason')"/></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>

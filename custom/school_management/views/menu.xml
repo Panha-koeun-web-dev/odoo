@@ -2,6 +2,7 @@
     <!-- Root Menu -->
     <menuitem id="menu_school_root"
               name="School"
+              groups="school_management.group_school_admin"
               sequence="20"/>
 
     <!-- ================= Dashboard ================= -->
@@ -52,6 +53,15 @@
     <menuitem id="menu_school_subject" name="Subjects"
               parent="menu_school_academic_parent"
               action="action_subject" sequence="20"/>
+    <menuitem id="menu_school_major" name="Majors"
+              parent="menu_school_academic_parent"
+              action="action_major" sequence="30"/>
+    <menuitem id="menu_school_major_enrollment_parent" name="Major Enrollment"
+              parent="menu_school_academic_parent"
+              sequence="40"/>
+    <menuitem id="menu_school_major_enrollment" name="All Major Enrollments"
+              parent="menu_school_major_enrollment_parent"
+              action="action_major_enrollment" sequence="10"/>
 
     <!-- ================= Examinations ================= -->
     <menuitem id="menu_school_exam_parent" name="Examinations"
@@ -67,6 +77,11 @@
     <menuitem id="menu_school_attendance" name="Attendance"
               parent="menu_school_root"
               action="action_attendance" sequence="50"/>
+
+    <!-- ================= Certificates ================= -->
+    <menuitem id="menu_school_certificate" name="Certificates"
+              parent="menu_school_root"
+              action="action_certificate" sequence="55"/>
 
     <!-- ================= Fees ================= -->
     <menuitem id="menu_school_fee" name="Fees"

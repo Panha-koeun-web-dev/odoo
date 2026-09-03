@@ -227,6 +227,12 @@ body.o_school_sidebar {
         .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_subject"]::before {
             content: "\f044";
         }
+        .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_major"]::before {
+            content: "\f19d";
+        }
+        .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_major_enrollment"]::before {
+            content: "\f234";
+        }
         .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_exam"]::before {
             content: "\f0ea";
         }
@@ -238,6 +244,9 @@ body.o_school_sidebar {
         }
         .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_fee"]::before {
             content: "\f0d6";
+        }
+        .o_school_sidenav .o_school_sidenav__item[data-menu-xmlid$="menu_school_certificate"]::before {
+            content: "\f0a3";
         }
 
         .o_main_navbar > .o_menu_systray {
