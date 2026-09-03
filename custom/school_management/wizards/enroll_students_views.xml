@@ -5,9 +5,6 @@
         <field name="arch" type="xml">
             <form string="Enroll Student(s)">
                 <group>
-                    <field name="enrollment_type" widget="radio" options="{'horizontal': true}"/>
-                </group>
-                <group>
                     <group string="Placement">
                         <field name="class_id"/>
                         <field name="semester" widget="radio"/>
@@ -20,12 +17,9 @@
                                placeholder="Optional - defaults to the class subjects"/>
                     </group>
                 </group>
-                <group string="Student" invisible="enrollment_type != 'single'">
-                    <field name="student_id" required="enrollment_type == 'single'"/>
-                </group>
-                <group string="Students (select as many as you want - or add new ones)" invisible="enrollment_type != 'bulk'">
+                <group string="Students (select as many as you want - or add new ones)">
                     <field name="student_ids" nolabel="1"
-                           placeholder="Select students, no limit..." required="enrollment_type == 'bulk'"/>
+                           placeholder="Select students, no limit..." required="1"/>
                     <p class="text-muted fst-italic">
                         <i class="fa fa-users me-1" title="Students"/>
                         <field name="student_count"/> student(s) selected - one separate

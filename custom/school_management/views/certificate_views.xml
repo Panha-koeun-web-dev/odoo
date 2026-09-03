@@ -8,7 +8,7 @@
         <field name="binding_type">action</field>
         <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
         <field name="state">code</field>
-        <field name="code">action = records.generate_certificates_for_all()</field>
+        <field name="code">action = model.generate_certificates_for_all()</field>
     </record>
 
     <!-- ======================= LIST VIEW ======================= -->

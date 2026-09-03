@@ -210,7 +210,7 @@
         <field name="model_id" ref="model_school_student"/>
         <field name="binding_model_id" ref="model_school_student"/>
         <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
         <field name="state">code</field>
         <field name="code">action = records.action_bulk_enroll()</field>
     </record>
@@ -220,7 +220,7 @@
         <field name="model_id" ref="model_school_student"/>
         <field name="binding_model_id" ref="model_school_student"/>
         <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
         <field name="state">code</field>
         <field name="code">action = records.action_print_student_certificates()</field>
     </record>

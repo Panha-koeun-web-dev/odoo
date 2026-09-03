@@ -144,10 +144,15 @@
         <field name="model">school.major.enrollment</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_drop_student" string="Kick Out / Drop" type="object" class="oe_highlight btn-danger" invisible="status != 'enrolled'"/>
+                    <button name="action_reenroll_student" string="Re-enroll" type="object" class="oe_highlight btn-success" invisible="status == 'enrolled'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="enrolled,completed,dropped"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="student_id" placeholder="Student"/>
+                            <field name="student_id" placeholder="Student" readonly="status != 'enrolled'"/>
                         </h1>
                         <h4 class="text-muted">
                             <field name="major_id"/>
@@ -156,10 +161,10 @@
                     <group class="mt-3">
                         <group string="Enrollment">
                             <field name="student_code" readonly="1"/>
-                            <field name="major_id"/>
-                            <field name="academic_year"/>
-                            <field name="status"/>
-                            <field name="enrollment_date"/>
+                            <field name="major_id" readonly="status != 'enrolled'"/>
+                            <field name="academic_year" readonly="status != 'enrolled'"/>
+                            <field name="status" readonly="1"/>
+                            <field name="enrollment_date" readonly="status != 'enrolled'"/>
                         </group>
                     </group>
                     <group string="Notes">

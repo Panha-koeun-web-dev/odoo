@@ -66,3 +66,11 @@ class SchoolMajorEnrollment(models.Model):
          'unique(student_id, major_id, academic_year)',
          'This student is already enrolled in this major for the selected academic year!'),
     ]
+
+    def action_drop_student(self):
+        for rec in self:
+            rec.status = 'dropped'
+
+    def action_reenroll_student(self):
+        for rec in self:
+            rec.status = 'enrolled'

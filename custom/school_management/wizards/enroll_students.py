@@ -6,11 +6,6 @@ class SchoolEnrollStudentsWizard(models.TransientModel):
     _name = 'school.enroll.students.wizard'
     _description = 'Bulk Enroll Students'
 
-    enrollment_type = fields.Selection([
-        ('single', 'Single Student'),
-        ('bulk', 'Multiple Students')
-    ], string='Enrollment Type', required=True, default='single')
-    student_id = fields.Many2one('school.student', string='Student')
     student_ids = fields.Many2many('school.student', string='Students')
     class_id = fields.Many2one('school.class', string='Class', required=True)
     academic_year = fields.Char(string='Academic Year', required=True, default='2025-2026')
@@ -39,14 +34,10 @@ class SchoolEnrollStudentsWizard(models.TransientModel):
 
     def action_enroll(self):
         self.ensure_one()
-        if self.enrollment_type == 'single':
-            if not self.student_id:
-                raise UserError(_('Please select a student to enroll.'))
-            students = self.student_id
-        else:
-            if not self.student_ids:
-                raise UserError(_('Please select at least one student to enroll.'))
-            students = self.student_ids
+        if not self.student_ids:
+            raise UserError(_('Please select at least one student to enroll.'))
+        
+        students = self.student_ids
             
         enrollment_model = self.env['school.enrollment']
 
