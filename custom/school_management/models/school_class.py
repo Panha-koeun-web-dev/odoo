@@ -28,3 +28,19 @@ class SchoolClass(models.Model):
             rec.student_count = self.env['school.student'].search_count([
                 ('class_id', '=', rec.id)
             ])
+
+    def action_take_attendance(self):
+        self.ensure_one()
+        wizard = self.env['school.daily.attendance.wizard'].create({
+            'class_id': self.id,
+            'date': fields.Date.today(),
+        })
+        wizard._populate_students()
+        return {
+            'name': _('Take Daily Attendance - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.daily.attendance.wizard',
+            'view_mode': 'form',
+            'res_id': wizard.id,
+            'target': 'new',
+        }

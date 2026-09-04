@@ -16,19 +16,8 @@
     <menuitem id="menu_school_enrollment"
               name="Enrollments"
               parent="menu_school_root"
-              sequence="12"/>
-
-    <menuitem id="menu_school_enrollment_list"
-              name="All Enrollments"
-              parent="menu_school_enrollment"
               action="action_enrollment"
-              sequence="10"/>
-
-    <menuitem id="menu_school_enroll_wizard"
-              name="Enroll Student(s)"
-              parent="menu_school_enrollment"
-              action="action_enroll_students"
-              sequence="20"/>
+              sequence="12"/>
 
     <!-- ================= Students ================= -->
     <menuitem id="menu_school_student_parent" name="Students"
@@ -74,9 +63,14 @@
               action="action_grade" sequence="20"/>
 
     <!-- ================= Attendance ================= -->
-    <menuitem id="menu_school_attendance" name="Attendance"
-              parent="menu_school_root"
-              action="action_attendance" sequence="50"/>
+    <menuitem id="menu_school_attendance_parent" name="Attendance"
+              parent="menu_school_root" sequence="50"/>
+    <menuitem id="menu_school_attendance" name="Attendance Records"
+              parent="menu_school_attendance_parent"
+              action="action_attendance" sequence="10"/>
+    <menuitem id="menu_school_daily_attendance" name="Take Daily Attendance"
+              parent="menu_school_attendance_parent"
+              action="action_daily_attendance_wizard" sequence="20"/>
 
     <!-- ================= Certificates ================= -->
     <menuitem id="menu_school_certificate" name="Certificates"

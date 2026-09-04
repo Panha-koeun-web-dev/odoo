@@ -7,7 +7,7 @@
             <list>
                 <header>
                     <button name="%(action_enroll_students)d" type="action"
-                            string="Enroll Student(s)" class="btn-primary" display="always"/>
+                            string="Enroll Student(s)" class="btn-primary" icon="fa-user-plus" display="always"/>
                 </header>
                 <field name="student_id"/>
                 <field name="student_code"/>
@@ -86,6 +86,8 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="%(action_enroll_students)d" type="action"
+                            string="Enroll Student(s)" class="btn-outline-primary" icon="fa-user-plus"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

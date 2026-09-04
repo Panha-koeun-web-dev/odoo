@@ -18,7 +18,21 @@ class SchoolAttendance(models.Model):
     ], string='Status', required=True, default='present')
     notes = fields.Text(string='Notes')
 
+    student_code = fields.Char(related='student_id.student_id', string='Student ID', readonly=True)
+
     _unique_attendance = models.Constraint(
         'unique(student_id, date)',
         'Attendance already recorded for this student on this date!',
     )
+
+    def action_set_present(self):
+        self.write({'status': 'present'})
+
+    def action_set_absent(self):
+        self.write({'status': 'absent'})
+
+    def action_set_late(self):
+        self.write({'status': 'late'})
+
+    def action_set_excused(self):
+        self.write({'status': 'excused'})

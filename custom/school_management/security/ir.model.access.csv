@@ -13,3 +13,5 @@ access_fee_user,fee.user,model_school_fee,school_management.group_school_admin,1
 access_dashboard_user,dashboard.user,model_school_dashboard,school_management.group_school_admin,1,1,1,1
 access_major_user,major.user,model_school_major,school_management.group_school_admin,1,1,1,1
 access_major_enrollment_user,major.enrollment.user,model_school_major_enrollment,school_management.group_school_admin,1,1,1,1
+access_daily_attendance_wizard,daily.attendance.wizard,model_school_daily_attendance_wizard,school_management.group_school_admin,1,1,1,1
+access_daily_attendance_line_wizard,daily.attendance.line.wizard,model_school_daily_attendance_line_wizard,school_management.group_school_admin,1,1,1,1

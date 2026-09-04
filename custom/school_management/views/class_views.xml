@@ -74,6 +74,9 @@
         <field name="model">school.class</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_take_attendance" string="Take Attendance" type="object" class="btn-primary" icon="fa-calendar-check-o"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>

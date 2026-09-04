@@ -23,6 +23,7 @@
         'views/enrollment_views.xml',
         'views/certificate_views.xml',
         'wizards/enroll_students_views.xml',
+        'wizards/daily_attendance_views.xml',
         'views/menu.xml',
         'report/fee_report.xml',
         'report/attendance_report.xml',

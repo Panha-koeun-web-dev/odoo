@@ -16,8 +16,11 @@
                 <field name="phone" optional="show"/>
                 <field name="parent_phone" optional="hide"/>
                 <field name="enrollment_date" optional="show"/>
-                <field name="study_start_date" optional="show"/>
-                <field name="study_end_date" optional="show"/>
+                <field name="absent_count" string="Absent Days" optional="show"
+                       widget="badge" decoration-danger="absent_count &gt; 0"/>
+                <field name="attendance_rate" string="Att. Rate %" optional="show"/>
+                <field name="study_start_date" optional="hide"/>
+                <field name="study_end_date" optional="hide"/>
                 <field name="study_period" optional="show"/>
                 <field name="active" optional="hide"/>
             </list>
@@ -37,6 +40,7 @@
                 <field name="gender"/>
                 <field name="parent_phone"/>
                 <field name="age"/>
+                <field name="absent_count"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click">
@@ -67,6 +71,9 @@
                                 <span t-attf-class="badge bg-light text-dark ms-1">
                                     <i class="fa fa-user-o me-1" title="Age"/><t t-esc="record.age.raw"/> yrs
                                 </span>
+                                <span t-if="record.absent_count.raw &gt; 0" class="badge bg-danger text-white ms-1" title="Days Absent">
+                                    <i class="fa fa-user-times me-1"/><t t-esc="record.absent_count.raw"/> Absent
+                                </span>
                             </div>
                         </div>
                     </t>
@@ -84,7 +91,16 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="open_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
-                            <div class="o_stat_info"><span class="o_stat_text">Attendance</span></div>
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="attendance_count"/></span>
+                                <span class="o_stat_text">Attendance</span>
+                            </div>
+                        </button>
+                        <button name="open_absent_attendance" type="object" class="oe_stat_button" icon="fa-user-times">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value text-danger"><field name="absent_count"/></span>
+                                <span class="o_stat_text text-danger">Days Absent</span>
+                            </div>
                         </button>
                         <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
                             <div class="o_stat_info"><span class="o_stat_text">Grades</span></div>
@@ -151,7 +167,94 @@
                             </group>
                         </page>
                         <page string="Attendance" name="attendance">
-                            <field name="attendance_ids"/>
+                            <!-- Daily Attendance Action Bar -->
+                            <div class="p-3 mb-3 border rounded bg-light">
+                                <div class="row align-items-center">
+                                    <div class="col-md-5">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <strong>Today's Status:</strong>
+                                            <field name="today_attendance_status" widget="badge"
+                                                   decoration-success="today_attendance_status == 'present'"
+                                                   decoration-danger="today_attendance_status == 'absent'"
+                                                   decoration-warning="today_attendance_status == 'late'"
+                                                   decoration-info="today_attendance_status == 'excused'"
+                                                   decoration-muted="today_attendance_status == 'not_marked'"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7 text-md-end mt-2 mt-md-0">
+                                        <div class="btn-group" role="group">
+                                            <button name="action_mark_present_today" type="object" string="Mark Present Today" class="btn btn-sm btn-outline-success" icon="fa-check"/>
+                                            <button name="action_mark_absent_today" type="object" string="Mark Absent Today" class="btn btn-sm btn-outline-danger" icon="fa-times"/>
+                                            <button name="action_mark_late_today" type="object" string="Mark Late Today" class="btn btn-sm btn-outline-warning" icon="fa-clock-o"/>
+                                            <button name="action_mark_excused_today" type="object" string="Mark Excused Today" class="btn btn-sm btn-outline-secondary" icon="fa-envelope-o"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Attendance Summary Stats -->
+                            <div class="row g-3 mb-3 text-center">
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm">
+                                        <div class="text-muted small">Total Recorded</div>
+                                        <h3 class="fw-bold mb-0 text-dark"><field name="attendance_count"/></h3>
+                                        <small class="text-muted">Days</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-danger">
+                                        <div class="text-danger small fw-bold">Absent Days</div>
+                                        <h3 class="fw-bold mb-0 text-danger"><field name="absent_count"/></h3>
+                                        <small class="text-danger">Missed</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-success">
+                                        <div class="text-success small fw-bold">Present Days</div>
+                                        <h3 class="fw-bold mb-0 text-success"><field name="present_count"/></h3>
+                                        <small class="text-success">Attended</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-warning">
+                                        <div class="text-warning small fw-bold">Late Days</div>
+                                        <h3 class="fw-bold mb-0 text-warning"><field name="late_count"/></h3>
+                                        <small class="text-muted">Tardy</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm">
+                                        <div class="text-muted small">Excused</div>
+                                        <h3 class="fw-bold mb-0 text-secondary"><field name="excused_count"/></h3>
+                                        <small class="text-muted">Leave</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-primary">
+                                        <div class="text-primary small fw-bold">Attendance Rate</div>
+                                        <h3 class="fw-bold mb-0 text-primary"><field name="attendance_rate"/>%</h3>
+                                        <small class="text-muted">Overall</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Attendance History -->
+                            <field name="attendance_ids" nolabel="1">
+                                <list editable="bottom" default_order="date desc"
+                                      decoration-success="status == 'present'"
+                                      decoration-danger="status == 'absent'"
+                                      decoration-warning="status == 'late'"
+                                      decoration-muted="status == 'excused'">
+                                    <field name="date"/>
+                                    <field name="class_id" optional="show" readonly="1"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'present'"
+                                           decoration-danger="status == 'absent'"
+                                           decoration-warning="status == 'late'"
+                                           decoration-muted="status == 'excused'"/>
+                                    <field name="notes" placeholder="Reason for absence or remarks..."/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Grades" name="grades">
                             <field name="grade_ids"/>
@@ -189,6 +292,10 @@
                 <field name="email"/>
                 <filter name="filter_male" string="Male" domain="[('gender','=','male')]" help="Only male students"/>
                 <filter name="filter_female" string="Female" domain="[('gender','=','female')]" help="Only female students"/>
+                <separator/>
+                <filter name="filter_has_absent" string="Has Absences" domain="[('absent_count', '&gt;', 0)]"/>
+                <filter name="filter_high_absent" string="High Absences (&gt;= 3)" domain="[('absent_count', '&gt;=', 3)]"/>
+                <filter name="filter_absent_today" string="Absent Today" domain="[('attendance_ids.date', '=', context_today().strftime('%Y-%m-%d')), ('attendance_ids.status', '=', 'absent')]"/>
                 <separator/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
                 <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_ids'}"/>
