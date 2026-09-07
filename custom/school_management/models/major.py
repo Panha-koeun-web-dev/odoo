@@ -45,6 +45,7 @@ class SchoolMajor(models.Model):
 
 class SchoolMajorEnrollment(models.Model):
     _name = 'school.major.enrollment'
+    _inherit = ['school.state.notification']
     _description = 'Student Major Enrollment'
     _order = 'enrollment_date desc, id desc'
     _rec_name = 'student_id'
@@ -66,6 +67,12 @@ class SchoolMajorEnrollment(models.Model):
          'unique(student_id, major_id, academic_year)',
          'This student is already enrolled in this major for the selected academic year!'),
     ]
+
+    def _get_state_email_template(self):
+        return 'school_management.email_template_major_enrollment_status'
+
+    def _get_state_change_recipients(self):
+        return self.student_id.email or self.student_id.parent_email
 
     def action_drop_student(self):
         for rec in self:

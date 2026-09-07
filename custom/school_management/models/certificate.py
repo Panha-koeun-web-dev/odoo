@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 
 class SchoolCertificate(models.Model):
     _name = 'school.certificate'
+    _inherit = ['school.state.notification']
     _description = 'Student Certificate'
     _order = 'issue_date desc, id desc'
 
@@ -97,6 +98,12 @@ class SchoolCertificate(models.Model):
         'unique(name)',
         'This certificate number already exists!',
     )
+
+    def _get_state_email_template(self):
+        return 'school_management.email_template_certificate_issued'
+
+    def _get_state_change_recipients(self):
+        return self.email or self.student_id.parent_email
 
     @api.model
     def generate_certificates(self, students, **extra):

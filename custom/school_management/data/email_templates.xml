@@ -1,0 +1,105 @@
+<odoo>
+    <!-- Certificate issued / approved -->
+    <record id="email_template_certificate_issued" model="mail.template">
+        <field name="name">Certificate Approved / Issued - Student Notification</field>
+        <field name="model_id" ref="school_management.model_school_certificate"/>
+        <field name="subject">Congratulations {{ object.student_id.name or '' }} - Your Certificate Has Been Approved!</field>
+        <field name="email_to">{{ object.email or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <h2 style="color: #1f4e79;">Certificate Approved</h2>
+                <p>Dear {{ object.student_id.name or 'student' }},</p>
+                <p>We are pleased to inform you that your certificate has been <strong>approved and issued</strong>.</p>
+                <table style="border-collapse: collapse; margin: 12px 0;">
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Certificate No.</td>
+                        <td style="padding: 6px 12px;">{{ object.name or '' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Certificate Type</td>
+                        <td style="padding: 6px 12px;">{{ object.certificate_type or '' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Academic Year</td>
+                        <td style="padding: 6px 12px;">{{ object.academic_year or '' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Issue Date</td>
+                        <td style="padding: 6px 12px;">{{ object.issue_date or '' }}</td>
+                    </tr>
+                </table>
+                <p>Congratulations on this achievement!</p>
+                <p>Warm regards,<br/>School Management</p>
+            </div>
+        </field>
+    </record>
+
+    <!-- Fee status change -->
+    <record id="email_template_fee_status" model="mail.template">
+        <field name="name">Fee Status Updated - Student Notification</field>
+        <field name="model_id" ref="school_management.model_school_fee"/>
+        <field name="subject">Fee Status Update - {{ object.student_id.name or '' }}</field>
+        <field name="email_to">{{ object.student_id.email or object.student_id.parent_email or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <h2 style="color: #1f4e79;">Fee Status Update</h2>
+                <p>Dear student / guardian,</p>
+                <p>The status of your fee has been updated to <strong>{{ object.status or '' }}</strong>.</p>
+                <table style="border-collapse: collapse; margin: 12px 0;">
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Fee Type</td>
+                        <td style="padding: 6px 12px;">{{ object.fee_type or '' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Amount</td>
+                        <td style="padding: 6px 12px;">{{ object.amount or 0 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Paid Amount</td>
+                        <td style="padding: 6px 12px;">{{ object.paid_amount or 0 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 12px; font-weight: bold;">Balance</td>
+                        <td style="padding: 6px 12px;">{{ object.balance or 0 }}</td>
+                    </tr>
+                </table>
+                <p>Thank you.<br/>School Management</p>
+            </div>
+        </field>
+    </record>
+
+    <!-- Attendance status change -->
+    <record id="email_template_attendance_status" model="mail.template">
+        <field name="name">Attendance Status Update - Student Notification</field>
+        <field name="model_id" ref="school_management.model_school_attendance"/>
+        <field name="subject">Attendance Update - {{ object.student_id.name or '' }} ({{ object.date or '' }})</field>
+        <field name="email_to">{{ object.student_id.email or object.student_id.parent_email or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <h2 style="color: #1f4e79;">Attendance Status Update</h2>
+                <p>Dear student / guardian,</p>
+                <p>The attendance for <strong>{{ object.student_id.name or '' }}</strong> on
+                    <strong>{{ object.date or '' }}</strong> has been recorded as
+                    <strong>{{ object.status or '' }}</strong>.</p>
+                <p>Thank you.<br/>School Management</p>
+            </div>
+        </field>
+    </record>
+
+    <!-- Major enrollment status change -->
+    <record id="email_template_major_enrollment_status" model="mail.template">
+        <field name="name">Major Enrollment Status Update - Student Notification</field>
+        <field name="model_id" ref="school_management.model_school_major_enrollment"/>
+        <field name="subject">Major Enrollment Update - {{ object.student_id.name or '' }}</field>
+        <field name="email_to">{{ object.student_id.email or object.student_id.parent_email or '' }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <h2 style="color: #1f4e79;">Major Enrollment Status Update</h2>
+                <p>Dear student / guardian,</p>
+                <p>The status of your major enrollment (<strong>{{ object.major_id.name or '' }}</strong>)
+                    has been updated to <strong>{{ object.status or '' }}</strong>.</p>
+                <p>Thank you.<br/>School Management</p>
+            </div>
+        </field>
+    </record>
+</odoo>

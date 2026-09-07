@@ -5,11 +5,12 @@
     'description': 'Complete school management system for Odoo 19',
     'author': 'Panha Koeun',
     'category': 'School',
-    'depends': ['base', 'web'],
+    'depends': ['base', 'web', 'mail'],
     'data': [
         'security/school_security.xml',
         'security/ir.model.access.csv',
         'data/certificate_data.xml',
+        'data/email_templates.xml',
         'wizards/enroll_students_views.xml',
         'wizards/daily_attendance_views.xml',
         'views/student_views.xml',

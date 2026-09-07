@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 
 class SchoolAttendance(models.Model):
     _name = 'school.attendance'
+    _inherit = ['school.state.notification']
     _description = 'Student Attendance'
     _order = 'date desc, student_id'
     _rec_name = 'student_id'
@@ -24,6 +25,12 @@ class SchoolAttendance(models.Model):
         'unique(student_id, date)',
         'Attendance already recorded for this student on this date!',
     )
+
+    def _get_state_email_template(self):
+        return 'school_management.email_template_attendance_status'
+
+    def _get_state_change_recipients(self):
+        return self.student_id.email or self.student_id.parent_email
 
     def action_set_present(self):
         self.write({'status': 'present'})

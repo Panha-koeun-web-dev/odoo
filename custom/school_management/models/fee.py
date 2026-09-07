@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 
 class SchoolFee(models.Model):
     _name = 'school.fee'
+    _inherit = ['school.state.notification']
     _description = 'Student Fee'
     _order = 'due_date desc'
     _rec_name = 'student_id'
@@ -40,6 +41,12 @@ class SchoolFee(models.Model):
     def _compute_balance(self):
         for rec in self:
             rec.balance = rec.amount - rec.paid_amount
+
+    def _get_state_email_template(self):
+        return 'school_management.email_template_fee_status'
+
+    def _get_state_change_recipients(self):
+        return self.student_id.email or self.student_id.parent_email
 
     def action_mark_paid(self):
         for rec in self:

@@ -1,3 +1,4 @@
+from . import state_notification
 from . import student
 from . import teacher
 from . import school_class
