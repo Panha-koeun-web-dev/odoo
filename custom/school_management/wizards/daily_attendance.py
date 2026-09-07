@@ -135,7 +135,17 @@ class SchoolDailyAttendanceWizard(models.TransientModel):
 
         action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_attendance')
         action['domain'] = [('date', '=', self.date)]
-        return action
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Attendance Saved'),
+                'message': _('Daily attendance for %s has been recorded.') % self.date,
+                'sticky': False,
+                'type': 'success',
+                'next': action,
+            }
+        }
 
 
 class SchoolDailyAttendanceLineWizard(models.TransientModel):

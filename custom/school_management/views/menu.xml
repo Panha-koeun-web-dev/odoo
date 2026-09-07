@@ -63,14 +63,9 @@
               action="action_grade" sequence="20"/>
 
     <!-- ================= Attendance ================= -->
-    <menuitem id="menu_school_attendance_parent" name="Attendance"
-              parent="menu_school_root" sequence="50"/>
     <menuitem id="menu_school_attendance" name="Attendance Records"
-              parent="menu_school_attendance_parent"
-              action="action_attendance" sequence="10"/>
-    <menuitem id="menu_school_daily_attendance" name="Take Daily Attendance"
-              parent="menu_school_attendance_parent"
-              action="action_daily_attendance_wizard" sequence="20"/>
+              parent="menu_school_root"
+              action="action_attendance" sequence="50"/>
 
     <!-- ================= Certificates ================= -->
     <menuitem id="menu_school_certificate" name="Certificates"
