@@ -1,0 +1,451 @@
+<odoo>
+    <!-- ======================= LIST VIEW ======================= -->
+    <record id="view_student_year_payment_list" model="ir.ui.view">
+        <field name="name">school.student.year.payment.list</field>
+        <field name="model">school.student.year.payment</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="overall_status == 'overdue'" decoration-success="overall_status == 'paid'"
+                  decoration-warning="overall_status == 'partial'" decoration-muted="overall_status == 'pending'">
+                <field name="student_id"/>
+                <field name="class_id" optional="show"/>
+                <field name="year"/>
+                <field name="total_amount" sum="Total Amount"/>
+                <field name="total_paid" sum="Total Paid"/>
+                <field name="total_balance" sum="Total Balance"/>
+                
+                <!-- Installment 1 -->
+                <field name="installment_1_amount" sum="Inst. 1 Amount"/>
+                <field name="installment_1_paid_amount" sum="Inst. 1 Paid"/>
+                <field name="installment_1_balance" sum="Inst. 1 Balance"/>
+                <field name="installment_1_status" widget="badge" optional="show"/>
+                <field name="installment_1_due_date" optional="show"/>
+                <field name="installment_1_paid_date" optional="show"/>
+                
+                <!-- Installment 2 -->
+                <field name="installment_2_amount" sum="Inst. 2 Amount"/>
+                <field name="installment_2_paid_amount" sum="Inst. 2 Paid"/>
+                <field name="installment_2_balance" sum="Inst. 2 Balance"/>
+                <field name="installment_2_status" widget="badge" optional="show"/>
+                <field name="installment_2_due_date" optional="show"/>
+                <field name="installment_2_paid_date" optional="show"/>
+                
+                <field name="overall_status" widget="badge"/>
+                <field name="payment_method" optional="show"/>
+                <field name="receipt_number" optional="show"/>
+                
+                <button name="action_pay_installment_1" type="object" string="Pay Inst. 1"
+                        class="btn-primary" icon="fa-money"
+                        invisible="installment_1_status == 'paid' or installment_1_amount == 0"/>
+                <button name="action_pay_installment_2" type="object" string="Pay Inst. 2"
+                        class="btn-primary" icon="fa-money"
+                        invisible="installment_2_status == 'paid' or installment_2_amount == 0"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_student_year_payment_kanban" model="ir.ui.view">
+        <field name="name">school.student.year.payment.kanban</field>
+        <field name="model">school.student.year.payment</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_group_by="overall_status">
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="year"/>
+                <field name="total_amount"/>
+                <field name="total_paid"/>
+                <field name="total_balance"/>
+                <field name="overall_status"/>
+                <field name="installment_1_amount"/>
+                <field name="installment_1_paid_amount"/>
+                <field name="installment_1_balance"/>
+                <field name="installment_1_status"/>
+                <field name="installment_1_due_date"/>
+                <field name="installment_2_amount"/>
+                <field name="installment_2_paid_amount"/>
+                <field name="installment_2_balance"/>
+                <field name="installment_2_status"/>
+                <field name="installment_2_due_date"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                    <h6 class="mb-0 fw-bold"><field name="student_id"/></h6>
+                                    <field name="overall_status" widget="badge"/>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Academic Year</small>
+                                            <div class="fw-bold"><field name="year"/></div>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <small class="text-muted">Class</small>
+                                            <div class="fw-bold"><field name="class_id"/></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-2"/>
+                                    
+                                    <!-- Installment 1 Card -->
+                                    <t t-if="record.installment_1_amount.raw > 0">
+                                        <div class="mb-3 p-2 bg-light rounded">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted fw-bold">Installment 1</small>
+                                                <field name="installment_1_status" widget="badge"/>
+                                            </div>
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <small class="text-muted">Amount</small>
+                                                    <div class="fw-bold text-primary"><field name="installment_1_amount"/></div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Paid</small>
+                                                    <div class="fw-bold text-success"><field name="installment_1_paid_amount"/></div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Balance</small>
+                                                    <div class="fw-bold text-danger"><field name="installment_1_balance"/></div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-1">
+                                                <small class="text-muted">Due: <field name="installment_1_due_date"/></small>
+                                                <small class="text-muted">Paid: <field name="installment_1_paid_date"/></small>
+                                            </div>
+                                            <button name="action_pay_installment_1" type="object" 
+                                                    class="btn btn-sm btn-primary w-100 mt-2" 
+                                                    invisible="installment_1_status == 'paid'">Pay Installment 1</button>
+                                        </div>
+                                    </t>
+                                    
+                                    <!-- Installment 2 Card -->
+                                    <t t-if="record.installment_2_amount.raw > 0">
+                                        <div class="mb-3 p-2 bg-light rounded">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted fw-bold">Installment 2</small>
+                                                <field name="installment_2_status" widget="badge"/>
+                                            </div>
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <small class="text-muted">Amount</small>
+                                                    <div class="fw-bold text-primary"><field name="installment_2_amount"/></div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Paid</small>
+                                                    <div class="fw-bold text-success"><field name="installment_2_paid_amount"/></div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Balance</small>
+                                                    <div class="fw-bold text-danger"><field name="installment_2_balance"/></div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-between mt-1">
+                                                <small class="text-muted">Due: <field name="installment_2_due_date"/></small>
+                                                <small class="text-muted">Paid: <field name="installment_2_paid_date"/></small>
+                                            </div>
+                                            <button name="action_pay_installment_2" type="object" 
+                                                    class="btn btn-sm btn-primary w-100 mt-2" 
+                                                    invisible="installment_2_status == 'paid'">Pay Installment 2</button>
+                                        </div>
+                                    </t>
+                                    
+                                    <hr class="my-2"/>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted">Total Amount</small>
+                                            <div class="fw-bold text-dark"><field name="total_amount"/></div>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">Total Paid</small>
+                                            <div class="fw-bold text-success"><field name="total_paid"/></div>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">Total Balance</small>
+                                            <div class="fw-bold text-danger"><field name="total_balance"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
+    <record id="view_student_year_payment_form" model="ir.ui.view">
+        <field name="name">school.student.year.payment.form</field>
+        <field name="model">school.student.year.payment</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_pay_installment_1" type="object" string="Pay Installment 1"
+                            class="btn-primary" icon="fa-money"
+                            invisible="installment_1_status == 'paid' or installment_1_amount == 0"/>
+                    <button name="action_pay_installment_2" type="object" string="Pay Installment 2"
+                            class="btn-primary" icon="fa-money"
+                            invisible="installment_2_status == 'paid' or installment_2_amount == 0"/>
+                    <button name="action_sync_from_class" type="object" string="Load from Class"
+                            class="btn-secondary" icon="fa-download"
+                            invisible="not class_id or installment_1_paid_amount > 0 or installment_2_paid_amount > 0"/>
+                    <field name="overall_status" widget="statusbar"
+                           statusbar_visible="pending,partial,paid"
+                           statusbar_colors='{"pending": "warning", "partial": "info", "paid": "success", "overdue": "danger"}'/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="student_id" placeholder="Student"/>
+                        </h1>
+                        <h4 class="text-muted">
+                            <field name="year" string="" placeholder="Academic Year"/> - <field name="class_id" string="" placeholder="Class"/>
+                        </h4>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <div class="text-uppercase text-white-50 small fw-bold">Total Amount</div>
+                                    <h2 class="fw-bold mb-0"><field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/></h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-success text-white">
+                                <div class="card-body text-center">
+                                    <div class="text-uppercase text-white-50 small fw-bold">Total Paid</div>
+                                    <h2 class="fw-bold mb-0"><field name="total_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/></h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <div class="text-uppercase text-white-50 small fw-bold">Total Balance</div>
+                                    <h2 class="fw-bold mb-0"><field name="total_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <notebook>
+                        <!-- Installment 1 Page -->
+                        <page string="Installment 1" name="installment_1" invisible="installment_1_amount == 0">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fa fa-calendar me-2"/>Schedule</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Amount</span>
+                                                <field name="installment_1_amount" class="form-control-plaintext fw-bold fs-5 text-primary"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Due Date</span>
+                                                <field name="installment_1_due_date" class="form-control-plaintext fw-bold"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Status</span>
+                                                <field name="installment_1_status" widget="badge" class="fs-6"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2"/>Payment Details</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Paid Amount</span>
+                                                <field name="installment_1_paid_amount" class="form-control-plaintext fw-bold fs-5 text-success"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Balance</span>
+                                                <field name="installment_1_balance" class="form-control-plaintext fw-bold fs-5 text-danger"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Paid Date</span>
+                                                <field name="installment_1_paid_date" class="form-control-plaintext fw-bold"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button name="action_pay_installment_1" type="object" string="Pay Installment 1"
+                                        class="btn btn-primary btn-lg" icon="fa-money"
+                                        invisible="installment_1_status == 'paid'"/>
+                            </div>
+                        </page>
+
+                        <!-- Installment 2 Page -->
+                        <page string="Installment 2" name="installment_2" invisible="installment_2_amount == 0">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fa fa-calendar me-2"/>Schedule</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Amount</span>
+                                                <field name="installment_2_amount" class="form-control-plaintext fw-bold fs-5 text-primary"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Due Date</span>
+                                                <field name="installment_2_due_date" class="form-control-plaintext fw-bold"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Status</span>
+                                                <field name="installment_2_status" widget="badge" class="fs-6"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2"/>Payment Details</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Paid Amount</span>
+                                                <field name="installment_2_paid_amount" class="form-control-plaintext fw-bold fs-5 text-success"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Balance</span>
+                                                <field name="installment_2_balance" class="form-control-plaintext fw-bold fs-5 text-danger"/>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="o_form_label fw-bold">Paid Date</span>
+                                                <field name="installment_2_paid_date" class="form-control-plaintext fw-bold"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button name="action_pay_installment_2" type="object" string="Pay Installment 2"
+                                        class="btn btn-primary btn-lg" icon="fa-money"
+                                        invisible="installment_2_status == 'paid'"/>
+                            </div>
+                        </page>
+
+                        <!-- General Info Page -->
+                        <page string="General Information" name="general">
+                            <group string="Academic Year &amp; Class">
+                                <group>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="year"/>
+                                    <field name="year_start"/>
+                                    <field name="year_end"/>
+                                </group>
+                                <group>
+                                    <field name="class_id"/>
+                                    <button name="action_sync_from_class" type="object" string="Reset to Class Default" class="btn btn-sm btn-link" icon="fa-refresh" invisible="not class_id or installment_1_paid_amount > 0 or installment_2_paid_amount > 0"/>
+                                </group>
+                            </group>
+                            <group string="Payment Details">
+                                <group>
+                                    <field name="payment_method"/>
+                                    <field name="receipt_number"/>
+                                </group>
+                            </group>
+                            <group string="Notes">
+                                <field name="notes"/>
+                            </group>
+                        </page>
+
+                        <!-- Related Fees Page -->
+                        <page string="Related Fees" name="fees">
+                            <button name="action_view_fees" type="object" string="View All Fees" class="btn-outline-primary" icon="fa-external-link"/>
+                            <field name="student_id" invisible="1"/>
+                            <field name="fee_ids" nolabel="1" readonly="1">
+                                <list decoration-danger="status == 'overdue'" decoration-success="status == 'paid'"
+                                      decoration-warning="status == 'partial'" decoration-muted="status == 'pending'">
+                                    <field name="fee_type" widget="badge"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="paid_amount" sum="Paid"/>
+                                    <field name="balance" sum="Balance"/>
+                                    <field name="due_date"/>
+                                    <field name="status" widget="badge"/>
+                                    <field name="paid_date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= SEARCH VIEW ======================= -->
+    <record id="view_student_year_payment_search" model="ir.ui.view">
+        <field name="name">school.student.year.payment.search</field>
+        <field name="model">school.student.year.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="student_id"/>
+                <field name="year"/>
+                <field name="class_id"/>
+                <filter name="filter_paid" string="Fully Paid" domain="[('overall_status','=','paid')]"/>
+                <filter name="filter_partial" string="Partially Paid" domain="[('overall_status','=','partial')]"/>
+                <filter name="filter_pending" string="Pending" domain="[('overall_status','=','pending')]"/>
+                <filter name="filter_overdue" string="Overdue" domain="[('overall_status','=','overdue')]"/>
+                <separator/>
+                <filter string="Student" name="group_student" domain="[]" context="{'group_by':'student_id'}"/>
+                <filter string="Year" name="group_year" domain="[]" context="{'group_by':'year'}"/>
+                <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
+                <filter string="Overall Status" name="group_status" domain="[]" context="{'group_by':'overall_status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================= WIZARD VIEWS ======================= -->
+    <record id="view_student_year_payment_pay_wizard" model="ir.ui.view">
+        <field name="name">school.student.year.payment.pay.wizard.form</field>
+        <field name="model">school.student.year.payment.pay.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay Installment">
+                <group string="Payment Details">
+                    <group>
+                        <field name="year_payment_id" invisible="1"/>
+                        <field name="installment" invisible="1"/>
+                    </group>
+                    <group>
+                        <field name="amount" required="1"/>
+                        <field name="paid_date" required="1"/>
+                    </group>
+                    <group>
+                        <field name="payment_method" required="1"/>
+                        <field name="receipt_number"/>
+                    </group>
+                    <group>
+                        <field name="notes" colspan="2"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Confirm Payment" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= ACTIONS ======================= -->
+    <record id="action_student_year_payment" model="ir.actions.act_window">
+        <field name="name">Student Year Payment</field>
+        <field name="res_model">school.student.year.payment</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_student_year_payment_search"/>
+        <field name="context">{'search_default_group_year': 1}</field>
+    </record>
+</odoo>

@@ -25,6 +25,7 @@
         'views/dashboard_views.xml',
         'views/enrollment_views.xml',
         'views/certificate_views.xml',
+        'views/year_payment_views.xml',
         'views/menu.xml',
         'report/fee_report.xml',
         'report/attendance_report.xml',

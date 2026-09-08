@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
+from datetime import timedelta
 
 def _open_records(self, model_name, domain):
     action = self.env['ir.actions.act_window']._for_xml_id(f'school_management.action_{model_name}')
@@ -65,7 +66,115 @@ class SchoolStudent(models.Model):
         compute='_compute_majors',
     )
     certificate_ids = fields.One2many('school.certificate', 'student_id', string='Certificates')
+
+    # Currency and Class Payment Integration
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Currency',
+        compute='_compute_currency_id',
+        default=lambda self: self.env.company.currency_id,
+    )
+    class_total_payment = fields.Monetary(
+        related='class_id.total_payment',
+        string='Class Total Payment',
+        currency_field='currency_id',
+        readonly=True,
+    )
+    year_payment_ids = fields.One2many('school.student.year.payment', 'student_id', string='Year Payments')
+    year_payment_count = fields.Integer(string='Year Payment Count', compute='_compute_payment_summary')
+    total_year_amount = fields.Monetary(string='Total Year Payment', currency_field='currency_id', compute='_compute_payment_summary')
+    total_year_paid = fields.Monetary(string='Total Year Paid', currency_field='currency_id', compute='_compute_payment_summary')
+    total_year_balance = fields.Monetary(string='Total Year Balance', currency_field='currency_id', compute='_compute_payment_summary')
+    year_payment_status = fields.Selection([
+        ('paid', 'Fully Paid'),
+        ('partial', 'Partially Paid'),
+        ('overdue', 'Overdue'),
+        ('pending', 'Pending'),
+        ('no_record', 'No Payment Record'),
+    ], string='Year Payment Status', compute='_compute_payment_summary')
+
     notes = fields.Text(string='Notes')
+
+    @api.depends_context('company')
+    def _compute_currency_id(self):
+        currency = self.env.company.currency_id
+        for rec in self:
+            rec.currency_id = currency
+
+    @api.depends('year_payment_ids.total_amount', 'year_payment_ids.total_paid', 'year_payment_ids.total_balance', 'year_payment_ids.overall_status')
+    def _compute_payment_summary(self):
+        for rec in self:
+            payments = rec.year_payment_ids
+            rec.year_payment_count = len(payments)
+            rec.total_year_amount = sum(payments.mapped('total_amount'))
+            rec.total_year_paid = sum(payments.mapped('total_paid'))
+            rec.total_year_balance = sum(payments.mapped('total_balance'))
+            if not payments:
+                rec.year_payment_status = 'no_record'
+            elif any(p.overall_status == 'overdue' for p in payments):
+                rec.year_payment_status = 'overdue'
+            elif all(p.overall_status == 'paid' for p in payments):
+                rec.year_payment_status = 'paid'
+            elif any(p.overall_status in ('paid', 'partial') for p in payments):
+                rec.year_payment_status = 'partial'
+            else:
+                rec.year_payment_status = 'pending'
+
+    def _sync_year_payment_with_class(self):
+        year_payment_model = self.env['school.student.year.payment']
+        for rec in self:
+            if rec.class_id and (rec.class_id.total_payment or rec.class_id.installment_1_amount or rec.class_id.installment_2_amount):
+                academic_year = rec.class_id.payment_year or '2024-2025'
+                existing = year_payment_model.search([
+                    ('student_id', '=', rec.id),
+                    ('year', '=', academic_year),
+                ], limit=1)
+
+                vals = {
+                    'class_id': rec.class_id.id,
+                    'year': academic_year,
+                    'year_start': rec.class_id.year_start or fields.Date.today(),
+                    'year_end': rec.class_id.year_end or (fields.Date.today() + timedelta(days=300)),
+                    'installment_1_amount': rec.class_id.installment_1_amount,
+                    'installment_1_due_date': rec.class_id.installment_1_due_date,
+                    'installment_2_amount': rec.class_id.installment_2_amount,
+                    'installment_2_due_date': rec.class_id.installment_2_due_date,
+                    'currency_id': rec.class_id.currency_id.id if rec.class_id.currency_id else False,
+                }
+
+                if not existing:
+                    vals['student_id'] = rec.id
+                    year_payment_model.create(vals)
+                elif existing.installment_1_paid_amount == 0 and existing.installment_2_paid_amount == 0:
+                    existing.write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        students = super().create(vals_list)
+        students._sync_year_payment_with_class()
+        return students
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'class_id' in vals:
+            self._sync_year_payment_with_class()
+        return res
+
+    def action_sync_year_payment_from_class(self):
+        self.ensure_one()
+        if not self.class_id:
+            raise UserError(_('This student is not assigned to any class.'))
+        self._sync_year_payment_with_class()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Year Payment Synchronized'),
+                'message': _("Payment schedule synchronized from class '%s'.") % self.class_id.name,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     @api.depends('major_enrollment_ids.major_id')
     def _compute_majors(self):
@@ -191,6 +300,14 @@ class SchoolStudent(models.Model):
 
     def open_major_enrollments(self):
         return _open_records(self, 'major_enrollment', [('student_id', '=', self.id)])
+
+    def open_year_payments(self):
+        action = _open_records(self, 'student_year_payment', [('student_id', '=', self.id)])
+        action['context'] = {
+            'default_student_id': self.id,
+            'default_class_id': self.class_id.id if self.class_id else False,
+        }
+        return action
 
     def action_generate_certificate(self):
         self.ensure_one()

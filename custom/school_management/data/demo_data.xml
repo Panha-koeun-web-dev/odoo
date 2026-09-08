@@ -1,3 +1,305 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Demo Classes with Total Payment Configuration -->
+    <record id="demo_class_1" model="school.class">
+        <field name="name">Grade 10A</field>
+        <field name="code">G10A</field>
+        <field name="capacity">30</field>
+        <field name="payment_year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="total_payment">10000.00</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+    </record>
+
+    <record id="demo_class_2" model="school.class">
+        <field name="name">Grade 10B</field>
+        <field name="code">G10B</field>
+        <field name="capacity">30</field>
+        <field name="payment_year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="total_payment">11000.00</field>
+        <field name="installment_1_amount">5500.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_2_amount">5500.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+    </record>
+
+    <record id="demo_class_3" model="school.class">
+        <field name="name">Grade 11A</field>
+        <field name="code">G11A</field>
+        <field name="capacity">25</field>
+        <field name="payment_year">2023-2024</field>
+        <field name="year_start">2023-09-01</field>
+        <field name="year_end">2024-06-30</field>
+        <field name="total_payment">10000.00</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2023-10-01</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2024-02-01</field>
+    </record>
+
+    <record id="demo_class_4" model="school.class">
+        <field name="name">Grade 11B</field>
+        <field name="code">G11B</field>
+        <field name="capacity">25</field>
+        <field name="payment_year">2023-2024</field>
+        <field name="year_start">2023-09-01</field>
+        <field name="year_end">2024-06-30</field>
+        <field name="total_payment">12000.00</field>
+        <field name="installment_1_amount">6000.00</field>
+        <field name="installment_1_due_date">2023-10-01</field>
+        <field name="installment_2_amount">6000.00</field>
+        <field name="installment_2_due_date">2024-02-01</field>
+    </record>
+
+    <record id="demo_class_5" model="school.class">
+        <field name="name">Grade 12A</field>
+        <field name="code">G12A</field>
+        <field name="capacity">20</field>
+        <field name="payment_year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="total_payment">9000.00</field>
+        <field name="installment_1_amount">4500.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_2_amount">4500.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+    </record>
+
+    <!-- Demo Students -->
+    <record id="demo_student_1" model="school.student">
+        <field name="name">John Smith</field>
+        <field name="student_id">STU-2024-001</field>
+        <field name="email">john.smith@email.com</field>
+        <field name="phone">555-0101</field>
+        <field name="gender">male</field>
+        <field name="date_of_birth">2008-05-15</field>
+        <field name="class_id" ref="demo_class_1"/>
+        <field name="parent_name">Michael Smith</field>
+        <field name="parent_phone">555-0102</field>
+        <field name="parent_email">michael.smith@email.com</field>
+        <field name="address">123 Main Street, City</field>
+        <field name="enrollment_date">2024-09-01</field>
+        <field name="study_start_date">2024-09-01</field>
+        <field name="study_end_date">2025-06-30</field>
+    </record>
+
+    <record id="demo_student_2" model="school.student">
+        <field name="name">Emily Johnson</field>
+        <field name="student_id">STU-2024-002</field>
+        <field name="email">emily.johnson@email.com</field>
+        <field name="phone">555-0201</field>
+        <field name="gender">female</field>
+        <field name="date_of_birth">2008-08-22</field>
+        <field name="class_id" ref="demo_class_1"/>
+        <field name="parent_name">Sarah Johnson</field>
+        <field name="parent_phone">555-0202</field>
+        <field name="parent_email">sarah.johnson@email.com</field>
+        <field name="address">456 Oak Avenue, City</field>
+        <field name="enrollment_date">2024-09-01</field>
+        <field name="study_start_date">2024-09-01</field>
+        <field name="study_end_date">2025-06-30</field>
+    </record>
+
+    <record id="demo_student_3" model="school.student">
+        <field name="name">Michael Brown</field>
+        <field name="student_id">STU-2024-003</field>
+        <field name="email">michael.brown@email.com</field>
+        <field name="phone">555-0301</field>
+        <field name="gender">male</field>
+        <field name="date_of_birth">2007-11-30</field>
+        <field name="class_id" ref="demo_class_2"/>
+        <field name="parent_name">Robert Brown</field>
+        <field name="parent_phone">555-0302</field>
+        <field name="parent_email">robert.brown@email.com</field>
+        <field name="address">789 Pine Road, City</field>
+        <field name="enrollment_date">2024-09-01</field>
+        <field name="study_start_date">2024-09-01</field>
+        <field name="study_end_date">2025-06-30</field>
+    </record>
+
+    <record id="demo_student_4" model="school.student">
+        <field name="name">Sophia Davis</field>
+        <field name="student_id">STU-2024-004</field>
+        <field name="email">sophia.davis@email.com</field>
+        <field name="phone">555-0401</field>
+        <field name="gender">female</field>
+        <field name="date_of_birth">2008-03-18</field>
+        <field name="class_id" ref="demo_class_2"/>
+        <field name="parent_name">James Davis</field>
+        <field name="parent_phone">555-0402</field>
+        <field name="parent_email">james.davis@email.com</field>
+        <field name="address">321 Elm Street, City</field>
+        <field name="enrollment_date">2024-09-01</field>
+        <field name="study_start_date">2024-09-01</field>
+        <field name="study_end_date">2025-06-30</field>
+    </record>
+
+    <record id="demo_student_5" model="school.student">
+        <field name="name">William Wilson</field>
+        <field name="student_id">STU-2023-001</field>
+        <field name="email">william.wilson@email.com</field>
+        <field name="phone">555-0501</field>
+        <field name="gender">male</field>
+        <field name="date_of_birth">2006-07-25</field>
+        <field name="class_id" ref="demo_class_3"/>
+        <field name="parent_name">David Wilson</field>
+        <field name="parent_phone">555-0502</field>
+        <field name="parent_email">david.wilson@email.com</field>
+        <field name="address">654 Maple Drive, City</field>
+        <field name="enrollment_date">2023-09-01</field>
+        <field name="study_start_date">2023-09-01</field>
+        <field name="study_end_date">2024-06-30</field>
+    </record>
+
+    <record id="demo_student_6" model="school.student">
+        <field name="name">Olivia Martinez</field>
+        <field name="student_id">STU-2023-002</field>
+        <field name="email">olivia.martinez@email.com</field>
+        <field name="phone">555-0601</field>
+        <field name="gender">female</field>
+        <field name="date_of_birth">2006-12-10</field>
+        <field name="class_id" ref="demo_class_3"/>
+        <field name="parent_name">Maria Martinez</field>
+        <field name="parent_phone">555-0602</field>
+        <field name="parent_email">maria.martinez@email.com</field>
+        <field name="address">987 Cedar Lane, City</field>
+        <field name="enrollment_date">2023-09-01</field>
+        <field name="study_start_date">2023-09-01</field>
+        <field name="study_end_date">2024-06-30</field>
+    </record>
+
+    <record id="demo_student_7" model="school.student">
+        <field name="name">James Anderson</field>
+        <field name="student_id">STU-2023-003</field>
+        <field name="email">james.anderson@email.com</field>
+        <field name="phone">555-0701</field>
+        <field name="gender">male</field>
+        <field name="date_of_birth">2007-04-05</field>
+        <field name="class_id" ref="demo_class_4"/>
+        <field name="parent_name">Thomas Anderson</field>
+        <field name="parent_phone">555-0702</field>
+        <field name="parent_email">thomas.anderson@email.com</field>
+        <field name="address">147 Birch Boulevard, City</field>
+        <field name="enrollment_date">2023-09-01</field>
+        <field name="study_start_date">2023-09-01</field>
+        <field name="study_end_date">2024-06-30</field>
+    </record>
+
+    <!-- Demo Year Payments -->
+    <record id="demo_year_payment_1" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_1"/>
+        <field name="year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_1_paid_amount">5000.00</field>
+        <field name="installment_1_paid_date">2024-09-28</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+        <field name="installment_2_paid_amount">2500.00</field>
+        <field name="installment_2_paid_date">2025-01-15</field>
+        <field name="payment_method">bank</field>
+        <field name="receipt_number">REC-2024-001</field>
+    </record>
+
+    <record id="demo_year_payment_2" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_2"/>
+        <field name="year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_1_paid_amount">0.00</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+        <field name="installment_2_paid_amount">0.00</field>
+        <field name="payment_method">cash</field>
+    </record>
+
+    <record id="demo_year_payment_3" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_3"/>
+        <field name="year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="installment_1_amount">5500.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_1_paid_amount">5500.00</field>
+        <field name="installment_1_paid_date">2024-09-15</field>
+        <field name="installment_2_amount">5500.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+        <field name="installment_2_paid_amount">5500.00</field>
+        <field name="installment_2_paid_date">2025-01-20</field>
+        <field name="payment_method">online</field>
+        <field name="receipt_number">REC-2024-002</field>
+    </record>
+
+    <record id="demo_year_payment_4" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_4"/>
+        <field name="year">2024-2025</field>
+        <field name="year_start">2024-09-01</field>
+        <field name="year_end">2025-06-30</field>
+        <field name="installment_1_amount">5500.00</field>
+        <field name="installment_1_due_date">2024-10-01</field>
+        <field name="installment_1_paid_amount">5500.00</field>
+        <field name="installment_1_paid_date">2024-09-20</field>
+        <field name="installment_2_amount">5500.00</field>
+        <field name="installment_2_due_date">2025-02-01</field>
+        <field name="installment_2_paid_amount">0.00</field>
+        <field name="payment_method">bank</field>
+    </record>
+
+    <record id="demo_year_payment_5" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_5"/>
+        <field name="year">2023-2024</field>
+        <field name="year_start">2023-09-01</field>
+        <field name="year_end">2024-06-30</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2023-10-01</field>
+        <field name="installment_1_paid_amount">5000.00</field>
+        <field name="installment_1_paid_date">2023-09-25</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2024-02-01</field>
+        <field name="installment_2_paid_amount">5000.00</field>
+        <field name="installment_2_paid_date">2024-01-10</field>
+        <field name="payment_method">cash</field>
+        <field name="receipt_number">REC-2023-001</field>
+    </record>
+
+    <record id="demo_year_payment_6" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_6"/>
+        <field name="year">2023-2024</field>
+        <field name="year_start">2023-09-01</field>
+        <field name="year_end">2024-06-30</field>
+        <field name="installment_1_amount">5000.00</field>
+        <field name="installment_1_due_date">2023-10-01</field>
+        <field name="installment_1_paid_amount">5000.00</field>
+        <field name="installment_1_paid_date">2023-09-28</field>
+        <field name="installment_2_amount">5000.00</field>
+        <field name="installment_2_due_date">2024-02-01</field>
+        <field name="installment_2_paid_amount">5000.00</field>
+        <field name="installment_2_paid_date">2024-01-15</field>
+        <field name="payment_method">bank</field>
+    </record>
+
+    <record id="demo_year_payment_7" model="school.student.year.payment">
+        <field name="student_id" ref="demo_student_7"/>
+        <field name="year">2023-2024</field>
+        <field name="year_start">2023-09-01</field>
+        <field name="year_end">2024-06-30</field>
+        <field name="installment_1_amount">6000.00</field>
+        <field name="installment_1_due_date">2023-10-01</field>
+        <field name="installment_1_paid_amount">3000.00</field>
+        <field name="installment_1_paid_date">2023-10-05</field>
+        <field name="installment_2_amount">6000.00</field>
+        <field name="installment_2_due_date">2024-02-01</field>
+        <field name="installment_2_paid_amount">0.00</field>
+        <field name="payment_method">online</field>
+    </record>
 </odoo>

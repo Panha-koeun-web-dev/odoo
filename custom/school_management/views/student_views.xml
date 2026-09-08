@@ -9,6 +9,13 @@
                 <field name="photo" widget="image" class="o_image_64_cover" options="{'no_attachment_counter': True}"/>
                 <field name="name"/>
                 <field name="class_id"/>
+                <field name="class_total_payment" widget="monetary" optional="hide"/>
+                <field name="year_payment_status" widget="badge" optional="show"
+                       decoration-success="year_payment_status == 'paid'"
+                       decoration-danger="year_payment_status == 'overdue'"
+                       decoration-warning="year_payment_status == 'partial'"
+                       decoration-info="year_payment_status == 'pending'"
+                       decoration-muted="year_payment_status == 'no_record'"/>
                 <field name="gender" widget="badge"/>
                 <field name="date_of_birth" optional="show"/>
                 <field name="age" optional="hide"/>
@@ -22,6 +29,7 @@
                 <field name="study_start_date" optional="hide"/>
                 <field name="study_end_date" optional="hide"/>
                 <field name="study_period" optional="show"/>
+                <field name="currency_id" column_invisible="True"/>
                 <field name="active" optional="hide"/>
             </list>
         </field>
@@ -36,11 +44,13 @@
                 <field name="name"/>
                 <field name="student_id"/>
                 <field name="class_id"/>
+                <field name="class_total_payment"/>
                 <field name="photo"/>
                 <field name="gender"/>
                 <field name="parent_phone"/>
                 <field name="age"/>
                 <field name="absent_count"/>
+                <field name="year_payment_status"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click">
@@ -74,6 +84,13 @@
                                 <span t-if="record.absent_count.raw &gt; 0" class="badge bg-danger text-white ms-1" title="Days Absent">
                                     <i class="fa fa-user-times me-1"/><t t-esc="record.absent_count.raw"/> Absent
                                 </span>
+                                <t t-if="record.year_payment_status.raw and record.year_payment_status.raw != 'no_record'">
+                                    <field name="year_payment_status" widget="badge" class="ms-1"
+                                           decoration-success="year_payment_status == 'paid'"
+                                           decoration-danger="year_payment_status == 'overdue'"
+                                           decoration-warning="year_payment_status == 'partial'"
+                                           decoration-info="year_payment_status == 'pending'"/>
+                                </t>
                             </div>
                         </div>
                     </t>
@@ -117,6 +134,12 @@
                         <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-trophy">
                             <div class="o_stat_info"><span class="o_stat_text">Certificate</span></div>
                         </button>
+                        <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-calendar">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="year_payment_count"/></span>
+                                <span class="o_stat_text">Year Payments</span>
+                            </div>
+                        </button>
                     </div>
                     <div class="row">
                         <div class="col-2">
@@ -142,7 +165,9 @@
                             <field name="address"/>
                         </group>
                         <group string="Academic Information">
+                            <field name="currency_id" invisible="1"/>
                             <field name="class_id"/>
+                            <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="not class_id"/>
                             <field name="enrollment_date"/>
                             <field name="study_start_date"/>
                             <field name="study_end_date"/>
@@ -256,6 +281,74 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Year Payments" name="year_payments">
+                            <!-- Year Payment Summary Banner -->
+                            <div class="p-3 mb-3 border rounded bg-light">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <strong>Payment Status:</strong>
+                                            <field name="year_payment_status" widget="badge"
+                                                   decoration-success="year_payment_status == 'paid'"
+                                                   decoration-danger="year_payment_status == 'overdue'"
+                                                   decoration-warning="year_payment_status == 'partial'"
+                                                   decoration-info="year_payment_status == 'pending'"
+                                                   decoration-muted="year_payment_status == 'no_record'"/>
+                                        </div>
+                                        <div class="text-muted small mt-1" invisible="not class_id">
+                                            Assigned Class: <strong><field name="class_id" readonly="1" class="d-inline"/></strong>
+                                            (Class Fee: <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" class="d-inline"/>)
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                        <button name="action_sync_year_payment_from_class" type="object"
+                                                string="Sync Payment from Class" class="btn btn-sm btn-outline-primary"
+                                                icon="fa-refresh" invisible="not class_id"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Financial Stats -->
+                            <div class="row g-3 mb-3 text-center" invisible="year_payment_count == 0">
+                                <div class="col-md-4 col-12">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-primary">
+                                        <div class="text-primary small fw-bold">Total Year Tuition</div>
+                                        <h4 class="fw-bold mb-0 text-primary"><field name="total_year_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
+                                        <small class="text-muted"><field name="year_payment_count"/> Record(s)</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-success">
+                                        <div class="text-success small fw-bold">Total Paid</div>
+                                        <h4 class="fw-bold mb-0 text-success"><field name="total_year_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
+                                        <small class="text-success">Collected</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="p-2 border rounded bg-white shadow-sm border-danger">
+                                        <div class="text-danger small fw-bold">Remaining Balance</div>
+                                        <h4 class="fw-bold mb-0 text-danger"><field name="total_year_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
+                                        <small class="text-danger">Due</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <field name="year_payment_ids" nolabel="1">
+                                <list decoration-danger="overall_status == 'overdue'" decoration-success="overall_status == 'paid'"
+                                      decoration-warning="overall_status == 'partial'" decoration-muted="overall_status == 'pending'">
+                                    <field name="year"/>
+                                    <field name="class_id" optional="show"/>
+                                    <field name="total_amount" sum="Total"/>
+                                    <field name="total_paid" sum="Paid"/>
+                                    <field name="total_balance" sum="Balance"/>
+                                    <field name="installment_1_amount"/>
+                                    <field name="installment_1_status" widget="badge"/>
+                                    <field name="installment_2_amount"/>
+                                    <field name="installment_2_status" widget="badge"/>
+                                    <field name="overall_status" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
                         <page string="Grades" name="grades">
                             <field name="grade_ids"/>
                         </page>
@@ -296,6 +389,11 @@
                 <filter name="filter_has_absent" string="Has Absences" domain="[('absent_count', '&gt;', 0)]"/>
                 <filter name="filter_high_absent" string="High Absences (&gt;= 3)" domain="[('absent_count', '&gt;=', 3)]"/>
                 <filter name="filter_absent_today" string="Absent Today" domain="[('attendance_ids.date', '=', context_today().strftime('%Y-%m-%d')), ('attendance_ids.status', '=', 'absent')]"/>
+                <separator/>
+                <filter name="filter_payment_paid" string="Tuition Paid" domain="[('year_payment_ids.overall_status', '=', 'paid')]"/>
+                <filter name="filter_payment_overdue" string="Tuition Overdue" domain="[('year_payment_ids.overall_status', '=', 'overdue')]"/>
+                <filter name="filter_payment_partial" string="Tuition Partial" domain="[('year_payment_ids.overall_status', '=', 'partial')]"/>
+                <filter name="filter_payment_pending" string="Tuition Pending" domain="[('year_payment_ids.overall_status', '=', 'pending')]"/>
                 <separator/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
                 <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_ids'}"/>

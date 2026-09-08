@@ -11,3 +11,4 @@ from . import grade
 from . import fee
 from . import major
 from . import dashboard
+from . import year_payment
