@@ -39,6 +39,8 @@
                 <button name="action_pay_installment_2" type="object" string="Pay Inst. 2"
                         class="btn-primary" icon="fa-money"
                         invisible="installment_2_status == 'paid' or installment_2_amount == 0"/>
+                <button name="action_sync_from_class" type="object" string="Sync Class"
+                        icon="fa-refresh" title="Sync payment schedule from assigned class" class="btn-sm btn-link text-primary"/>
             </list>
         </field>
     </record>
@@ -187,9 +189,9 @@
                     <button name="action_pay_installment_2" type="object" string="Pay Installment 2"
                             class="btn-primary" icon="fa-money"
                             invisible="installment_2_status == 'paid' or installment_2_amount == 0"/>
-                    <button name="action_sync_from_class" type="object" string="Load from Class"
-                            class="btn-secondary" icon="fa-download"
-                            invisible="not class_id or installment_1_paid_amount > 0 or installment_2_paid_amount > 0"/>
+                    <button name="action_sync_from_class" type="object" string="Sync from Class"
+                            class="btn-secondary" icon="fa-refresh"
+                            invisible="not class_id"/>
                     <field name="overall_status" widget="statusbar"
                            statusbar_visible="pending,partial,paid"
                            statusbar_colors='{"pending": "warning", "partial": "info", "paid": "success", "overdue": "danger"}'/>
@@ -239,7 +241,7 @@
                                 <div class="col-md-6">
                                     <div class="card border-0 shadow-sm h-100">
                                         <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fa fa-calendar me-2"/>Schedule</h6>
+                                            <h6 class="mb-0"><i class="fa fa-calendar me-2" title="Schedule"/>Schedule</h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
@@ -260,7 +262,7 @@
                                 <div class="col-md-6">
                                     <div class="card border-0 shadow-sm h-100">
                                         <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2"/>Payment Details</h6>
+                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2" title="Payment Details"/>Payment Details</h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
@@ -292,7 +294,7 @@
                                 <div class="col-md-6">
                                     <div class="card border-0 shadow-sm h-100">
                                         <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fa fa-calendar me-2"/>Schedule</h6>
+                                            <h6 class="mb-0"><i class="fa fa-calendar me-2" title="Schedule"/>Schedule</h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
@@ -313,7 +315,7 @@
                                 <div class="col-md-6">
                                     <div class="card border-0 shadow-sm h-100">
                                         <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2"/>Payment Details</h6>
+                                            <h6 class="mb-0"><i class="fa fa-check-circle me-2" title="Payment Details"/>Payment Details</h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
@@ -350,7 +352,7 @@
                                 </group>
                                 <group>
                                     <field name="class_id"/>
-                                    <button name="action_sync_from_class" type="object" string="Reset to Class Default" class="btn btn-sm btn-link" icon="fa-refresh" invisible="not class_id or installment_1_paid_amount > 0 or installment_2_paid_amount > 0"/>
+                                    <button name="action_sync_from_class" type="object" string="Sync from Class" class="btn btn-sm btn-link" icon="fa-refresh" invisible="not class_id"/>
                                 </group>
                             </group>
                             <group string="Payment Details">
@@ -442,10 +444,17 @@
 
     <!-- ======================= ACTIONS ======================= -->
     <record id="action_student_year_payment" model="ir.actions.act_window">
-        <field name="name">Student Year Payment</field>
+        <field name="name">Student Year Payments</field>
         <field name="res_model">school.student.year.payment</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_student_year_payment_search"/>
-        <field name="context">{'search_default_group_year': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage student annual tuition and installment payments.
+            </p>
+            <p>
+                Each student's payment schedule automatically follows the payment configuration set on their class.
+            </p>
+        </field>
     </record>
 </odoo>

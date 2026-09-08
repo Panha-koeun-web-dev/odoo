@@ -1,0 +1,14 @@
+2026-09-08 03:13:38,334 21612 WARNING ? odoo.tools.config: missing --http-interface/http_interface, using 0.0.0.0 by default, will change to 127.0.0.1 in 20.0 
+2026-09-08 03:13:38,335 21612 INFO ? odoo: Odoo version 19.0 
+2026-09-08 03:13:38,335 21612 INFO ? odoo: Using configuration file at c:\users\user\desktop\odoo\odoo.conf 
+2026-09-08 03:13:38,335 21612 INFO ? odoo: addons paths: _NamespacePath(['C:\\Users\\USER\\Desktop\\odoo\\odoo\\addons', 'C:\\Users\\USER\\AppData\\Local\\OpenERP S.A.\\Odoo\\addons\\19.0', 'c:\\users\\user\\desktop\\odoo\\addons', 'c:\\users\\user\\desktop\\odoo\\custom', 'c:\\users\\user\\desktop\\odoo\\odoo\\addons']) 
+2026-09-08 03:13:38,339 21612 INFO ? odoo: database: panha123@localhost:5432 
+2026-09-08 03:13:40,064 21612 INFO ? odoo.service.server: HTTP service (werkzeug) running on LAPTOP-SOTPBCGC:8069 
+2026-09-08 03:13:40,117 21612 INFO testing_db odoo.modules.loading: loading 1 modules... 
+2026-09-08 03:13:40,120 21612 INFO testing_db odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-08 03:13:40,133 21612 INFO testing_db odoo.modules.loading: loading 28 modules... 
+2026-09-08 03:13:40,393 21612 WARNING testing_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define models.Constraint on the model. 
+2026-09-08 03:13:40,477 21612 INFO testing_db odoo.modules.loading: 28 modules loaded in 0.34s, 0 queries (+0 extra) 
+2026-09-08 03:13:40,510 21612 WARNING testing_db odoo.fields: school.certificate.gender: selection attribute will be ignored as the field is related 
+2026-09-08 03:13:40,533 21612 INFO testing_db odoo.modules.loading: Modules loaded. 
+2026-09-08 03:13:40,550 21612 INFO testing_db odoo.registry: Registry loaded in 0.485s 

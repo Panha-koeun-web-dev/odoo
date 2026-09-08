@@ -70,7 +70,7 @@
                                 </div>
                                 <t t-if="record.total_payment.raw > 0">
                                     <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                        <span class="text-muted small"><i class="fa fa-money me-1"/>Payment: <field name="total_payment"/></span>
+                                        <span class="text-muted small"><i class="fa fa-money me-1"/>Tuition: <field name="total_payment"/></span>
                                         <span class="badge bg-light text-primary"><field name="payment_collection_rate"/>% Paid</span>
                                     </div>
                                 </t>
@@ -90,7 +90,7 @@
             <form>
                 <header>
                     <button name="action_take_attendance" string="Take Attendance" type="object" class="btn-primary" icon="fa-calendar-check-o"/>
-                    <button name="action_generate_year_payments" string="Generate / Sync Year Payments" type="object" class="btn-secondary" icon="fa-refresh" invisible="not total_payment"/>
+                    <button name="action_generate_year_payments" string="Apply Class Payment to All Students" type="object" class="btn-primary" icon="fa-refresh" invisible="not total_payment"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -123,7 +123,33 @@
                     </group>
                     <notebook>
                         <page string="Students" name="students">
-                            <field name="student_ids"/>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="text-muted mb-0"><i class="fa fa-users me-1" title="Students"/> Enrolled Students in this Class</h6>
+                            </div>
+                            <field name="student_ids" readonly="1">
+                                <list decoration-danger="study_status == 'stopped'" decoration-muted="not active">
+                                    <field name="student_id"/>
+                                    <field name="name"/>
+                                    <field name="study_status" widget="badge"
+                                           decoration-success="study_status == 'studying'"
+                                           decoration-danger="study_status == 'stopped'"/>
+                                    <field name="gender" widget="badge" optional="show"/>
+                                    <field name="phone" optional="show"/>
+                                    <field name="total_year_amount" string="Class Tuition" widget="monetary" sum="Total Tuition"/>
+                                    <field name="total_year_paid" string="Paid" widget="monetary" sum="Total Paid"/>
+                                    <field name="total_year_balance" string="Balance" widget="monetary" sum="Total Due"/>
+                                    <field name="year_payment_status" widget="badge"
+                                           decoration-success="year_payment_status == 'paid'"
+                                           decoration-danger="year_payment_status == 'overdue'"
+                                           decoration-warning="year_payment_status == 'partial'"
+                                           decoration-info="year_payment_status == 'pending'"
+                                           decoration-muted="year_payment_status == 'no_record'"/>
+                                    <button name="action_open_stop_study_wizard" type="object" string="Stop" icon="fa-ban"
+                                            title="Stop / Kick Student" class="text-danger" invisible="study_status == 'stopped'"/>
+                                    <button name="action_continue_study" type="object" string="Continue" icon="fa-play"
+                                            title="Continue Study" class="text-success" invisible="study_status != 'stopped'"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Payment / Tuition" name="payments">
                             <!-- Financial Summary KPI Cards -->
@@ -131,9 +157,9 @@
                                 <div class="col-md-3 col-6">
                                     <div class="card border-0 shadow-sm h-100 bg-primary text-white">
                                         <div class="card-body text-center p-3">
-                                            <div class="text-uppercase text-white-50 small fw-bold">Class Total Payment</div>
+                                            <div class="text-uppercase text-white-50 small fw-bold">Class Tuition per Student</div>
                                             <h3 class="fw-bold mb-0"><field name="total_payment" widget="monetary" options="{'currency_field': 'currency_id'}"/></h3>
-                                            <small class="text-white-50">Per Student</small>
+                                            <small class="text-white-50">Standard for this Class</small>
                                         </div>
                                     </div>
                                 </div>
@@ -142,7 +168,7 @@
                                         <div class="card-body text-center p-3">
                                             <div class="text-uppercase text-white-50 small fw-bold">Total Expected</div>
                                             <h3 class="fw-bold mb-0"><field name="total_payment_expected" widget="monetary" options="{'currency_field': 'currency_id'}"/></h3>
-                                            <small class="text-white-50"><field name="year_payment_count"/> Records</small>
+                                            <small class="text-white-50"><field name="year_payment_count"/> Student(s)</small>
                                         </div>
                                     </div>
                                 </div>
@@ -160,21 +186,26 @@
                                         <div class="card-body text-center p-3">
                                             <div class="text-uppercase text-white-50 small fw-bold">Total Balance</div>
                                             <h3 class="fw-bold mb-0"><field name="total_payment_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></h3>
-                                            <small class="text-white-50">Outstanding</small>
+                                            <small class="text-white-50">Outstanding Due</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <group string="Payment Schedule Settings">
-                                <group string="Academic Year &amp; Total Fee">
+                            <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" role="status">
+                                <i class="fa fa-info-circle fa-lg me-2 text-primary" title="Information"/>
+                                <span>Configure payment for this class below. Every student enrolled in this class will automatically follow this payment schedule.</span>
+                            </div>
+
+                            <group string="Class Tuition &amp; Installments Configuration">
+                                <group string="Academic Year &amp; Total Tuition">
                                     <field name="currency_id" invisible="1"/>
                                     <field name="payment_year" placeholder="e.g. 2024-2025"/>
                                     <field name="total_payment" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="year_start"/>
                                     <field name="year_end"/>
                                 </group>
-                                <group string="Installments Plan">
+                                <group string="Installments Breakdown">
                                     <field name="installment_1_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="installment_1_due_date"/>
                                     <field name="installment_2_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -183,23 +214,36 @@
                             </group>
 
                             <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-                                <h5 class="mb-0 fw-bold">Student Year Payment Records (<field name="payment_year" readonly="1"/>)</h5>
-                                <button name="action_generate_year_payments" string="Generate / Sync Payments for All Students"
-                                        type="object" class="btn btn-sm btn-primary" icon="fa-refresh" invisible="not total_payment"/>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Student Payment Records (<field name="payment_year" readonly="1"/>)</h5>
+                                    <small class="text-muted">All students in this class follow the class payment schedule configured above.</small>
+                                </div>
+                                <div>
+                                    <button name="action_generate_year_payments" string="Apply Class Payment to All Students"
+                                            type="object" class="btn btn-sm btn-primary" icon="fa-refresh" invisible="not total_payment"/>
+                                </div>
                             </div>
                             <field name="year_payment_ids" readonly="1">
                                 <list decoration-danger="overall_status == 'overdue'" decoration-success="overall_status == 'paid'"
                                       decoration-warning="overall_status == 'partial'" decoration-muted="overall_status == 'pending'">
                                     <field name="student_id"/>
                                     <field name="year"/>
-                                    <field name="total_amount" sum="Total Expected"/>
+                                    <field name="total_amount" string="Class Fee" sum="Total Expected"/>
                                     <field name="total_paid" sum="Total Paid"/>
                                     <field name="total_balance" sum="Total Balance"/>
-                                    <field name="installment_1_amount"/>
-                                    <field name="installment_1_status" widget="badge"/>
-                                    <field name="installment_2_amount"/>
-                                    <field name="installment_2_status" widget="badge"/>
+                                    <field name="installment_1_amount" string="Inst 1" optional="show"/>
+                                    <field name="installment_1_status" widget="badge" optional="show"/>
+                                    <field name="installment_1_due_date" optional="show"/>
+                                    <field name="installment_2_amount" string="Inst 2" optional="show"/>
+                                    <field name="installment_2_status" widget="badge" optional="show"/>
+                                    <field name="installment_2_due_date" optional="show"/>
                                     <field name="overall_status" widget="badge"/>
+                                    <button name="action_pay_installment_1" type="object" string="Pay Inst 1"
+                                            class="btn-sm btn-outline-success" invisible="installment_1_status == 'paid'"/>
+                                    <button name="action_pay_installment_2" type="object" string="Pay Inst 2"
+                                            class="btn-sm btn-outline-success" invisible="installment_2_status == 'paid'"/>
+                                    <button name="action_sync_from_class" type="object" string="Sync"
+                                            icon="fa-refresh" title="Sync this student's payment with class" class="btn-sm btn-link text-primary"/>
                                 </list>
                             </field>
                         </page>

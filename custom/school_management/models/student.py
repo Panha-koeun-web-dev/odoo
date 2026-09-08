@@ -130,31 +130,33 @@ class SchoolStudent(models.Model):
                 rec.year_payment_status = 'pending'
 
     def _sync_year_payment_with_class(self):
+        """Sync student payment record to follow the payment configured by the student's class."""
         year_payment_model = self.env['school.student.year.payment']
         for rec in self:
             if rec.class_id and (rec.class_id.total_payment or rec.class_id.installment_1_amount or rec.class_id.installment_2_amount):
-                academic_year = rec.class_id.payment_year or '2024-2025'
+                cls = rec.class_id
+                academic_year = cls.payment_year or '2024-2025'
                 existing = year_payment_model.search([
                     ('student_id', '=', rec.id),
                     ('year', '=', academic_year),
                 ], limit=1)
 
                 vals = {
-                    'class_id': rec.class_id.id,
+                    'class_id': cls.id,
                     'year': academic_year,
-                    'year_start': rec.class_id.year_start or fields.Date.today(),
-                    'year_end': rec.class_id.year_end or (fields.Date.today() + timedelta(days=300)),
-                    'installment_1_amount': rec.class_id.installment_1_amount,
-                    'installment_1_due_date': rec.class_id.installment_1_due_date,
-                    'installment_2_amount': rec.class_id.installment_2_amount,
-                    'installment_2_due_date': rec.class_id.installment_2_due_date,
-                    'currency_id': rec.class_id.currency_id.id if rec.class_id.currency_id else False,
+                    'year_start': cls.year_start or fields.Date.today(),
+                    'year_end': cls.year_end or (fields.Date.today() + timedelta(days=300)),
+                    'installment_1_amount': cls.installment_1_amount or 0.0,
+                    'installment_1_due_date': cls.installment_1_due_date,
+                    'installment_2_amount': cls.installment_2_amount or 0.0,
+                    'installment_2_due_date': cls.installment_2_due_date,
+                    'currency_id': cls.currency_id.id if cls.currency_id else False,
                 }
 
                 if not existing:
                     vals['student_id'] = rec.id
                     year_payment_model.create(vals)
-                elif existing.installment_1_paid_amount == 0 and existing.installment_2_paid_amount == 0:
+                else:
                     existing.write(vals)
 
     @api.model_create_multi
@@ -170,6 +172,7 @@ class SchoolStudent(models.Model):
         return res
 
     def action_sync_year_payment_from_class(self):
+        """Action button on student form to ensure payment follows the assigned class."""
         self.ensure_one()
         if not self.class_id:
             raise UserError(_('This student is not assigned to any class.'))
@@ -179,7 +182,9 @@ class SchoolStudent(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': _('Year Payment Synchronized'),
-                'message': _("Payment schedule synchronized from class '%s'.") % self.class_id.name,
+                'message': _("Payment schedule successfully updated to follow class '%s' (Tuition: %s).") % (
+                    self.class_id.name, self.class_id.total_payment
+                ),
                 'type': 'success',
                 'sticky': False,
             }
@@ -269,7 +274,7 @@ class SchoolStudent(models.Model):
     def _check_study_dates(self):
         for rec in self:
             if rec.study_start_date and rec.study_end_date and rec.study_end_date < rec.study_start_date:
-                raise ValidationError(_('Study End Date must be after Study Start Date.'))
+                raise ValidationError(_('Study End Date must be after Study Start Date.'))\
 
     @api.depends('attendance_ids.status')
     def _compute_attendance_stats(self):

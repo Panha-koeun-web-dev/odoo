@@ -6,10 +6,71 @@
         <field name="arch" type="xml">
             <list>
                 <field name="code" widget="badge"/>
-                <field name="name"/>
-                <field name="teacher_ids" widget="many2many_tags" optional="show"/>
-                <field name="description" optional="hide"/>
+                <field name="name" string="Subject Name"/>
+                <field name="department" widget="badge" optional="show"/>
+                <field name="course_type" widget="badge"
+                       decoration-success="course_type == 'core'"
+                       decoration-warning="course_type == 'elective'"
+                       decoration-primary="course_type == 'lab'"
+                       optional="show"/>
+                <field name="credits" optional="show"/>
+                <field name="teacher_count" string="Teachers" optional="show"/>
+                <field name="class_count" string="Classes" optional="show"/>
+                <field name="teacher_ids" widget="many2many_tags" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
             </list>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_subject_kanban" model="ir.ui.view">
+        <field name="name">school.subject.kanban</field>
+        <field name="model">school.subject</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" group_create="false">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="department"/>
+                <field name="course_type"/>
+                <field name="credits"/>
+                <field name="teacher_count"/>
+                <field name="class_count"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="o_kanban_avatar">
+                                    <span class="o_kanban_avatar_letter bg-primary text-white">
+                                        <i class="fa fa-book" title="Subject"/>
+                                    </span>
+                                </span>
+                                <div class="ms-2 flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-light text-primary fw-bold"><field name="code"/></span>
+                                        <span class="badge bg-secondary text-white"><field name="credits"/> Credits</span>
+                                    </div>
+                                    <strong class="o_kanban_record_title d-block fs-6 mt-1">
+                                        <field name="name"/>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="oe_kanban_details text-muted small mb-2">
+                                <div><i class="fa fa-folder-open-o me-1" title="Department"/><field name="department"/></div>
+                                <div><i class="fa fa-tag me-1" title="Course Type"/><field name="course_type"/></div>
+                            </div>
+                            <div class="oe_kanban_footer mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">
+                                    <i class="fa fa-users me-1" title="Teachers"/><field name="teacher_count"/> Teachers
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="fa fa-university me-1" title="Classes"/><field name="class_count"/> Classes
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
@@ -20,23 +81,126 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_teachers" type="object" class="oe_stat_button" icon="fa-users">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="teacher_count"/></span>
+                                <span class="o_stat_text">Teachers</span>
+                            </div>
+                        </button>
+                        <button name="action_view_classes" type="object" class="oe_stat_button" icon="fa-university">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="class_count"/></span>
+                                <span class="o_stat_text">Classes</span>
+                            </div>
+                        </button>
+                        <button name="action_view_exams" type="object" class="oe_stat_button" icon="fa-pencil-square-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="exam_count"/></span>
+                                <span class="o_stat_text">Exams</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+
+                    <!-- Title & Header Block -->
                     <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Subject Name"/>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary fs-6"><field name="code" placeholder="CODE"/></span>
+                            <field name="department" widget="badge" class="fs-6"/>
+                            <field name="course_type" widget="badge"
+                                   decoration-success="course_type == 'core'"
+                                   decoration-warning="course_type == 'elective'"
+                                   decoration-primary="course_type == 'lab'"/>
+                        </div>
+                        <h1 class="mt-2">
+                            <field name="name" placeholder="Subject Name (e.g. English, Advanced Calculus...)"/>
                         </h1>
                     </div>
-                    <group class="mt-3">
-                        <group string="Subject Details">
-                            <field name="code"/>
-                            <field name="active"/>
+
+                    <!-- Clean Quick Details Cards -->
+                    <group class="mt-4">
+                        <group string="Academic Information">
+                            <field name="code" placeholder="e.g. ENG101"/>
+                            <field name="department"/>
+                            <field name="course_type"/>
+                            <field name="credits"/>
                         </group>
-                        <group string="Description">
-                            <field name="description"/>
+                        <group string="General &amp; Status">
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="teacher_count" string="Assigned Teachers Count" readonly="1"/>
+                            <field name="class_count" string="Assigned Classes Count" readonly="1"/>
                         </group>
                     </group>
-                    <group string="Assigned Teachers" class="mt-3">
-                        <field name="teacher_ids"/>
-                    </group>
+
+                    <!-- Clean Full-Width Tabs -->
+                    <notebook class="mt-4">
+                        <page string="Assigned Teachers" name="teachers">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold"><i class="fa fa-graduation-cap me-2 text-primary" title="Teachers"/>Teachers Authorized for this Subject</h6>
+                                    <small class="text-muted">Faculty instructors authorized to teach this subject curriculum.</small>
+                                </div>
+                            </div>
+                            <field name="teacher_ids">
+                                <list>
+                                    <field name="employee_id" string="Teacher ID"/>
+                                    <field name="name" string="Full Name"/>
+                                    <field name="gender" widget="badge" optional="show"/>
+                                    <field name="phone"/>
+                                    <field name="email"/>
+                                    <field name="hire_date" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Classes" name="classes">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold"><i class="fa fa-university me-2 text-primary" title="Classes"/>Classes Teaching this Subject</h6>
+                                    <small class="text-muted">Classrooms where this subject is currently offered.</small>
+                                </div>
+                            </div>
+                            <field name="class_ids">
+                                <list>
+                                    <field name="name" string="Class Name"/>
+                                    <field name="code" optional="show"/>
+                                    <field name="section"/>
+                                    <field name="major_id"/>
+                                    <field name="teacher_id" string="Class Teacher"/>
+                                    <field name="student_count" string="Students"/>
+                                    <field name="room"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Syllabus &amp; Description" name="description">
+                            <div class="mb-3">
+                                <h6 class="fw-bold mb-1"><i class="fa fa-book me-2 text-primary" title="Syllabus"/>Course Outline &amp; Syllabus Details</h6>
+                                <small class="text-muted">Enter course objectives, required textbooks, and curriculum description.</small>
+                            </div>
+                            <field name="description" placeholder="Write course outline, prerequisites, and learning goals here..." widget="text"/>
+                        </page>
+
+                        <page string="Exams" name="exams">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-0 fw-bold"><i class="fa fa-pencil-square-o me-2 text-primary" title="Exams"/>Scheduled Exams for this Subject</h6>
+                                </div>
+                            </div>
+                            <field name="exam_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="class_id"/>
+                                    <field name="exam_type" widget="badge"/>
+                                    <field name="date"/>
+                                    <field name="total_marks"/>
+                                    <field name="passing_marks"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -50,16 +214,30 @@
             <search>
                 <field name="name"/>
                 <field name="code"/>
+                <field name="department"/>
                 <separator/>
-                <filter string="Teacher" name="group_teacher" domain="[]" context="{'group_by':'teacher_ids'}"/>
+                <filter string="Core Courses" name="filter_core" domain="[('course_type', '=', 'core')]"/>
+                <filter string="Elective Courses" name="filter_elective" domain="[('course_type', '=', 'elective')]"/>
+                <filter string="Practical / Labs" name="filter_lab" domain="[('course_type', '=', 'lab')]"/>
+                <separator/>
+                <filter string="Archived" name="filter_archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Department" name="group_department" domain="[]" context="{'group_by':'department'}"/>
+                <filter string="Course Type" name="group_course_type" domain="[]" context="{'group_by':'course_type'}"/>
             </search>
         </field>
     </record>
 
+    <!-- ======================= WINDOW ACTION ======================= -->
     <record id="action_subject" model="ir.actions.act_window">
         <field name="name">Subjects</field>
         <field name="res_model">school.subject</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_subject_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create and manage academic subjects, curriculum, and teacher assignments.
+            </p>
+        </field>
     </record>
 </odoo>

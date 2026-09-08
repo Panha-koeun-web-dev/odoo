@@ -22,23 +22,31 @@ class SchoolClass(models.Model):
     active = fields.Boolean(default=True)
     capacity_progress = fields.Float(string='Capacity %', compute='_compute_capacity_progress')
 
-    # Currency and Payment Configuration
+    # Currency and Payment Configuration for the Class
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
         compute='_compute_currency_id',
         default=lambda self: self.env.company.currency_id,
     )
-    payment_year = fields.Char(string='Academic Year', default='2024-2025', help="Default academic year for class payment (e.g. 2024-2025)")
+    payment_year = fields.Char(
+        string='Academic Year',
+        default='2024-2025',
+        help="Academic year for this class's payment (e.g. 2024-2025)"
+    )
     year_start = fields.Date(string='Academic Year Start')
     year_end = fields.Date(string='Academic Year End')
-    total_payment = fields.Monetary(string='Total Payment', currency_field='currency_id', help="Total tuition / payment required per student in this class")
+    total_payment = fields.Monetary(
+        string='Total Payment',
+        currency_field='currency_id',
+        help="Tuition / payment required per student studying in this class"
+    )
     installment_1_amount = fields.Monetary(string='Installment 1 Amount', currency_field='currency_id')
     installment_1_due_date = fields.Date(string='Installment 1 Due Date')
     installment_2_amount = fields.Monetary(string='Installment 2 Amount', currency_field='currency_id')
     installment_2_due_date = fields.Date(string='Installment 2 Due Date')
 
-    # Student Year Payments Integration & Analytics
+    # Student Year Payments Integration & Analytics for this Class
     year_payment_ids = fields.One2many('school.student.year.payment', 'class_id', string='Student Year Payments')
     year_payment_count = fields.Integer(string='Payment Count', compute='_compute_payment_statistics')
     total_payment_expected = fields.Monetary(string='Total Expected', currency_field='currency_id', compute='_compute_payment_statistics')
@@ -101,51 +109,76 @@ class SchoolClass(models.Model):
             if not self.installment_2_due_date and self.year_end:
                 self.installment_2_due_date = self.year_start + timedelta(days=150)
 
+    def _sync_students_class_payment(self):
+        """Synchronize payment for all students enrolled in this class.
+        Each student follows the payment configured for this class."""
+        for rec in self:
+            if not rec.total_payment and not (rec.installment_1_amount or rec.installment_2_amount):
+                continue
+            academic_year = rec.payment_year or '2024-2025'
+            year_payment_model = self.env['school.student.year.payment']
+            for student in rec.student_ids:
+                payment_rec = year_payment_model.search([
+                    ('student_id', '=', student.id),
+                    ('year', '=', academic_year),
+                ], limit=1)
+
+                vals = {
+                    'class_id': rec.id,
+                    'year': academic_year,
+                    'year_start': rec.year_start or fields.Date.today(),
+                    'year_end': rec.year_end or (fields.Date.today() + timedelta(days=300)),
+                    'installment_1_amount': rec.installment_1_amount or 0.0,
+                    'installment_1_due_date': rec.installment_1_due_date,
+                    'installment_2_amount': rec.installment_2_amount or 0.0,
+                    'installment_2_due_date': rec.installment_2_due_date,
+                    'currency_id': rec.currency_id.id if rec.currency_id else False,
+                }
+
+                if not payment_rec:
+                    vals['student_id'] = student.id
+                    year_payment_model.create(vals)
+                else:
+                    payment_rec.write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.student_ids and (rec.total_payment or rec.installment_1_amount or rec.installment_2_amount):
+                rec._sync_students_class_payment()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        sync_fields = {
+            'total_payment', 'installment_1_amount', 'installment_2_amount',
+            'installment_1_due_date', 'installment_2_due_date', 'payment_year',
+            'year_start', 'year_end', 'currency_id'
+        }
+        if any(f in vals for f in sync_fields) or 'student_ids' in vals:
+            for rec in self:
+                rec._sync_students_class_payment()
+        return res
+
     def action_generate_year_payments(self):
+        """Action button to sync or apply class payment to all students enrolled in this class."""
         self.ensure_one()
         if not self.student_ids:
             raise UserError(_('There are no students assigned to this class.'))
+        if not self.total_payment and not (self.installment_1_amount or self.installment_2_amount):
+            raise UserError(_('Please configure the Total Payment or Installment amounts for this class first.'))
 
-        academic_year = self.payment_year or '2024-2025'
-        year_payment_model = self.env['school.student.year.payment']
-        created_count = 0
-        updated_count = 0
+        self._sync_students_class_payment()
 
-        for student in self.student_ids:
-            payment_rec = year_payment_model.search([
-                ('student_id', '=', student.id),
-                ('year', '=', academic_year),
-            ], limit=1)
-
-            vals = {
-                'class_id': self.id,
-                'year': academic_year,
-                'year_start': self.year_start or fields.Date.today(),
-                'year_end': self.year_end or (fields.Date.today() + timedelta(days=300)),
-                'installment_1_amount': self.installment_1_amount,
-                'installment_1_due_date': self.installment_1_due_date,
-                'installment_2_amount': self.installment_2_amount,
-                'installment_2_due_date': self.installment_2_due_date,
-                'currency_id': self.currency_id.id if self.currency_id else False,
-            }
-
-            if not payment_rec:
-                vals['student_id'] = student.id
-                year_payment_model.create(vals)
-                created_count += 1
-            else:
-                if payment_rec.installment_1_paid_amount == 0 and payment_rec.installment_2_paid_amount == 0:
-                    payment_rec.write(vals)
-                    updated_count += 1
-
-        msg = _("Payment synchronization complete: %d created, %d updated for class '%s'.") % (
-            created_count, updated_count, self.name
+        msg = _("Payment synchronization complete: All %d students in class '%s' now follow this class's payment configuration (Total: %s).") % (
+            len(self.student_ids), self.name, self.total_payment
         )
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Student Year Payments'),
+                'title': _('Class Payment Synced'),
                 'message': msg,
                 'type': 'success',
                 'sticky': False,

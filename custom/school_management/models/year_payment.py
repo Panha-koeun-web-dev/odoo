@@ -19,7 +19,7 @@ class SchoolStudentYearPayment(models.Model):
     # Currency for monetary fields
     currency_id = fields.Many2one('res.currency', string='Currency', default=lambda self: self.env.company.currency_id)
 
-    # Installment 1
+    # Installment 1 (Follows Class)
     installment_1_amount = fields.Float(string='Installment 1 Amount', required=True, default=0.0)
     installment_1_due_date = fields.Date(string='Installment 1 Due Date')
     installment_1_paid_date = fields.Date(string='Installment 1 Paid Date')
@@ -32,7 +32,7 @@ class SchoolStudentYearPayment(models.Model):
         ('overdue', 'Overdue'),
     ], string='Installment 1 Status', default='pending', compute='_compute_installment_1_status', store=True)
 
-    # Installment 2
+    # Installment 2 (Follows Class)
     installment_2_amount = fields.Float(string='Installment 2 Amount', required=True, default=0.0)
     installment_2_due_date = fields.Date(string='Installment 2 Due Date')
     installment_2_paid_date = fields.Date(string='Installment 2 Paid Date')
@@ -45,8 +45,14 @@ class SchoolStudentYearPayment(models.Model):
         ('overdue', 'Overdue'),
     ], string='Installment 2 Status', default='pending', compute='_compute_installment_2_status', store=True)
 
-    # Total
-    total_amount = fields.Float(string='Total Year Amount', compute='_compute_total_amount', store=True)
+    # Total Year Amount (Class Tuition followed by student)
+    total_amount = fields.Float(
+        string='Total Year Amount',
+        compute='_compute_total_amount',
+        store=True,
+        readonly=True,
+        help="Total tuition for this year, following the class payment schedule"
+    )
     total_paid = fields.Float(string='Total Paid', compute='_compute_total_paid', store=True)
     total_balance = fields.Float(string='Total Balance', compute='_compute_total_balance', store=True)
     overall_status = fields.Selection([
@@ -108,30 +114,26 @@ class SchoolStudentYearPayment(models.Model):
             cls = self.student_id.class_id
             if cls:
                 self.class_id = cls.id
-                if cls.payment_year and not self.year:
+                if cls.payment_year:
                     self.year = cls.payment_year
-                if cls.year_start and not self.year_start:
+                if cls.year_start:
                     self.year_start = cls.year_start
-                if cls.year_end and not self.year_end:
+                if cls.year_end:
                     self.year_end = cls.year_end
-                if cls.total_payment or (cls.installment_1_amount or cls.installment_2_amount):
-                    if not self.installment_1_amount:
-                        self.installment_1_amount = cls.installment_1_amount
-                    if not self.installment_2_amount:
-                        self.installment_2_amount = cls.installment_2_amount
-                    if not self.installment_1_due_date:
-                        self.installment_1_due_date = cls.installment_1_due_date
-                    if not self.installment_2_due_date:
-                        self.installment_2_due_date = cls.installment_2_due_date
-                    if cls.currency_id:
-                        self.currency_id = cls.currency_id
+                self.installment_1_amount = cls.installment_1_amount
+                self.installment_2_amount = cls.installment_2_amount
+                self.installment_1_due_date = cls.installment_1_due_date
+                self.installment_2_due_date = cls.installment_2_due_date
+                if cls.currency_id:
+                    self.currency_id = cls.currency_id
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('student_id'):
-                student = self.env['school.student'].browse(vals['student_id'])
-                cls = student.class_id
+                student = self.env['school.student'].browse(vals['student_id']) \
+                    if isinstance(vals['student_id'], int) else None
+                cls = student.class_id if student else None
                 if cls:
                     if 'class_id' not in vals:
                         vals['class_id'] = cls.id
@@ -154,6 +156,7 @@ class SchoolStudentYearPayment(models.Model):
         return super().create(vals_list)
 
     def action_sync_from_class(self):
+        """Re-sync payment schedule to follow the assigned class."""
         self.ensure_one()
         cls = self.class_id or self.student_id.class_id
         if not cls:
@@ -161,17 +164,14 @@ class SchoolStudentYearPayment(models.Model):
         if not cls.total_payment and not (cls.installment_1_amount or cls.installment_2_amount):
             raise UserError(_("The class '%s' does not have payment amounts configured.") % cls.name)
 
-        if self.installment_1_paid_amount > 0 or self.installment_2_paid_amount > 0:
-            raise UserError(_('Cannot reset payment amounts from class because payments have already been recorded.'))
-
         self.write({
             'class_id': cls.id,
             'year': cls.payment_year or self.year,
             'year_start': cls.year_start or self.year_start,
             'year_end': cls.year_end or self.year_end,
-            'installment_1_amount': cls.installment_1_amount,
+            'installment_1_amount': cls.installment_1_amount or 0.0,
             'installment_1_due_date': cls.installment_1_due_date,
-            'installment_2_amount': cls.installment_2_amount,
+            'installment_2_amount': cls.installment_2_amount or 0.0,
             'installment_2_due_date': cls.installment_2_due_date,
             'currency_id': cls.currency_id.id if cls.currency_id else self.currency_id.id,
         })
@@ -180,7 +180,7 @@ class SchoolStudentYearPayment(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': _('Payment Loaded'),
-                'message': _("Successfully loaded payment schedule from class '%s'.") % cls.name,
+                'message': _("Successfully updated payment schedule to follow class '%s'.") % cls.name,
                 'type': 'success',
                 'sticky': False,
             }
@@ -230,7 +230,7 @@ class SchoolStudentYearPayment(models.Model):
     @api.depends('installment_1_amount', 'installment_2_amount')
     def _compute_total_amount(self):
         for rec in self:
-            rec.total_amount = rec.installment_1_amount + rec.installment_2_amount
+            rec.total_amount = round((rec.installment_1_amount or 0.0) + (rec.installment_2_amount or 0.0), 2)
 
     @api.depends('installment_1_paid_amount', 'installment_2_paid_amount')
     def _compute_total_paid(self):
