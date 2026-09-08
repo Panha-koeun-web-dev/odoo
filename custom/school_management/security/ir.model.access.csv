@@ -17,3 +17,4 @@ access_daily_attendance_wizard,daily.attendance.wizard,model_school_daily_attend
 access_daily_attendance_line_wizard,daily.attendance.line.wizard,model_school_daily_attendance_line_wizard,school_management.group_school_admin,1,1,1,1
 access_student_year_payment_user,student.year.payment.user,model_school_student_year_payment,school_management.group_school_admin,1,1,1,1
 access_student_year_payment_pay_wizard,student.year.payment.pay.wizard.user,model_school_student_year_payment_pay_wizard,school_management.group_school_admin,1,1,1,1
+access_student_stop_wizard,student.stop.wizard,model_school_student_stop_wizard,school_management.group_school_admin,1,1,1,1

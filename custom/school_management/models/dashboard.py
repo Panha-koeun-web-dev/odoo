@@ -23,6 +23,8 @@ class SchoolDashboard(models.AbstractModel):
         # ---------------- 1. Top-Level Summary Counts ----------------
         student_count = student_model.search_count([])
         active_students = student_model.search_count([('active', '=', True)])
+        studying_students = student_model.search_count([('active', '=', True), ('study_status', '=', 'studying')])
+        stopped_students = student_model.search_count([('study_status', '=', 'stopped')])
         teacher_count = teacher_model.search_count([])
         class_count = class_model.search_count([])
         subject_count = subject_model.search_count([])
@@ -31,7 +33,7 @@ class SchoolDashboard(models.AbstractModel):
         grade_count = grade_model.search_count([])
         fee_count = fee_model.search_count([])
 
-        avg_students_per_class = round(student_count / class_count, 1) if class_count else 0.0
+        avg_students_per_class = round(studying_students / class_count, 1) if class_count else 0.0
 
         # ---------------- 2. Student Demographics ----------------
         gender_counts = {'male': 0, 'female': 0, 'other': 0}
@@ -190,7 +192,7 @@ class SchoolDashboard(models.AbstractModel):
         # ---------------- 6. Class Capacity & Occupancy ----------------
         classes = class_model.search([])
         total_capacity = sum(classes.mapped('capacity'))
-        capacity_rate = round(student_count / total_capacity * 100, 1) if total_capacity else 0.0
+        capacity_rate = round(studying_students / total_capacity * 100, 1) if total_capacity else 0.0
 
         top_classes = []
         for cls in classes.sorted(lambda c: c.student_count, reverse=True)[:6]:
@@ -210,6 +212,8 @@ class SchoolDashboard(models.AbstractModel):
             'summary': {
                 'student_count': student_count,
                 'active_students': active_students,
+                'studying_students': studying_students,
+                'stopped_students': stopped_students,
                 'teacher_count': teacher_count,
                 'class_count': class_count,
                 'subject_count': subject_count,
@@ -262,4 +266,4 @@ class SchoolDashboard(models.AbstractModel):
                 'top_class_students': top_class['students'] if top_class else 0,
                 'top_classes': top_classes,
             },
-        }
+        }

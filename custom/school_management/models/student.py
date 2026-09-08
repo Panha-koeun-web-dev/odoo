@@ -37,6 +37,15 @@ class SchoolStudent(models.Model):
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', string='Related User')
 
+    # Study Status Management (Stop / Kick / Continue Study)
+    study_status = fields.Selection([
+        ('studying', 'Studying'),
+        ('stopped', 'Stopped Studying'),
+    ], string='Study Status', default='studying', required=True, copy=False)
+    stop_date = fields.Date(string='Stop Date', copy=False, help="Date when student stopped studying")
+    stop_reason = fields.Text(string='Reason for Stopping', copy=False, help="Reason why the student stopped studying or was kicked")
+    recontinue_date = fields.Date(string='Resumed Date', copy=False, help="Date when student resumed studying")
+
     attendance_ids = fields.One2many('school.attendance', 'student_id', string='Attendance')
     attendance_count = fields.Integer(string='Total Attendance', compute='_compute_attendance_stats', store=True)
     absent_count = fields.Integer(string='Absent Days', compute='_compute_attendance_stats', store=True)
@@ -174,6 +183,58 @@ class SchoolStudent(models.Model):
                 'type': 'success',
                 'sticky': False,
             }
+        }
+
+    # ==================== STOP / CONTINUE STUDY ACTIONS ====================
+    def action_stop_study(self):
+        """Direct action to stop / kick student(s) from studying."""
+        for rec in self:
+            rec.write({
+                'study_status': 'stopped',
+                'stop_date': fields.Date.today(),
+                'stop_reason': rec.stop_reason or _('Marked as stopped studying by administrator.'),
+            })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Student(s) Stopped'),
+                'message': _('Selected student(s) marked as Stopped Studying.'),
+                'type': 'warning',
+                'sticky': False,
+            }
+        }
+
+    def action_continue_study(self):
+        """Direct action to resume / continue study for student(s)."""
+        for rec in self:
+            rec.write({
+                'study_status': 'studying',
+                'recontinue_date': fields.Date.today(),
+            })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Study Continued'),
+                'message': _('Selected student(s) are now active and Studying.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_open_stop_study_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Stop Student Study (Kick / Drop Out)'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student.stop.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_student_id': self.id,
+                'default_stop_date': fields.Date.today(),
+            },
         }
 
     @api.depends('major_enrollment_ids.major_id')
@@ -345,4 +406,42 @@ class SchoolStudent(models.Model):
             'context': {
                 'default_student_ids': self.ids,
             },
+        }
+
+
+class SchoolStudentStopWizard(models.TransientModel):
+    _name = 'school.student.stop.wizard'
+    _description = 'Stop Student Study Wizard'
+
+    student_id = fields.Many2one('school.student', string='Student', required=True)
+    stop_date = fields.Date(string='Stop Date', required=True, default=fields.Date.today)
+    reason_type = fields.Selection([
+        ('kicked', 'Dismissed / Kicked (Disciplinary)'),
+        ('dropped', 'Requested to Stop / Dropped Out'),
+        ('financial', 'Financial Difficulty'),
+        ('personal', 'Personal / Family Reasons'),
+        ('transfer', 'Transferred to Another School'),
+        ('health', 'Health / Medical Reasons'),
+        ('other', 'Other Reason'),
+    ], string='Reason Category', required=True, default='dropped')
+    stop_reason = fields.Text(string='Detailed Reason / Remarks')
+
+    def action_confirm_stop(self):
+        self.ensure_one()
+        category_label = dict(self._fields['reason_type'].selection).get(self.reason_type, '')
+        full_reason = f"[{category_label}] {self.stop_reason}" if self.stop_reason else f"[{category_label}]"
+        self.student_id.write({
+            'study_status': 'stopped',
+            'stop_date': self.stop_date,
+            'stop_reason': full_reason,
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Student Stopped Studying'),
+                'message': _("Student '%s' has been marked as Stopped Studying.") % self.student_id.name,
+                'type': 'warning',
+                'sticky': False,
+            }
         }

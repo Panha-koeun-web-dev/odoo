@@ -35,7 +35,7 @@ class SchoolDailyAttendanceWizard(models.TransientModel):
         class_id = res.get('class_id') or self.env.context.get('default_class_id')
         date_val = res.get('date') or fields.Date.today()
         if 'line_ids' in fields_list:
-            domain = [('active', '=', True)]
+            domain = [('active', '=', True), ('study_status', '=', 'studying')]
             if class_id:
                 domain.append(('class_id', '=', class_id))
             students = self.env['school.student'].search(domain, order='name')
@@ -65,7 +65,7 @@ class SchoolDailyAttendanceWizard(models.TransientModel):
         self._populate_students()
 
     def _populate_students(self):
-        domain = [('active', '=', True)]
+        domain = [('active', '=', True), ('study_status', '=', 'studying')]
         if self.class_id:
             domain.append(('class_id', '=', self.class_id.id))
         students = self.env['school.student'].search(domain, order='name')

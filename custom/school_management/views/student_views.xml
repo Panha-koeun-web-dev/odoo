@@ -1,13 +1,40 @@
 <odoo>
+    <!-- ======================= STOP STUDY WIZARD FORM ======================= -->
+    <record id="view_school_student_stop_wizard_form" model="ir.ui.view">
+        <field name="name">school.student.stop.wizard.form</field>
+        <field name="model">school.student.stop.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Stop Student Study">
+                <div class="alert alert-warning mb-3" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2" title="Warning"/>
+                    Stopping this student will change their status to <strong>Stopped Studying</strong> and exclude them from daily attendance taking. You can resume their studies anytime using the <strong>Continue Study</strong> button.
+                </div>
+                <group>
+                    <field name="student_id" readonly="1"/>
+                    <field name="stop_date"/>
+                    <field name="reason_type"/>
+                    <field name="stop_reason" placeholder="Provide reason or remarks for stopping study / kicking student..."/>
+                </group>
+                <footer>
+                    <button string="Confirm Stop Study" name="action_confirm_stop" type="object" class="btn-danger" icon="fa-ban"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <!-- ======================= LIST VIEW ======================= -->
     <record id="view_student_tree" model="ir.ui.view">
         <field name="name">school.student.list</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
-            <list decoration-info="age &lt; 13" decoration-muted="not active" editable="bottom" multi_edit="1">
+            <list decoration-info="age &lt; 13" decoration-muted="not active" decoration-danger="study_status == 'stopped'" editable="bottom" multi_edit="1">
                 <field name="student_id"/>
                 <field name="photo" widget="image" class="o_image_64_cover" options="{'no_attachment_counter': True}"/>
                 <field name="name"/>
+                <field name="study_status" widget="badge"
+                       decoration-success="study_status == 'studying'"
+                       decoration-danger="study_status == 'stopped'"/>
                 <field name="class_id"/>
                 <field name="class_total_payment" widget="monetary" optional="hide"/>
                 <field name="year_payment_status" widget="badge" optional="show"
@@ -29,8 +56,14 @@
                 <field name="study_start_date" optional="hide"/>
                 <field name="study_end_date" optional="hide"/>
                 <field name="study_period" optional="show"/>
+                <field name="stop_date" optional="hide"/>
+                <field name="stop_reason" optional="hide"/>
                 <field name="currency_id" column_invisible="True"/>
                 <field name="active" optional="hide"/>
+                <button name="action_open_stop_study_wizard" type="object" string="Stop Study" icon="fa-ban"
+                        title="Stop / Kick Student" class="text-danger" invisible="study_status == 'stopped'"/>
+                <button name="action_continue_study" type="object" string="Continue Study" icon="fa-play"
+                        title="Continue / Resume Study" class="text-success" invisible="study_status != 'stopped'"/>
             </list>
         </field>
     </record>
@@ -51,6 +84,7 @@
                 <field name="age"/>
                 <field name="absent_count"/>
                 <field name="year_payment_status"/>
+                <field name="study_status"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click">
@@ -78,6 +112,9 @@
                             </div>
                             <div class="oe_kanban_footer">
                                 <field name="gender" widget="badge"/>
+                                <field name="study_status" widget="badge" class="ms-1"
+                                       decoration-success="study_status == 'studying'"
+                                       decoration-danger="study_status == 'stopped'"/>
                                 <span t-attf-class="badge bg-light text-dark ms-1">
                                     <i class="fa fa-user-o me-1" title="Age"/><t t-esc="record.age.raw"/> yrs
                                 </span>
@@ -105,7 +142,34 @@
         <field name="model">school.student</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_open_stop_study_wizard" type="object"
+                            string="Stop Study (Kick)" class="btn-danger" icon="fa-ban"
+                            invisible="study_status == 'stopped'"/>
+                    <button name="action_continue_study" type="object"
+                            string="Continue Study" class="btn-success" icon="fa-play"
+                            invisible="study_status != 'stopped'"/>
+                    <button name="action_sync_year_payment_from_class" type="object"
+                            string="Sync Payment Schedule" class="btn-secondary" icon="fa-refresh"
+                            invisible="not class_id"/>
+                    <field name="study_status" widget="statusbar" statusbar_visible="studying,stopped"/>
+                </header>
                 <sheet>
+                    <!-- Visual alert banner when student is stopped -->
+                    <div class="alert alert-danger d-flex align-items-center justify-content-between p-3 mb-3" role="alert" invisible="study_status != 'stopped'">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-ban fa-2x text-danger me-3" title="Stopped Student"/>
+                            <div>
+                                <h5 class="alert-heading mb-0 text-danger fw-bold">Student Has Stopped Studying</h5>
+                                <div class="text-muted small mt-1">
+                                    Status: <strong>Stopped</strong> since <field name="stop_date" readonly="1" class="d-inline fw-bold"/>.
+                                    <span invisible="not stop_reason"> Reason: <field name="stop_reason" readonly="1" class="d-inline"/></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button name="action_continue_study" type="object" string="Resume Study" class="btn btn-success ms-3" icon="fa-play"/>
+                    </div>
+
                     <div class="oe_button_box" name="button_box">
                         <button name="open_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
                             <div class="o_stat_info">
@@ -154,6 +218,9 @@
                             <div class="mt-2">
                                 <field name="gender" widget="badge" bg_color="gender == 'male' ? 'bg-teal-200 text-teal-900' : gender == 'female' ? 'bg-pink-200 text-pink-900' : 'bg-purple-200 text-purple-900'"/>
                                 <span class="text-muted ms-1">ID: <field name="student_id" class="d-inline"/></span>
+                                <field name="study_status" widget="badge" class="ms-2"
+                                       decoration-success="study_status == 'studying'"
+                                       decoration-danger="study_status == 'stopped'"/>
                             </div>
                         </div>
                     </div>
@@ -166,6 +233,12 @@
                         </group>
                         <group string="Academic Information">
                             <field name="currency_id" invisible="1"/>
+                            <field name="study_status" widget="badge"
+                                   decoration-success="study_status == 'studying'"
+                                   decoration-danger="study_status == 'stopped'"/>
+                            <field name="stop_date" invisible="study_status != 'stopped'"/>
+                            <field name="stop_reason" invisible="study_status != 'stopped'"/>
+                            <field name="recontinue_date" invisible="not recontinue_date"/>
                             <field name="class_id"/>
                             <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="not class_id"/>
                             <field name="enrollment_date"/>
@@ -383,6 +456,9 @@
                 <field name="student_id"/>
                 <field name="class_id"/>
                 <field name="email"/>
+                <filter name="filter_studying" string="Studying" domain="[('study_status','=','studying')]"/>
+                <filter name="filter_stopped" string="Stopped Studying (Kicked)" domain="[('study_status','=','stopped')]"/>
+                <separator/>
                 <filter name="filter_male" string="Male" domain="[('gender','=','male')]" help="Only male students"/>
                 <filter name="filter_female" string="Female" domain="[('gender','=','female')]" help="Only female students"/>
                 <separator/>
@@ -395,6 +471,7 @@
                 <filter name="filter_payment_partial" string="Tuition Partial" domain="[('year_payment_ids.overall_status', '=', 'partial')]"/>
                 <filter name="filter_payment_pending" string="Tuition Pending" domain="[('year_payment_ids.overall_status', '=', 'pending')]"/>
                 <separator/>
+                <filter string="Study Status" name="group_study_status" domain="[]" context="{'group_by':'study_status'}"/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
                 <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_ids'}"/>
                 <filter string="Gender" name="group_gender" domain="[]" context="{'group_by':'gender'}"/>
@@ -408,6 +485,27 @@
         <field name="res_model">school.student</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_student_search"/>
+    </record>
+
+    <!-- ======================= SERVER ACTIONS ======================= -->
+    <record id="action_stop_study_students" model="ir.actions.server">
+        <field name="name">Stop Study (Kick)</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">action</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_stop_study()</field>
+    </record>
+
+    <record id="action_continue_study_students" model="ir.actions.server">
+        <field name="name">Continue Study</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">action</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_continue_study()</field>
     </record>
 
     <record id="action_bulk_enroll_students" model="ir.actions.server">

@@ -59,7 +59,8 @@ class SchoolClass(models.Model):
     def _compute_student_count(self):
         for rec in self:
             rec.student_count = self.env['school.student'].search_count([
-                ('class_id', '=', rec.id)
+                ('class_id', '=', rec.id),
+                ('study_status', '=', 'studying'),
             ])
 
     @api.depends('year_payment_ids.total_amount', 'year_payment_ids.total_paid', 'year_payment_ids.total_balance')
