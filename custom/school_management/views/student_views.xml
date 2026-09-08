@@ -41,12 +41,11 @@
                        decoration-success="year_payment_status == 'paid'"
                        decoration-danger="year_payment_status == 'overdue'"
                        decoration-warning="year_payment_status == 'partial'"
-                       decoration-info="year_payment_status == 'pending'"
-                       decoration-muted="year_payment_status == 'no_record'"/>
-                <field name="gender" widget="badge"/>
-                <field name="date_of_birth" optional="show"/>
-                <field name="age" optional="hide"/>
-                <field name="email" optional="hide"/>
+                       decoration-info="year_payment_status == 'pending'"/>
+                <field name="gender" widget="badge" optional="show"/>
+                <field name="date_of_birth" optional="hide"/>
+                <field name="age" optional="show"/>
+                <field name="email" optional="show"/>
                 <field name="phone" optional="show"/>
                 <field name="parent_phone" optional="hide"/>
                 <field name="enrollment_date" optional="show"/>
@@ -61,9 +60,11 @@
                 <field name="currency_id" column_invisible="True"/>
                 <field name="active" optional="hide"/>
                 <button name="action_open_stop_study_wizard" type="object" string="Stop Study" icon="fa-ban"
-                        title="Stop / Kick Student" class="text-danger" invisible="study_status == 'stopped'"/>
+                        title="Stop / Kick Student" class="text-danger" invisible="study_status == 'stopped'"
+                        groups="school_management.group_school_admin"/>
                 <button name="action_continue_study" type="object" string="Continue Study" icon="fa-play"
-                        title="Continue / Resume Study" class="text-success" invisible="study_status != 'stopped'"/>
+                        title="Continue / Resume Study" class="text-success" invisible="study_status != 'stopped'"
+                        groups="school_management.group_school_admin"/>
             </list>
         </field>
     </record>
@@ -143,15 +144,26 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_create_user" type="object"
+                            string="Create Login Account" class="btn-primary" icon="fa-user-plus"
+                            invisible="user_id"
+                            groups="school_management.group_school_admin"/>
+                    <button name="action_reset_user_password" type="object"
+                            string="Reset Password" class="btn-secondary" icon="fa-key"
+                            invisible="not user_id"
+                            groups="school_management.group_school_admin"/>
                     <button name="action_open_stop_study_wizard" type="object"
                             string="Stop Study (Kick)" class="btn-danger" icon="fa-ban"
-                            invisible="study_status == 'stopped'"/>
+                            invisible="study_status == 'stopped'"
+                            groups="school_management.group_school_admin"/>
                     <button name="action_continue_study" type="object"
                             string="Continue Study" class="btn-success" icon="fa-play"
-                            invisible="study_status != 'stopped'"/>
+                            invisible="study_status != 'stopped'"
+                            groups="school_management.group_school_admin"/>
                     <button name="action_sync_year_payment_from_class" type="object"
                             string="Sync Payment Schedule" class="btn-secondary" icon="fa-refresh"
-                            invisible="not class_id"/>
+                            invisible="not class_id"
+                            groups="school_management.group_school_admin"/>
                     <field name="study_status" widget="statusbar" statusbar_visible="studying,stopped"/>
                 </header>
                 <sheet>
@@ -167,7 +179,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button name="action_continue_study" type="object" string="Resume Study" class="btn btn-success ms-3" icon="fa-play"/>
+                        <button name="action_continue_study" type="object" string="Resume Study" class="btn btn-success ms-3" icon="fa-play" groups="school_management.group_school_admin"/>
                     </div>
 
                     <div class="oe_button_box" name="button_box">
@@ -186,19 +198,19 @@
                         <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
                             <div class="o_stat_info"><span class="o_stat_text">Grades</span></div>
                         </button>
-                        <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money">
+                        <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Fees</span></div>
                         </button>
-                        <button name="open_enrollments" type="object" class="oe_stat_button" icon="fa-user-plus">
+                        <button name="open_enrollments" type="object" class="oe_stat_button" icon="fa-user-plus" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Enrollments</span></div>
                         </button>
-                        <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                        <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-graduation-cap" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Majors</span></div>
                         </button>
-                        <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-trophy">
+                        <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-trophy" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Certificate</span></div>
                         </button>
-                        <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-calendar">
+                        <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-calendar" groups="school_management.group_school_admin,school_management.group_school_student">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="year_payment_count"/></span>
                                 <span class="o_stat_text">Year Payments</span>
@@ -230,6 +242,7 @@
                             <field name="age" string="Age" readonly="1"/>
                             <field name="gender"/>
                             <field name="address"/>
+                            <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
                         </group>
                         <group string="Academic Information">
                             <field name="currency_id" invisible="1"/>
@@ -260,185 +273,8 @@
                                 </group>
                                 <group>
                                     <field name="parent_email"/>
-                                    <field name="user_id"/>
                                 </group>
                             </group>
-                        </page>
-                        <page string="Attendance" name="attendance">
-                            <!-- Daily Attendance Action Bar -->
-                            <div class="p-3 mb-3 border rounded bg-light">
-                                <div class="row align-items-center">
-                                    <div class="col-md-5">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <strong>Today's Status:</strong>
-                                            <field name="today_attendance_status" widget="badge"
-                                                   decoration-success="today_attendance_status == 'present'"
-                                                   decoration-danger="today_attendance_status == 'absent'"
-                                                   decoration-warning="today_attendance_status == 'late'"
-                                                   decoration-info="today_attendance_status == 'excused'"
-                                                   decoration-muted="today_attendance_status == 'not_marked'"/>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-7 text-md-end mt-2 mt-md-0">
-                                        <div class="btn-group" role="group">
-                                            <button name="action_mark_present_today" type="object" string="Mark Present Today" class="btn btn-sm btn-outline-success" icon="fa-check"/>
-                                            <button name="action_mark_absent_today" type="object" string="Mark Absent Today" class="btn btn-sm btn-outline-danger" icon="fa-times"/>
-                                            <button name="action_mark_late_today" type="object" string="Mark Late Today" class="btn btn-sm btn-outline-warning" icon="fa-clock-o"/>
-                                            <button name="action_mark_excused_today" type="object" string="Mark Excused Today" class="btn btn-sm btn-outline-secondary" icon="fa-envelope-o"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Attendance Summary Stats -->
-                            <div class="row g-3 mb-3 text-center">
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm">
-                                        <div class="text-muted small">Total Recorded</div>
-                                        <h3 class="fw-bold mb-0 text-dark"><field name="attendance_count"/></h3>
-                                        <small class="text-muted">Days</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-danger">
-                                        <div class="text-danger small fw-bold">Absent Days</div>
-                                        <h3 class="fw-bold mb-0 text-danger"><field name="absent_count"/></h3>
-                                        <small class="text-danger">Missed</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-success">
-                                        <div class="text-success small fw-bold">Present Days</div>
-                                        <h3 class="fw-bold mb-0 text-success"><field name="present_count"/></h3>
-                                        <small class="text-success">Attended</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-warning">
-                                        <div class="text-warning small fw-bold">Late Days</div>
-                                        <h3 class="fw-bold mb-0 text-warning"><field name="late_count"/></h3>
-                                        <small class="text-muted">Tardy</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm">
-                                        <div class="text-muted small">Excused</div>
-                                        <h3 class="fw-bold mb-0 text-secondary"><field name="excused_count"/></h3>
-                                        <small class="text-muted">Leave</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-6">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-primary">
-                                        <div class="text-primary small fw-bold">Attendance Rate</div>
-                                        <h3 class="fw-bold mb-0 text-primary"><field name="attendance_rate"/>%</h3>
-                                        <small class="text-muted">Overall</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Detailed Attendance History -->
-                            <field name="attendance_ids" nolabel="1">
-                                <list editable="bottom" default_order="date desc"
-                                      decoration-success="status == 'present'"
-                                      decoration-danger="status == 'absent'"
-                                      decoration-warning="status == 'late'"
-                                      decoration-muted="status == 'excused'">
-                                    <field name="date"/>
-                                    <field name="class_id" optional="show" readonly="1"/>
-                                    <field name="status" widget="badge"
-                                           decoration-success="status == 'present'"
-                                           decoration-danger="status == 'absent'"
-                                           decoration-warning="status == 'late'"
-                                           decoration-muted="status == 'excused'"/>
-                                    <field name="notes" placeholder="Reason for absence or remarks..."/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Year Payments" name="year_payments">
-                            <!-- Year Payment Summary Banner -->
-                            <div class="p-3 mb-3 border rounded bg-light">
-                                <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <strong>Payment Status:</strong>
-                                            <field name="year_payment_status" widget="badge"
-                                                   decoration-success="year_payment_status == 'paid'"
-                                                   decoration-danger="year_payment_status == 'overdue'"
-                                                   decoration-warning="year_payment_status == 'partial'"
-                                                   decoration-info="year_payment_status == 'pending'"
-                                                   decoration-muted="year_payment_status == 'no_record'"/>
-                                        </div>
-                                        <div class="text-muted small mt-1" invisible="not class_id">
-                                            Assigned Class: <strong><field name="class_id" readonly="1" class="d-inline"/></strong>
-                                            (Class Fee: <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" class="d-inline"/>)
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
-                                        <button name="action_sync_year_payment_from_class" type="object"
-                                                string="Sync Payment from Class" class="btn btn-sm btn-outline-primary"
-                                                icon="fa-refresh" invisible="not class_id"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Payment Financial Stats -->
-                            <div class="row g-3 mb-3 text-center" invisible="year_payment_count == 0">
-                                <div class="col-md-4 col-12">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-primary">
-                                        <div class="text-primary small fw-bold">Total Year Tuition</div>
-                                        <h4 class="fw-bold mb-0 text-primary"><field name="total_year_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
-                                        <small class="text-muted"><field name="year_payment_count"/> Record(s)</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-success">
-                                        <div class="text-success small fw-bold">Total Paid</div>
-                                        <h4 class="fw-bold mb-0 text-success"><field name="total_year_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
-                                        <small class="text-success">Collected</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="p-2 border rounded bg-white shadow-sm border-danger">
-                                        <div class="text-danger small fw-bold">Remaining Balance</div>
-                                        <h4 class="fw-bold mb-0 text-danger"><field name="total_year_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
-                                        <small class="text-danger">Due</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <field name="year_payment_ids" nolabel="1">
-                                <list decoration-danger="overall_status == 'overdue'" decoration-success="overall_status == 'paid'"
-                                      decoration-warning="overall_status == 'partial'" decoration-muted="overall_status == 'pending'">
-                                    <field name="year"/>
-                                    <field name="class_id" optional="show"/>
-                                    <field name="total_amount" sum="Total"/>
-                                    <field name="total_paid" sum="Paid"/>
-                                    <field name="total_balance" sum="Balance"/>
-                                    <field name="installment_1_amount"/>
-                                    <field name="installment_1_status" widget="badge"/>
-                                    <field name="installment_2_amount"/>
-                                    <field name="installment_2_status" widget="badge"/>
-                                    <field name="overall_status" widget="badge"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Grades" name="grades">
-                            <field name="grade_ids"/>
-                        </page>
-                        <page string="Fees" name="fees">
-                            <field name="fee_ids"/>
-                        </page>
-                        <page string="Enrollments" name="enrollments">
-                            <field name="enrollment_ids"/>
-                        </page>
-                        <page string="Major Enrollments" name="major_enrollments">
-                            <field name="major_enrollment_ids"/>
-                        </page>
-                        <page string="Certificates" name="certificates">
-                            <field name="certificate_ids"/>
-                        </page>
-                        <page string="Notes" name="notes">
-                            <field name="notes" placeholder="Additional notes..."/>
                         </page>
                     </notebook>
                 </sheet>
@@ -455,76 +291,33 @@
                 <field name="name"/>
                 <field name="student_id"/>
                 <field name="class_id"/>
-                <field name="email"/>
-                <filter name="filter_studying" string="Studying" domain="[('study_status','=','studying')]"/>
-                <filter name="filter_stopped" string="Stopped Studying (Kicked)" domain="[('study_status','=','stopped')]"/>
                 <separator/>
-                <filter name="filter_male" string="Male" domain="[('gender','=','male')]" help="Only male students"/>
-                <filter name="filter_female" string="Female" domain="[('gender','=','female')]" help="Only female students"/>
+                <filter string="Studying" name="studying" domain="[('study_status', '=', 'studying')]"/>
+                <filter string="Stopped Studying" name="stopped" domain="[('study_status', '=', 'stopped')]"/>
                 <separator/>
-                <filter name="filter_has_absent" string="Has Absences" domain="[('absent_count', '&gt;', 0)]"/>
-                <filter name="filter_high_absent" string="High Absences (&gt;= 3)" domain="[('absent_count', '&gt;=', 3)]"/>
-                <filter name="filter_absent_today" string="Absent Today" domain="[('attendance_ids.date', '=', context_today().strftime('%Y-%m-%d')), ('attendance_ids.status', '=', 'absent')]"/>
+                <filter string="Male" name="male" domain="[('gender', '=', 'male')]"/>
+                <filter string="Female" name="female" domain="[('gender', '=', 'female')]"/>
                 <separator/>
-                <filter name="filter_payment_paid" string="Tuition Paid" domain="[('year_payment_ids.overall_status', '=', 'paid')]"/>
-                <filter name="filter_payment_overdue" string="Tuition Overdue" domain="[('year_payment_ids.overall_status', '=', 'overdue')]"/>
-                <filter name="filter_payment_partial" string="Tuition Partial" domain="[('year_payment_ids.overall_status', '=', 'partial')]"/>
-                <filter name="filter_payment_pending" string="Tuition Pending" domain="[('year_payment_ids.overall_status', '=', 'pending')]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <separator/>
-                <filter string="Study Status" name="group_study_status" domain="[]" context="{'group_by':'study_status'}"/>
-                <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
-                <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_ids'}"/>
-                <filter string="Gender" name="group_gender" domain="[]" context="{'group_by':'gender'}"/>
-                <filter string="Enrollment Date" name="group_enroll" domain="[]" context="{'group_by':'enrollment_date'}"/>
+                <filter string="Class" name="group_class" domain="[]" context="{'group_by': 'class_id'}"/>
+                <filter string="Study Status" name="group_study_status" domain="[]" context="{'group_by': 'study_status'}"/>
+                <filter string="Gender" name="group_gender" domain="[]" context="{'group_by': 'gender'}"/>
             </search>
         </field>
     </record>
 
+    <!-- ======================= WINDOW ACTION ======================= -->
     <record id="action_student" model="ir.actions.act_window">
         <field name="name">Students</field>
         <field name="res_model">school.student</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_student_search"/>
-    </record>
-
-    <!-- ======================= SERVER ACTIONS ======================= -->
-    <record id="action_stop_study_students" model="ir.actions.server">
-        <field name="name">Stop Study (Kick)</field>
-        <field name="model_id" ref="model_school_student"/>
-        <field name="binding_model_id" ref="model_school_student"/>
-        <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
-        <field name="state">code</field>
-        <field name="code">action = records.action_stop_study()</field>
-    </record>
-
-    <record id="action_continue_study_students" model="ir.actions.server">
-        <field name="name">Continue Study</field>
-        <field name="model_id" ref="model_school_student"/>
-        <field name="binding_model_id" ref="model_school_student"/>
-        <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
-        <field name="state">code</field>
-        <field name="code">action = records.action_continue_study()</field>
-    </record>
-
-    <record id="action_bulk_enroll_students" model="ir.actions.server">
-        <field name="name">Bulk Enroll</field>
-        <field name="model_id" ref="model_school_student"/>
-        <field name="binding_model_id" ref="model_school_student"/>
-        <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
-        <field name="state">code</field>
-        <field name="code">action = records.action_bulk_enroll()</field>
-    </record>
-
-    <record id="action_print_students_certificate" model="ir.actions.server">
-        <field name="name">Print Certificate</field>
-        <field name="model_id" ref="model_school_student"/>
-        <field name="binding_model_id" ref="model_school_student"/>
-        <field name="binding_type">action</field>
-        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
-        <field name="state">code</field>
-        <field name="code">action = records.action_print_student_certificates()</field>
+        <field name="context">{'search_default_studying': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first student record!
+            </p>
+        </field>
     </record>
 </odoo>

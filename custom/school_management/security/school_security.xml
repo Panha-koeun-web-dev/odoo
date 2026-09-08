@@ -1,7 +1,183 @@
 <odoo>
-    <!-- Groups -->
+    <!-- ================= Security Groups ================= -->
+    <!-- 1. Student Group -->
+    <record id="group_school_student" model="res.groups">
+        <field name="name">School / Student</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- 2. Teacher Group -->
+    <record id="group_school_teacher" model="res.groups">
+        <field name="name">School / Teacher</field>
+        <field name="implied_ids" eval="[(4, ref('group_school_student'))]"/>
+    </record>
+
+    <!-- 3. Administrator Group -->
     <record id="group_school_admin" model="res.groups">
-        <field name="name">School Administrator</field>
+        <field name="name">School / Administrator</field>
+        <field name="implied_ids" eval="[(4, ref('group_school_teacher'))]"/>
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
+
+    <!-- ================= Record Rules (Data Isolation) ================= -->
+    <data noupdate="0">
+        <!-- 1. Student Profile Record Rules -->
+        <record id="rule_school_student_student" model="ir.rule">
+            <field name="name">Student: Read Own Record Only</field>
+            <field name="model_id" ref="model_school_student"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_student_teacher" model="ir.rule">
+            <field name="name">Teacher: Read/Write All Students</field>
+            <field name="model_id" ref="model_school_student"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_student_admin" model="ir.rule">
+            <field name="name">Admin: Full Access All Students</field>
+            <field name="model_id" ref="model_school_student"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- 2. Grades Record Rules -->
+        <record id="rule_school_grade_student" model="ir.rule">
+            <field name="name">Student: Read Own Grades Only</field>
+            <field name="model_id" ref="model_school_grade"/>
+            <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_grade_teacher" model="ir.rule">
+            <field name="name">Teacher: Manage All Grades</field>
+            <field name="model_id" ref="model_school_grade"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_grade_admin" model="ir.rule">
+            <field name="name">Admin: Full Access All Grades</field>
+            <field name="model_id" ref="model_school_grade"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- 3. Attendance Record Rules -->
+        <record id="rule_school_attendance_student" model="ir.rule">
+            <field name="name">Student: Read Own Attendance Only</field>
+            <field name="model_id" ref="model_school_attendance"/>
+            <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_attendance_teacher" model="ir.rule">
+            <field name="name">Teacher: Manage All Attendance</field>
+            <field name="model_id" ref="model_school_attendance"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_attendance_admin" model="ir.rule">
+            <field name="name">Admin: Full Access All Attendance</field>
+            <field name="model_id" ref="model_school_attendance"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- 4. Student Year Payment Record Rules -->
+        <record id="rule_school_student_year_payment_student" model="ir.rule">
+            <field name="name">Student: Read Own Payments Only</field>
+            <field name="model_id" ref="model_school_student_year_payment"/>
+            <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_student_year_payment_admin" model="ir.rule">
+            <field name="name">Admin: Manage All Student Payments</field>
+            <field name="model_id" ref="model_school_student_year_payment"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- 5. Certificates Record Rules -->
+        <record id="rule_school_certificate_student" model="ir.rule">
+            <field name="name">Student: Read Own Certificates Only</field>
+            <field name="model_id" ref="model_school_certificate"/>
+            <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_certificate_teacher" model="ir.rule">
+            <field name="name">Teacher: Read All Certificates</field>
+            <field name="model_id" ref="model_school_certificate"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_school_certificate_admin" model="ir.rule">
+            <field name="name">Admin: Manage All Certificates</field>
+            <field name="model_id" ref="model_school_certificate"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+    </data>
 </odoo>

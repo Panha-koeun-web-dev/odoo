@@ -72,6 +72,16 @@
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_create_user" type="object"
+                            string="Create Login Account" class="btn-primary" icon="fa-user-plus"
+                            invisible="user_id"
+                            groups="school_management.group_school_admin"/>
+                    <button name="action_reset_user_password" type="object"
+                            string="Reset Password" class="btn-secondary" icon="fa-key"
+                            invisible="not user_id"
+                            groups="school_management.group_school_admin"/>
+                </header>
                 <sheet>
                     <div class="row">
                         <div class="col-2">
@@ -97,7 +107,7 @@
                         <group string="Employment Information">
                             <field name="hire_date"/>
                             <field name="email"/>
-                            <field name="user_id"/>
+                            <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
                             <field name="active"/>
                         </group>
                     </group>
