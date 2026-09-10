@@ -16,7 +16,7 @@
                     <field name="stop_reason" placeholder="Provide reason or remarks for stopping study / kicking student..."/>
                 </group>
                 <footer>
-                    <button string="Confirm Stop Study" name="action_confirm_stop" type="object" class="btn-danger" icon="fa-ban"/>
+                    <button string="Confirm Stop Study" name="action_confirm_stop" type="object" class="btn-outline-danger" icon="fa-ban"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
@@ -74,63 +74,100 @@
         <field name="name">school.student.kanban</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_mobile">
+            <kanban class="o_school_kanban">
                 <field name="name"/>
                 <field name="student_id"/>
                 <field name="class_id"/>
-                <field name="class_total_payment"/>
                 <field name="photo"/>
                 <field name="gender"/>
-                <field name="parent_phone"/>
                 <field name="age"/>
-                <field name="absent_count"/>
-                <field name="year_payment_status"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="parent_phone"/>
+                <field name="parent_name"/>
+                <field name="study_period"/>
                 <field name="study_status"/>
+                <field name="year_payment_status"/>
+                <field name="absent_count"/>
+                <field name="attendance_rate"/>
+                <field name="active"/>
                 <templates>
-                    <t t-name="card">
-                        <div class="oe_kanban_global_click">
-                            <div class="o_kanban_image">
-                                <img t-if="record.photo.raw" t-attf-src="data:image/png;base64,#{record.photo.raw}"
-                                     class="o_image_64_cover" alt="Student Photo"/>
-                                <span t-else="" class="o_kanban_avatar">
-                                    <span class="o_kanban_avatar_letter">S</span>
-                                </span>
+                    <t t-name="card" class="flex-row">
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                        <widget name="web_ribbon" title="Stopped" bg_color="text-bg-danger" invisible="study_status != 'stopped'"/>
+                        <aside class="o_kanban_aside_full">
+                            <t t-if="record.photo.raw_value">
+                                <field name="photo" class="o_kanban_image_fill w-100 h-100" widget="image" options="{'zoom': true, 'zoom_delay': 1000, 'img_class': 'object-fit-cover w-100 h-100'}" alt="Student Photo"/>
+                            </t>
+                            <div t-else="" class="d-flex align-items-center justify-content-center bg-100 bg-gradient h-100 text-muted">
+                                <svg class="w-50 h-50 opacity-50" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <g fill="currentColor">
+                                        <path d="M 10 11 C 4.08 11 2 14 2 16 L 2 19 L 18 19 L 18 16 C 18 14 15.92 11 10 11 Z"/>
+                                        <circle cx="10" cy="5.5" r="4.5"/>
+                                    </g>
+                                </svg>
                             </div>
-                            <div class="oe_kanban_details">
-                                <strong class="o_kanban_record_title"><field name="name"/></strong>
-                                <div class="text-muted">
-                                    <i class="fa fa-id-badge me-1" title="Student ID"/>
-                                    <field name="student_id"/>
+                        </aside>
+                        <main class="ms-2 flex-grow-1 d-flex flex-column justify-content-between py-1">
+                            <div>
+                                <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
+                                    <field class="fw-bold fs-5 text-truncate mb-0" name="name" placeholder="Student's Name"/>
+                                    <field name="study_status" widget="badge"
+                                           decoration-success="study_status == 'studying'"
+                                           decoration-danger="study_status == 'stopped'"/>
                                 </div>
-                                <div class="text-muted">
-                                    <i class="fa fa-tags me-1" title="Class"/>
-                                    <field name="class_id"/>
+                                <div class="text-muted d-flex align-items-center flex-wrap gap-1 mb-2">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <i class="fa fa-id-card-o me-1" title="Student ID"/>
+                                        <field name="student_id"/>
+                                    </span>
+                                    <span t-if="record.class_id.raw_value" class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        <i class="fa fa-graduation-cap me-1" title="Class"/>
+                                        <field name="class_id"/>
+                                    </span>
                                 </div>
-                                <div class="text-muted">
-                                    <i class="fa fa-phone me-1" title="Parent phone"/>
-                                    <field name="parent_phone"/>
+                                <div t-if="record.email.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-envelope text-primary" title="Email"/>
+                                    <field name="email"/>
+                                </div>
+                                <div t-if="record.phone.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-phone text-primary" title="Phone"/>
+                                    <field name="phone"/>
+                                </div>
+                                <div t-if="record.parent_phone.raw_value" class="text-truncate text-muted small mb-1" title="Parent Contact">
+                                    <i class="fa fa-fw me-2 fa-users text-primary" title="Parent Phone"/>
+                                    <span>Parent: </span><field name="parent_phone"/>
+                                    <span t-if="record.parent_name.raw_value" class="text-muted"> (<field name="parent_name"/>)</span>
+                                </div>
+                                <div t-if="record.study_period.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-calendar text-primary" title="Academic Year"/>
+                                    <span>Academic Year: </span><field name="study_period"/>
                                 </div>
                             </div>
-                            <div class="oe_kanban_footer">
-                                <field name="gender" widget="badge"/>
-                                <field name="study_status" widget="badge" class="ms-1"
-                                       decoration-success="study_status == 'studying'"
-                                       decoration-danger="study_status == 'stopped'"/>
-                                <span t-attf-class="badge bg-light text-dark ms-1">
-                                    <i class="fa fa-user-o me-1" title="Age"/><t t-esc="record.age.raw"/> yrs
-                                </span>
-                                <span t-if="record.absent_count.raw &gt; 0" class="badge bg-danger text-white ms-1" title="Days Absent">
-                                    <i class="fa fa-user-times me-1"/><t t-esc="record.absent_count.raw"/> Absent
-                                </span>
-                                <t t-if="record.year_payment_status.raw and record.year_payment_status.raw != 'no_record'">
-                                    <field name="year_payment_status" widget="badge" class="ms-1"
+                            <footer class="pt-2 mt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-1">
+                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                    <field name="gender" widget="badge"
+                                           decoration-info="gender == 'male'"
+                                           decoration-danger="gender == 'female'"/>
+                                    <span t-if="record.age.raw_value" class="badge bg-light text-dark border">
+                                        <i class="fa fa-birthday-cake me-1 text-muted"/><t t-esc="record.age.raw_value"/> yrs
+                                    </span>
+                                    <span t-if="record.absent_count.raw_value &gt; 0" class="badge bg-danger text-white" title="Absent Days">
+                                        <i class="fa fa-user-times me-1"/><t t-esc="record.absent_count.raw_value"/> Absent
+                                    </span>
+                                    <span t-elif="record.attendance_rate.raw_value" class="badge bg-success-subtle text-success border border-success-subtle" title="Attendance Rate">
+                                        <i class="fa fa-check-circle me-1"/><t t-esc="record.attendance_rate.raw_value"/>% Att.
+                                    </span>
+                                </div>
+                                <div class="ms-auto" t-if="record.year_payment_status.raw_value and record.year_payment_status.raw_value != 'no_record'">
+                                    <field name="year_payment_status" widget="badge"
                                            decoration-success="year_payment_status == 'paid'"
                                            decoration-danger="year_payment_status == 'overdue'"
                                            decoration-warning="year_payment_status == 'partial'"
                                            decoration-info="year_payment_status == 'pending'"/>
-                                </t>
-                            </div>
-                        </div>
+                                </div>
+                            </footer>
+                        </main>
                     </t>
                 </templates>
             </kanban>
@@ -142,7 +179,7 @@
         <field name="name">school.student.form</field>
         <field name="model">school.student</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_school_form">
                 <header>
                     <button name="action_create_user" type="object"
                             string="Create Login Account" class="btn-primary" icon="fa-user-plus"
@@ -152,8 +189,12 @@
                             string="Reset Password" class="btn-secondary" icon="fa-key"
                             invisible="not user_id"
                             groups="school_management.group_school_admin"/>
+                    <button name="action_set_year_payment_deadline" type="object"
+                            string="Set Payment Deadline" class="btn-outline-primary" icon="fa-calendar-check-o"
+                            invisible="not class_id"
+                            groups="school_management.group_school_admin"/>
                     <button name="action_open_stop_study_wizard" type="object"
-                            string="Stop Study (Kick)" class="btn-danger" icon="fa-ban"
+                            string="Stop Study (Kick)" class="btn-outline-danger" icon="fa-ban"
                             invisible="study_status == 'stopped'"
                             groups="school_management.group_school_admin"/>
                     <button name="action_continue_study" type="object"
@@ -167,117 +208,521 @@
                     <field name="study_status" widget="statusbar" statusbar_visible="studying,stopped"/>
                 </header>
                 <sheet>
-                    <!-- Visual alert banner when student is stopped -->
-                    <div class="alert alert-danger d-flex align-items-center justify-content-between p-3 mb-3" role="alert" invisible="study_status != 'stopped'">
-                        <div class="d-flex align-items-center">
-                            <i class="fa fa-ban fa-2x text-danger me-3" title="Stopped Student"/>
-                            <div>
-                                <h5 class="alert-heading mb-0 text-danger fw-bold">Student Has Stopped Studying</h5>
-                                <div class="text-muted small mt-1">
-                                    Status: <strong>Stopped</strong> since <field name="stop_date" readonly="1" class="d-inline fw-bold"/>.
-                                    <span invisible="not stop_reason"> Reason: <field name="stop_reason" readonly="1" class="d-inline"/></span>
-                                </div>
-                            </div>
-                        </div>
-                        <button name="action_continue_study" type="object" string="Resume Study" class="btn btn-success ms-3" icon="fa-play" groups="school_management.group_school_admin"/>
-                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <widget name="web_ribbon" title="Stopped" bg_color="text-bg-danger" invisible="study_status != 'stopped'"/>
+
+
 
                     <div class="oe_button_box" name="button_box">
-                        <button name="open_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                        <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-credit-card" groups="school_management.group_school_admin,school_management.group_school_student">
                             <div class="o_stat_info">
-                                <span class="o_stat_value"><field name="attendance_count"/></span>
-                                <span class="o_stat_text">Attendance</span>
+                                <span class="o_stat_value"><field name="total_year_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></span>
+                                <span class="o_stat_text">Tuition Balance</span>
                             </div>
                         </button>
-                        <button name="open_absent_attendance" type="object" class="oe_stat_button" icon="fa-user-times">
+                        <button name="open_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
                             <div class="o_stat_info">
-                                <span class="o_stat_value text-danger"><field name="absent_count"/></span>
-                                <span class="o_stat_text text-danger">Days Absent</span>
+                                <span class="o_stat_value"><field name="attendance_rate"/>%</span>
+                                <span class="o_stat_text">Attendance (<field name="attendance_count"/>)</span>
                             </div>
                         </button>
                         <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
-                            <div class="o_stat_info"><span class="o_stat_text">Grades</span></div>
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="average_score"/>%</span>
+                                <span class="o_stat_text">Grades (<field name="grade_count"/>)</span>
+                            </div>
                         </button>
-                        <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money" groups="school_management.group_school_admin">
-                            <div class="o_stat_info"><span class="o_stat_text">Fees</span></div>
+                        <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="fee_count"/></span>
+                                <span class="o_stat_text">Fee Invoices</span>
+                            </div>
                         </button>
                         <button name="open_enrollments" type="object" class="oe_stat_button" icon="fa-user-plus" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Enrollments</span></div>
                         </button>
-                        <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-graduation-cap" groups="school_management.group_school_admin">
+                        <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-certificate" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Majors</span></div>
                         </button>
                         <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-trophy" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Certificate</span></div>
                         </button>
-                        <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-calendar" groups="school_management.group_school_admin,school_management.group_school_student">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value"><field name="year_payment_count"/></span>
-                                <span class="o_stat_text">Year Payments</span>
-                            </div>
-                        </button>
                     </div>
-                    <div class="row">
-                        <div class="col-2">
-                            <field name="photo" widget="image" class="oe_avatar"/>
+
+                    <!-- Hero Header Profile (Modern Clean Layout) -->
+                    <div class="d-flex flex-column flex-md-row align-items-md-center gap-4 mb-4 pb-3 border-bottom">
+                        <div class="o_school_avatar p-0">
+                            <field name="photo" widget="image" class="m-0" options="{'size': [120, 150], 'zoom': true, 'preview_image': 'photo', 'img_class': 'border rounded-3 h-100 object-fit-cover shadow-sm'}"/>
                         </div>
-                        <div class="col-10">
-                            <div class="oe_title">
-                                <h1>
-                                    <field name="name" placeholder="Student Name"/>
+                        <div class="flex-grow-1 o_school_hero_title">
+                            <div class="oe_title mw-100 ps-0 pe-sm-2">
+                                <h1 class="d-flex flex-row align-items-center mb-1">
+                                    <field name="name" placeholder="Student's Full Name" required="True" style="font-size: min(4vw, 2.2rem); font-weight: 700;"/>
                                 </h1>
-                            </div>
-                            <div class="mt-2">
-                                <field name="gender" widget="badge" bg_color="gender == 'male' ? 'bg-teal-200 text-teal-900' : gender == 'female' ? 'bg-pink-200 text-pink-900' : 'bg-purple-200 text-purple-900'"/>
-                                <span class="text-muted ms-1">ID: <field name="student_id" class="d-inline"/></span>
-                                <field name="study_status" widget="badge" class="ms-2"
-                                       decoration-success="study_status == 'studying'"
-                                       decoration-danger="study_status == 'stopped'"/>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
+                                        <i class="fa fa-id-card-o me-1" title="Student ID"/>ID: <field name="student_id" class="d-inline fw-semibold"/>
+                                    </span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" invisible="not class_id">
+                                        <i class="fa fa-graduation-cap me-1" title="Class"/><field name="class_id" class="d-inline fw-semibold"/>
+                                    </span>
+                                    <field name="study_status" widget="badge"
+                                           decoration-success="study_status == 'studying'"
+                                           decoration-danger="study_status == 'stopped'"/>
+                                    <field name="gender" widget="badge"
+                                           decoration-info="gender == 'male'"
+                                           decoration-danger="gender == 'female'"/>
+                                    <field name="year_payment_status" widget="badge"
+                                           decoration-success="year_payment_status == 'paid'"
+                                           decoration-danger="year_payment_status == 'overdue'"
+                                           decoration-warning="year_payment_status == 'partial'"
+                                           decoration-info="year_payment_status == 'pending'"
+                                           invisible="not year_payment_status or year_payment_status == 'no_record'"/>
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center gap-3 o_school_quick_info">
+                                    <div class="d-flex align-items-center" invisible="not email">
+                                        <i class="fa fa-envelope fa-fw me-1 text-primary" title="Email"/>
+                                        <field name="email" widget="email" placeholder="student@school.edu"/>
+                                    </div>
+                                    <div class="d-flex align-items-center" invisible="not phone">
+                                        <i class="fa fa-phone fa-fw me-1 text-primary" title="Phone"/>
+                                        <field name="phone" widget="phone" placeholder="Phone"/>
+                                    </div>
+                                    <div class="d-flex align-items-center" invisible="not parent_phone">
+                                        <i class="fa fa-users fa-fw me-1 text-primary" title="Parent Contact"/>
+                                        <span>Parent: </span><field name="parent_phone" class="ms-1"/>
+                                    </div>
+                                    <div class="d-flex align-items-center" invisible="not study_period">
+                                        <i class="fa fa-calendar fa-fw me-1 text-primary" title="Academic Year"/>
+                                        <field name="study_period" class="fw-semibold"/>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <group string="Personal Information">
-                        <group>
-                            <field name="date_of_birth"/>
-                            <field name="age" string="Age" readonly="1"/>
-                            <field name="gender"/>
-                            <field name="address"/>
-                            <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
-                        </group>
-                        <group string="Academic Information">
-                            <field name="currency_id" invisible="1"/>
-                            <field name="study_status" widget="badge"
-                                   decoration-success="study_status == 'studying'"
-                                   decoration-danger="study_status == 'stopped'"/>
-                            <field name="stop_date" invisible="study_status != 'stopped'"/>
-                            <field name="stop_reason" invisible="study_status != 'stopped'"/>
-                            <field name="recontinue_date" invisible="not recontinue_date"/>
-                            <field name="class_id"/>
-                            <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="not class_id"/>
-                            <field name="enrollment_date"/>
-                            <field name="study_start_date"/>
-                            <field name="study_end_date"/>
-                            <field name="study_period" readonly="1"/>
-                            <field name="major_ids" widget="many2many_tags"/>
-                            <field name="email"/>
-                            <field name="phone"/>
-                            <field name="active"/>
-                        </group>
-                    </group>
+
                     <notebook>
-                        <page string="Parent / Guardian" name="parent">
-                            <group string="Contact Details">
-                                <group>
-                                    <field name="parent_name"/>
-                                    <field name="parent_phone"/>
-                                </group>
-                                <group>
-                                    <field name="parent_email"/>
-                                </group>
-                            </group>
+                        <page name="academic" string="Academic Information">
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                        <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                            <i class="fa fa-graduation-cap text-primary me-2 fa-lg" title="Academic Info"/>
+                                            <h6 class="mb-0 fw-bold">Class &amp; Enrollment Details</h6>
+                                        </div>
+                                        <group>
+                                            <field name="class_id"/>
+                                            <field name="enrollment_date"/>
+                                            <field name="study_start_date"/>
+                                            <field name="study_end_date"/>
+                                            <field name="major_ids" widget="many2many_tags"/>
+                                            <field name="recontinue_date" invisible="not recontinue_date"/>
+                                            <field name="stop_date" invisible="study_status != 'stopped'"/>
+                                            <field name="stop_reason" invisible="study_status != 'stopped'"/>
+                                        </group>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                        <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                            <i class="fa fa-tachometer text-primary me-2 fa-lg" title="Academic Standing"/>
+                                            <h6 class="mb-0 fw-bold">Academic Standing &amp; Attendance</h6>
+                                        </div>
+                                        <group>
+                                            <field name="attendance_rate" string="Attendance Rate (%)"/>
+                                            <field name="attendance_count" string="Total Sessions Marked"/>
+                                            <field name="today_attendance_status" widget="badge"
+                                                   decoration-success="today_attendance_status == 'present'"
+                                                   decoration-danger="today_attendance_status == 'absent'"
+                                                   decoration-warning="today_attendance_status == 'late'"
+                                                   decoration-info="today_attendance_status == 'excused'"/>
+                                            <field name="study_period"/>
+                                            <field name="recontinue_date" invisible="not recontinue_date"/>
+                                            <field name="stop_date" invisible="study_status != 'stopped'"/>
+                                            <field name="stop_reason" invisible="study_status != 'stopped'"/>
+                                        </group>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="personal" string="Personal Information">
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                        <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                            <i class="fa fa-user text-primary me-2 fa-lg" title="Personal Details"/>
+                                            <h6 class="mb-0 fw-bold">Personal Details</h6>
+                                        </div>
+                                        <group>
+                                            <field name="gender"/>
+                                            <field name="date_of_birth"/>
+                                            <field name="age" readonly="1"/>
+                                            <field name="address"/>
+                                            <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
+                                            <field name="active"/>
+                                        </group>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                        <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                            <i class="fa fa-users text-primary me-2 fa-lg" title="Guardian Details"/>
+                                            <h6 class="mb-0 fw-bold">Parent / Guardian Contact</h6>
+                                        </div>
+                                        <group>
+                                            <field name="parent_name"/>
+                                            <field name="parent_phone" widget="phone"/>
+                                            <field name="parent_email" widget="email"/>
+                                        </group>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="attendance" string="Attendance">
+                            <!-- Quick Attendance KPI stats -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="card border-0 shadow-sm rounded-3 bg-light-subtle p-3 text-center">
+                                        <div class="small text-uppercase text-muted fw-bold">Attendance Rate</div>
+                                        <div class="fs-4 fw-bold text-primary mt-1">
+                                            <field name="attendance_rate"/>%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border-0 shadow-sm rounded-3 bg-success-subtle bg-opacity-25 p-3 text-center">
+                                        <div class="small text-uppercase text-success fw-bold">Present Days</div>
+                                        <div class="fs-4 fw-bold text-success mt-1">
+                                            <field name="present_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border-0 shadow-sm rounded-3 bg-danger-subtle bg-opacity-25 p-3 text-center">
+                                        <div class="small text-uppercase text-danger fw-bold">Absent Days</div>
+                                        <div class="fs-4 fw-bold text-danger mt-1">
+                                            <field name="absent_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border-0 shadow-sm rounded-3 bg-warning-subtle bg-opacity-25 p-3 text-center">
+                                        <div class="small text-uppercase text-warning fw-bold">Late / Excused</div>
+                                        <div class="fs-4 fw-bold text-warning mt-1">
+                                            <field name="late_count"/> / <field name="excused_count" class="d-inline"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-calendar-check-o text-primary me-2" title="Attendance History"/>Recent Attendance Records
+                                        </h6>
+                                        <small class="text-muted">Daily roll-call check-in and attendance history.</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                            Today: <field name="today_attendance_status" widget="badge"
+                                                   decoration-success="today_attendance_status == 'present'"
+                                                   decoration-danger="today_attendance_status == 'absent'"
+                                                   decoration-warning="today_attendance_status == 'late'"
+                                                   decoration-info="today_attendance_status == 'excused'"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="attendance_ids" nolabel="1" readonly="1">
+                                        <list limit="10">
+                                            <field name="date"/>
+                                            <field name="status" widget="badge"
+                                                   decoration-success="status == 'present'"
+                                                   decoration-danger="status == 'absent'"
+                                                   decoration-warning="status == 'late'"
+                                                   decoration-info="status == 'excused'"/>
+                                            <field name="class_id"/>
+                                            <field name="notes"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="payments" string="Year Payments &amp; Fees">
+                            <!-- Top KPI Summary Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Total Tuition</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="fa fa-graduation-cap" title="Tuition Amount"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-dark mb-0">
+                                            <field name="total_year_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Class rate: <field name="class_total_payment" widget="monetary" options="{'currency_field': 'currency_id'}" class="d-inline"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-success-subtle bg-opacity-25 border-start border-success border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-success fw-bold small">Total Paid</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa fa-check-circle" title="Paid Amount"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-success mb-0">
+                                            <field name="total_year_paid" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Settled to date
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-danger-subtle bg-opacity-25 border-start border-danger border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-danger fw-bold small">Outstanding Balance</span>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="fa fa-exclamation-circle" title="Outstanding Balance"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-danger mb-0">
+                                            <field name="total_year_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </div>
+                                        <div class="small mt-1">
+                                            <field name="year_payment_status" widget="badge"
+                                                   decoration-success="year_payment_status == 'paid'"
+                                                   decoration-danger="year_payment_status == 'overdue'"
+                                                   decoration-warning="year_payment_status == 'partial'"
+                                                   decoration-info="year_payment_status == 'pending'"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Next Due Date</span>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="fa fa-calendar" title="Payment Due Date"/></span>
+                                        </div>
+                                        <div class="fs-5 fw-bold text-dark mb-0">
+                                            <field name="next_payment_deadline" invisible="not next_payment_deadline"/>
+                                            <span class="text-muted fw-normal fs-6" invisible="next_payment_deadline">None Pending</span>
+                                        </div>
+                                        <div class="small mt-1">
+                                            <field name="next_deadline_status" widget="badge"
+                                                   decoration-success="next_deadline_status == 'paid'"
+                                                   decoration-danger="next_deadline_status == 'overdue'"
+                                                   decoration-warning="next_deadline_status == 'today'"
+                                                   decoration-info="next_deadline_status == 'upcoming'"
+                                                   invisible="not next_payment_deadline"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Schedule Card -->
+                            <div class="card border rounded-3 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-calendar-check-o text-primary me-2" title="Tuition Schedules"/>Academic Year Tuition Schedules
+                                        </h6>
+                                        <small class="text-muted">Manage installment terms, customized student deadlines, and payments.</small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button name="action_sync_year_payment_from_class" type="object"
+                                                string="Sync from Class" class="btn btn-sm btn-outline-secondary" icon="fa-refresh"
+                                                invisible="not class_id" groups="school_management.group_school_admin"
+                                                title="Synchronize fee structure from assigned class"/>
+                                        <button name="action_set_year_payment_deadline" type="object"
+                                                string="Set Specific Deadline Schedule" class="btn btn-sm btn-primary" icon="fa-clock-o"
+                                                invisible="not class_id" groups="school_management.group_school_admin"/>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="year_payment_ids" nolabel="1">
+                                        <list decoration-danger="overall_status == 'overdue' or deadline_status == 'overdue'"
+                                              decoration-success="overall_status == 'paid'"
+                                              decoration-warning="overall_status == 'partial' or deadline_status == 'today'"
+                                              decoration-muted="overall_status == 'pending'">
+                                            <field name="year" string="Academic Year"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="total_amount" widget="monetary" string="Tuition"/>
+                                            <field name="total_paid" widget="monetary" string="Paid"/>
+                                            <field name="total_balance" widget="monetary" string="Balance" class="fw-bold"/>
+                                            <field name="next_deadline" string="Next Due Date"/>
+                                            <field name="deadline_status" widget="badge" string="Deadline Status"
+                                                   decoration-success="deadline_status == 'paid'"
+                                                   decoration-danger="deadline_status == 'overdue'"
+                                                   decoration-warning="deadline_status == 'today'"
+                                                   decoration-info="deadline_status == 'upcoming'"/>
+                                            <field name="is_custom_deadline" widget="boolean_toggle" string="Custom Schedule" optional="show"/>
+                                            <field name="overall_status" widget="badge" string="Payment Status"
+                                                   decoration-success="overall_status == 'paid'"
+                                                   decoration-danger="overall_status == 'overdue'"
+                                                   decoration-warning="overall_status == 'partial'"
+                                                   decoration-info="overall_status == 'pending'"/>
+                                            <field name="installment_1_due_date" optional="hide" string="Inst 1 Due"/>
+                                            <field name="installment_2_due_date" optional="hide" string="Inst 2 Due"/>
+                                            <field name="payment_deadline" optional="hide" string="Final Deadline"/>
+                                            <button name="action_open_deadline_wizard" type="object" string="Configure"
+                                                    class="btn-sm btn-outline-primary" icon="fa-pencil"
+                                                    groups="school_management.group_school_admin"
+                                                    title="Configure specific deadline schedule"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+
+                            <!-- Fee Invoices Card -->
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-file-text-o text-primary me-2" title="Fee Invoices"/>Individual Fee Invoices
+                                        </h6>
+                                        <small class="text-muted">Itemized student fees, exams, activities, and extra charges.</small>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="fee_ids" nolabel="1">
+                                        <list>
+                                            <field name="fee_type" string="Fee Type"/>
+                                            <field name="amount" widget="monetary" string="Amount"/>
+                                            <field name="due_date" string="Due Date"/>
+                                            <field name="paid_date" string="Paid Date"/>
+                                            <field name="status" widget="badge" string="Status"
+                                                   decoration-success="status == 'paid'"
+                                                   decoration-danger="status == 'overdue'"
+                                                   decoration-warning="status == 'pending'"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="grades" string="Grades">
+                            <!-- Top Academic & Grade KPI Metric Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Average Score</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                <i class="fa fa-graduation-cap" title="Average Score"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-dark mb-0">
+                                            <field name="average_score"/>%
+                                        </div>
+                                        <div class="small mt-1">
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                <field name="academic_performance" class="d-inline"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Total Exams</span>
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                                <i class="fa fa-book" title="Exams Taken"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-dark mb-0">
+                                            <field name="grade_count"/>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Completed tests
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-success-subtle bg-opacity-25 border-start border-success border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-success fw-bold small">Passed Exams</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="fa fa-check-circle" title="Passed Exams"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-success mb-0">
+                                            <field name="passed_exam_count"/>
+                                        </div>
+                                        <div class="small text-success mt-1">
+                                            Successful evaluations
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Failed Exams</span>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="fa fa-times-circle" title="Failed Exams"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-danger mb-0">
+                                            <field name="failed_exam_count"/>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Needs re-take / review
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Academic Examination Grades Table Card -->
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-trophy text-primary me-2" title="Exam Grades"/>Academic Examination Grades
+                                        </h6>
+                                        <small class="text-muted">Recorded exam results, total marks, percentage, and pass/fail evaluation.</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                            Avg Score: <field name="average_score" class="fw-bold d-inline"/>%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="grade_ids" nolabel="1">
+                                        <list decoration-success="result == 'pass'" decoration-danger="result == 'fail'">
+                                            <field name="exam_id" string="Exam"/>
+                                            <field name="subject_id" string="Subject"/>
+                                            <field name="marks_obtained" string="Score" class="fw-bold"/>
+                                            <field name="total_marks" string="Max Marks"/>
+                                            <field name="percentage" string="Percentage (%)" class="fw-semibold"/>
+                                            <field name="grade_letter" widget="badge" string="Grade"
+                                                   decoration-success="grade_letter in ('a+', 'a', 'a-')"
+                                                   decoration-primary="grade_letter in ('b+', 'b', 'b-')"
+                                                   decoration-warning="grade_letter in ('c+', 'c', 'c-')"
+                                                   decoration-danger="grade_letter in ('d', 'f')"/>
+                                            <field name="result" widget="badge" string="Result"
+                                                   decoration-success="result == 'pass'"
+                                                   decoration-danger="result == 'fail'"/>
+                                            <field name="remarks" optional="show" string="Remarks"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="notes" string="Notes">
+                            <div class="card border rounded-3 shadow-sm p-3">
+                                <h6 class="mb-2 fw-bold text-dark">
+                                    <i class="fa fa-sticky-note-o text-primary me-2" title="Notes"/>Internal Student Notes
+                                </h6>
+                                <field name="notes" placeholder="Internal notes, administrative records, or behavioral remarks regarding student..."/>
+                            </div>
                         </page>
                     </notebook>
                 </sheet>
+                <chatter reload_on_follower="True"/>
             </form>
         </field>
     </record>
@@ -311,7 +756,7 @@
     <record id="action_student" model="ir.actions.act_window">
         <field name="name">Students</field>
         <field name="res_model">school.student</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_student_search"/>
         <field name="context">{'search_default_studying': 1}</field>
         <field name="help" type="html">

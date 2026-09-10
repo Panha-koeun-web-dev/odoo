@@ -17,6 +17,7 @@ access_admin_daily_attendance_wizard,admin.daily.attendance.wizard,model_school_
 access_admin_daily_attendance_line_wizard,admin.daily.attendance.line.wizard,model_school_daily_attendance_line_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_student_year_payment,admin.student.year.payment,model_school_student_year_payment,school_management.group_school_admin,1,1,1,1
 access_admin_student_year_payment_pay_wizard,admin.student.year.payment.pay.wizard,model_school_student_year_payment_pay_wizard,school_management.group_school_admin,1,1,1,1
+access_admin_student_year_payment_deadline_wizard,admin.student.year.payment.deadline.wizard,model_school_student_year_payment_deadline_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_student_stop_wizard,admin.student.stop.wizard,model_school_student_stop_wizard,school_management.group_school_admin,1,1,1,1
 access_teacher_student,teacher.student,model_school_student,school_management.group_school_teacher,1,1,0,0
 access_teacher_teacher,teacher.teacher,model_school_teacher,school_management.group_school_teacher,1,0,0,0
@@ -32,6 +33,8 @@ access_teacher_enrollment,teacher.enrollment,model_school_enrollment,school_mana
 access_teacher_major,teacher.major,model_school_major,school_management.group_school_teacher,1,0,0,0
 access_teacher_major_enrollment,teacher.major.enrollment,model_school_major_enrollment,school_management.group_school_teacher,1,0,0,0
 access_teacher_dashboard,teacher.dashboard,model_school_dashboard,school_management.group_school_teacher,1,0,0,0
+access_teacher_fee,teacher.fee,model_school_fee,school_management.group_school_teacher,1,0,0,0
+access_teacher_payment,teacher.payment,model_school_student_year_payment,school_management.group_school_teacher,1,0,0,0
 access_student_student,student.student,model_school_student,school_management.group_school_student,1,0,0,0
 access_student_teacher,student.teacher,model_school_teacher,school_management.group_school_student,1,0,0,0
 access_student_class,student.class,model_school_class,school_management.group_school_student,1,0,0,0
@@ -42,3 +45,7 @@ access_student_grade,student.grade,model_school_grade,school_management.group_sc
 access_student_certificate,student.certificate,model_school_certificate,school_management.group_school_student,1,0,0,0
 access_student_major,student.major,model_school_major,school_management.group_school_student,1,0,0,0
 access_student_payment,student.payment,model_school_student_year_payment,school_management.group_school_student,1,0,0,0
+access_student_fee,student.fee,model_school_fee,school_management.group_school_student,1,0,0,0
+access_student_enrollment,student.enrollment,model_school_enrollment,school_management.group_school_student,1,0,0,0
+access_student_major_enrollment,student.major.enrollment,model_school_major_enrollment,school_management.group_school_student,1,0,0,0
+access_student_dashboard,student.dashboard,model_school_dashboard,school_management.group_school_student,1,0,0,0

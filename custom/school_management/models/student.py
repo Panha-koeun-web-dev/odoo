@@ -10,6 +10,7 @@ def _open_records(self, model_name, domain):
 
 class SchoolStudent(models.Model):
     _name = 'school.student'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'School Student'
     _order = 'name'
 
@@ -63,7 +64,13 @@ class SchoolStudent(models.Model):
     today_attendance_id = fields.Many2one('school.attendance', string="Today's Attendance Record", compute='_compute_today_attendance')
 
     grade_ids = fields.One2many('school.grade', 'student_id', string='Grades')
+    grade_count = fields.Integer(string='Total Exams', compute='_compute_grade_stats')
+    average_score = fields.Float(string='Average Score (%)', compute='_compute_grade_stats', digits=(5, 1))
+    passed_exam_count = fields.Integer(string='Passed Exams', compute='_compute_grade_stats')
+    failed_exam_count = fields.Integer(string='Failed Exams', compute='_compute_grade_stats')
+    academic_performance = fields.Char(string='Overall Grade', compute='_compute_grade_stats')
     fee_ids = fields.One2many('school.fee', 'student_id', string='Fees')
+    fee_count = fields.Integer(string='Fee Count', compute='_compute_fee_count')
     enrollment_ids = fields.One2many('school.enrollment', 'student_id', string='Enrollments')
     major_enrollment_ids = fields.One2many('school.major.enrollment', 'student_id', string='Major Enrollments')
     major_ids = fields.Many2many(
@@ -101,6 +108,14 @@ class SchoolStudent(models.Model):
         ('pending', 'Pending'),
         ('no_record', 'No Payment Record'),
     ], string='Year Payment Status', compute='_compute_payment_summary')
+    next_payment_deadline = fields.Date(string='Next Due Date', compute='_compute_payment_summary')
+    next_deadline_status = fields.Selection([
+        ('no_deadline', 'No Deadline'),
+        ('paid', 'Fully Paid'),
+        ('today', 'Due Today'),
+        ('upcoming', 'Upcoming'),
+        ('overdue', 'Overdue'),
+    ], string='Next Deadline Status', compute='_compute_payment_summary')
 
     notes = fields.Text(string='Notes')
 
@@ -110,7 +125,14 @@ class SchoolStudent(models.Model):
         for rec in self:
             rec.currency_id = currency
 
-    @api.depends('year_payment_ids.total_amount', 'year_payment_ids.total_paid', 'year_payment_ids.total_balance', 'year_payment_ids.overall_status')
+    @api.depends(
+        'year_payment_ids.total_amount',
+        'year_payment_ids.total_paid',
+        'year_payment_ids.total_balance',
+        'year_payment_ids.overall_status',
+        'year_payment_ids.next_deadline',
+        'year_payment_ids.deadline_status',
+    )
     def _compute_payment_summary(self):
         for rec in self:
             payments = rec.year_payment_ids
@@ -120,14 +142,63 @@ class SchoolStudent(models.Model):
             rec.total_year_balance = sum(payments.mapped('total_balance'))
             if not payments:
                 rec.year_payment_status = 'no_record'
-            elif any(p.overall_status == 'overdue' for p in payments):
-                rec.year_payment_status = 'overdue'
-            elif all(p.overall_status == 'paid' for p in payments):
-                rec.year_payment_status = 'paid'
-            elif any(p.overall_status in ('paid', 'partial') for p in payments):
-                rec.year_payment_status = 'partial'
+                rec.next_payment_deadline = False
+                rec.next_deadline_status = 'no_deadline'
             else:
-                rec.year_payment_status = 'pending'
+                if any(p.overall_status == 'overdue' for p in payments):
+                    rec.year_payment_status = 'overdue'
+                elif all(p.overall_status == 'paid' for p in payments):
+                    rec.year_payment_status = 'paid'
+                elif any(p.overall_status in ('paid', 'partial') for p in payments):
+                    rec.year_payment_status = 'partial'
+                else:
+                    rec.year_payment_status = 'pending'
+
+                active_deadlines = payments.filtered(lambda p: p.total_balance > 0 and p.next_deadline)
+                if active_deadlines:
+                    earliest = min(active_deadlines, key=lambda p: p.next_deadline)
+                    rec.next_payment_deadline = earliest.next_deadline
+                    rec.next_deadline_status = earliest.deadline_status
+                elif all(p.overall_status == 'paid' for p in payments):
+                    rec.next_payment_deadline = False
+                    rec.next_deadline_status = 'paid'
+                else:
+                    rec.next_payment_deadline = False
+                    rec.next_deadline_status = 'no_deadline'
+
+    @api.depends('fee_ids')
+    def _compute_fee_count(self):
+        for rec in self:
+            rec.fee_count = len(rec.fee_ids)
+
+    @api.depends('grade_ids.percentage', 'grade_ids.result')
+    def _compute_grade_stats(self):
+        for rec in self:
+            grades = rec.grade_ids
+            rec.grade_count = len(grades)
+            if grades:
+                percentages = grades.mapped('percentage')
+                rec.average_score = round(sum(percentages) / len(percentages), 1) if percentages else 0.0
+                rec.passed_exam_count = len(grades.filtered(lambda g: g.result == 'pass'))
+                rec.failed_exam_count = len(grades.filtered(lambda g: g.result == 'fail'))
+                avg = rec.average_score
+                if avg >= 90:
+                    rec.academic_performance = 'Excellent (A+)'
+                elif avg >= 80:
+                    rec.academic_performance = 'Very Good (A)'
+                elif avg >= 70:
+                    rec.academic_performance = 'Good (B)'
+                elif avg >= 60:
+                    rec.academic_performance = 'Satisfactory (C)'
+                elif avg >= 50:
+                    rec.academic_performance = 'Pass (D)'
+                else:
+                    rec.academic_performance = 'Needs Improvement (F)'
+            else:
+                rec.average_score = 0.0
+                rec.passed_exam_count = 0
+                rec.failed_exam_count = 0
+                rec.academic_performance = 'No Exams Yet'
 
     def _sync_year_payment_with_class(self):
         """Sync student payment record to follow the payment configured by the student's class."""
@@ -189,6 +260,26 @@ class SchoolStudent(models.Model):
                 'sticky': False,
             }
         }
+
+    def action_set_year_payment_deadline(self):
+        self.ensure_one()
+        cls = self.class_id
+        academic_year = cls.payment_year if cls and cls.payment_year else '2024-2025'
+        payment = self.env['school.student.year.payment'].search([
+            ('student_id', '=', self.id),
+            ('year', '=', academic_year),
+        ], limit=1)
+        if not payment:
+            self._sync_year_payment_with_class()
+            payment = self.env['school.student.year.payment'].search([
+                ('student_id', '=', self.id),
+                ('year', '=', academic_year),
+            ], limit=1)
+        if not payment:
+            payment = self.year_payment_ids[:1]
+        if not payment:
+            raise UserError(_('No year payment record found for this student. Please configure class payment first.'))
+        return payment.action_open_deadline_wizard()
 
     # ==================== STOP / CONTINUE STUDY ACTIONS ====================
     def action_stop_study(self):

@@ -1,0 +1,315 @@
+/* School Management - Modern Kanban Cards (Student & Teacher) */
+
+.o_school_kanban {
+    .o_kanban_renderer {
+        gap: 16px;
+    }
+
+    /* Hide ghost/dummy placeholder cards completely */
+    .o_kanban_ghost {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .o_kanban_record:empty {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .o_kanban_record:not(:has(main)) {
+        display: none !important;
+    }
+
+    .o_kanban_record:not(.o_kanban_ghost) {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: none !important;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+        overflow: hidden;
+        min-height: 155px;
+
+        &:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+            border-color: #cbd5e1;
+        }
+
+        aside.o_kanban_aside_full {
+            width: 115px;
+            min-width: 115px;
+            max-width: 115px;
+            flex-shrink: 0;
+
+            .o_kanban_image_fill,
+            > img,
+            > div {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+            }
+
+            img {
+                object-fit: cover !important;
+            }
+        }
+
+        main {
+            min-width: 0;
+            padding-right: 4px;
+
+            .fs-5 {
+                font-size: 1.05rem !important;
+                color: #0f172a;
+            }
+
+            i.text-primary {
+                color: #2563eb !important;
+            }
+
+            .badge {
+                font-size: 11px;
+                font-weight: 500;
+                padding: 3px 7px;
+                border-radius: 6px;
+            }
+        }
+    }
+}
+
+/* School Management - Modern Form View Hero Header, Cards, Tables & Tabs */
+.o_school_form,
+.o_form_view:has(.o_school_avatar),
+.o_form_view:has(.o_school_hero_title) {
+    /* Profile Hero Header */
+    .o_school_avatar {
+        width: 120px;
+        min-width: 120px;
+        height: 150px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        background-color: #f8fafc;
+        flex-shrink: 0;
+
+        .o_field_image,
+        .img,
+        img {
+            width: 100% !important;
+            height: 150px !important;
+            max-height: 150px !important;
+            object-fit: cover !important;
+            display: block;
+        }
+    }
+
+    .o_school_hero_title {
+        h1 {
+            font-size: 1.85rem !important;
+            font-weight: 700 !important;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.25rem;
+        }
+
+        .o_school_quick_info {
+            font-size: 0.88rem;
+            color: #475569;
+
+            i.text-primary {
+                color: #2563eb !important;
+            }
+        }
+    }
+
+    /* Stat Buttons Bar */
+    .oe_button_box {
+        margin-bottom: 0.75rem;
+
+        .oe_stat_button {
+            border-radius: 8px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            margin-left: 4px;
+            margin-bottom: 4px;
+            transition: all 0.15s ease;
+
+            &:hover {
+                border-color: #cbd5e1 !important;
+                background-color: #f8fafc !important;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            }
+
+            .o_stat_info {
+                .o_stat_value {
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+                .o_stat_text {
+                    color: #64748b;
+                    font-size: 0.75rem;
+                    text-transform: capitalize;
+                }
+            }
+        }
+    }
+
+    /* Tabs Styling */
+    .nav-tabs {
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 1.25rem;
+
+        .nav-link {
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.88rem;
+            padding: 0.65rem 1.15rem;
+            border: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+
+            &:hover {
+                color: #1e293b;
+                border-bottom-color: #cbd5e1;
+            }
+
+            &.active {
+                color: #2563eb !important;
+                border-bottom: 2px solid #2563eb !important;
+                background: transparent !important;
+            }
+        }
+    }
+
+    .o_horizontal_separator {
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.05em;
+        color: #475569 !important;
+        text-transform: uppercase !important;
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* KPI Metric Cards */
+    .o_school_kpi_card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+        &:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .o_school_kpi_label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .o_school_kpi_value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.25;
+            margin-top: 0.2rem;
+        }
+
+        .o_school_kpi_sub {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+    }
+
+    /* Card Containers */
+    .card {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+        overflow: hidden;
+
+        .card-header {
+            background-color: #f8fafc !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 0.85rem 1.25rem !important;
+
+            h6 {
+                font-weight: 700;
+                color: #1e293b;
+                font-size: 0.95rem;
+                margin-bottom: 0;
+            }
+
+            .text-muted {
+                font-size: 0.8rem;
+            }
+        }
+
+        .card-body {
+            padding: 1.25rem;
+
+            &.p-0 {
+                padding: 0 !important;
+            }
+        }
+    }
+
+    /* Clean Sub-tables in one2many (Year payments, fees, attendance, grades) */
+    .o_field_one2many {
+        width: 100%;
+        overflow-x: auto;
+
+        .o_list_table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            min-width: 600px;
+
+            thead th {
+                background-color: #f8fafc !important;
+                color: #475569 !important;
+                font-size: 0.75rem !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.05em !important;
+                padding: 0.75rem 0.85rem !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+            }
+
+            tbody tr {
+                transition: background-color 0.15s ease;
+
+                &:hover {
+                    background-color: #f8fafc !important;
+                }
+
+                td {
+                    padding: 0.7rem 0.85rem !important;
+                    vertical-align: middle !important;
+                    font-size: 0.88rem !important;
+                    border-bottom: 1px solid #f1f5f9 !important;
+                    white-space: nowrap !important;
+                }
+            }
+        }
+    }
+}

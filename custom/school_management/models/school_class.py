@@ -45,6 +45,10 @@ class SchoolClass(models.Model):
     installment_1_due_date = fields.Date(string='Installment 1 Due Date')
     installment_2_amount = fields.Monetary(string='Installment 2 Amount', currency_field='currency_id')
     installment_2_due_date = fields.Date(string='Installment 2 Due Date')
+    payment_deadline = fields.Date(
+        string='Final Payment Deadline',
+        help="Class-wide final deadline for full tuition settlement."
+    )
 
     # Student Year Payments Integration & Analytics for this Class
     year_payment_ids = fields.One2many('school.student.year.payment', 'class_id', string='Student Year Payments')
@@ -108,6 +112,8 @@ class SchoolClass(models.Model):
                 self.installment_1_due_date = self.year_start + timedelta(days=30)
             if not self.installment_2_due_date and self.year_end:
                 self.installment_2_due_date = self.year_start + timedelta(days=150)
+            if not self.payment_deadline and self.year_end:
+                self.payment_deadline = self.year_end
 
     def _sync_students_class_payment(self):
         """Synchronize payment for all students enrolled in this class.
@@ -132,6 +138,7 @@ class SchoolClass(models.Model):
                     'installment_1_due_date': rec.installment_1_due_date,
                     'installment_2_amount': rec.installment_2_amount or 0.0,
                     'installment_2_due_date': rec.installment_2_due_date,
+                    'payment_deadline': rec.payment_deadline or rec.installment_2_due_date,
                     'currency_id': rec.currency_id.id if rec.currency_id else False,
                 }
 
@@ -139,6 +146,10 @@ class SchoolClass(models.Model):
                     vals['student_id'] = student.id
                     year_payment_model.create(vals)
                 else:
+                    if payment_rec.is_custom_deadline:
+                        vals.pop('installment_1_due_date', None)
+                        vals.pop('installment_2_due_date', None)
+                        vals.pop('payment_deadline', None)
                     payment_rec.write(vals)
 
     @api.model_create_multi
@@ -153,8 +164,8 @@ class SchoolClass(models.Model):
         res = super().write(vals)
         sync_fields = {
             'total_payment', 'installment_1_amount', 'installment_2_amount',
-            'installment_1_due_date', 'installment_2_due_date', 'payment_year',
-            'year_start', 'year_end', 'currency_id'
+            'installment_1_due_date', 'installment_2_due_date', 'payment_deadline',
+            'payment_year', 'year_start', 'year_end', 'currency_id'
         }
         if any(f in vals for f in sync_fields) or 'student_ids' in vals:
             for rec in self:
@@ -171,7 +182,7 @@ class SchoolClass(models.Model):
 
         self._sync_students_class_payment()
 
-        msg = _("Payment synchronization complete: All %d students in class '%s' now follow this class's payment configuration (Total: %s).") % (
+        msg = _("Payment synchronization complete: All %d students in class '%s' now follow this class's payment configuration (Total: %s).") % (\
             len(self.student_ids), self.name, self.total_payment
         )
         return {

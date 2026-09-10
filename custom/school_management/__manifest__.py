@@ -38,6 +38,7 @@
             'school_management/static/src/dashboard/school_dashboard.js',
             'school_management/static/src/dashboard/school_dashboard.scss',
             'school_management/static/src/dashboard/school_dashboard.xml',
+            'school_management/static/src/kanban/kanban.scss',
         ],
         'web.report_assets_common': [
             'school_management/static/src/report/school_reports.scss',

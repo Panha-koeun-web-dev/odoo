@@ -16,7 +16,8 @@
                 <field name="status" widget="badge"/>
                 <button name="action_mark_paid" type="object" string="Mark Paid"
                         class="btn-success" icon="fa-check"
-                        invisible="status == 'paid'"/>
+                        invisible="status == 'paid'"
+                        groups="school_management.group_school_admin"/>
             </list>
         </field>
     </record>
@@ -76,7 +77,8 @@
                 <header>
                     <button name="action_mark_paid" type="object" string="Mark as Paid"
                             class="btn-primary" icon="fa-check"
-                            invisible="status == 'paid'"/>
+                            invisible="status == 'paid'"
+                            groups="school_management.group_school_admin"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

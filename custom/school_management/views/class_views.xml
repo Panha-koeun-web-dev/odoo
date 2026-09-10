@@ -194,7 +194,7 @@
 
                             <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" role="status">
                                 <i class="fa fa-info-circle fa-lg me-2 text-primary" title="Information"/>
-                                <span>Configure payment for this class below. Every student enrolled in this class will automatically follow this payment schedule.</span>
+                                <span>Configure payment for this class below. Every student enrolled in this class will automatically follow this payment schedule unless a specific custom deadline schedule is set for them.</span>
                             </div>
 
                             <group string="Class Tuition &amp; Installments Configuration">
@@ -205,18 +205,19 @@
                                     <field name="year_start"/>
                                     <field name="year_end"/>
                                 </group>
-                                <group string="Installments Breakdown">
+                                <group string="Installments Breakdown &amp; Deadlines">
                                     <field name="installment_1_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="installment_1_due_date"/>
                                     <field name="installment_2_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="installment_2_due_date"/>
+                                    <field name="payment_deadline"/>
                                 </group>
                             </group>
 
                             <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
                                 <div>
                                     <h5 class="mb-0 fw-bold">Student Payment Records (<field name="payment_year" readonly="1"/>)</h5>
-                                    <small class="text-muted">All students in this class follow the class payment schedule configured above.</small>
+                                    <small class="text-muted">Students follow this class payment schedule, or can have a custom deadline set specifically for them.</small>
                                 </div>
                                 <div>
                                     <button name="action_generate_year_payments" string="Apply Class Payment to All Students"
@@ -224,8 +225,10 @@
                                 </div>
                             </div>
                             <field name="year_payment_ids" readonly="1">
-                                <list decoration-danger="overall_status == 'overdue'" decoration-success="overall_status == 'paid'"
-                                      decoration-warning="overall_status == 'partial'" decoration-muted="overall_status == 'pending'">
+                                <list decoration-danger="overall_status == 'overdue' or deadline_status == 'overdue'"
+                                      decoration-success="overall_status == 'paid'"
+                                      decoration-warning="overall_status == 'partial' or deadline_status == 'today'"
+                                      decoration-muted="overall_status == 'pending'">
                                     <field name="student_id"/>
                                     <field name="year"/>
                                     <field name="total_amount" string="Class Fee" sum="Total Expected"/>
@@ -237,7 +240,18 @@
                                     <field name="installment_2_amount" string="Inst 2" optional="show"/>
                                     <field name="installment_2_status" widget="badge" optional="show"/>
                                     <field name="installment_2_due_date" optional="show"/>
+                                    <field name="next_deadline" optional="show"/>
+                                    <field name="deadline_status" widget="badge"
+                                           decoration-success="deadline_status == 'paid'"
+                                           decoration-danger="deadline_status == 'overdue'"
+                                           decoration-warning="deadline_status == 'today'"
+                                           decoration-info="deadline_status == 'upcoming'"
+                                           optional="show"/>
+                                    <field name="is_custom_deadline" widget="boolean_toggle" string="Custom Schedule" optional="show"/>
                                     <field name="overall_status" widget="badge"/>
+                                    <button name="action_open_deadline_wizard" type="object" string="Set Deadline"
+                                            class="btn-sm btn-outline-primary" icon="fa-calendar-check-o"
+                                            title="Set specific deadline schedule for this student"/>
                                     <button name="action_pay_installment_1" type="object" string="Pay Inst 1"
                                             class="btn-sm btn-outline-success" invisible="installment_1_status == 'paid'"/>
                                     <button name="action_pay_installment_2" type="object" string="Pay Inst 2"
