@@ -577,6 +577,18 @@ class SchoolStudent(models.Model):
             },
         }
 
+    def action_open_add_to_exam_wizard(self):
+        return {
+            'name': _('Add Student(s) to Exam'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.exam.select.student.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_student_ids': self.ids,
+            },
+        }
+
 
 class SchoolStudentStopWizard(models.TransientModel):
     _name = 'school.student.stop.wizard'

@@ -25,15 +25,17 @@ class SchoolTeacher(models.Model):
     user_id = fields.Many2one('res.users', string='Related User')
     notes = fields.Text(string='Notes')
 
-    class_count = fields.Integer(string='Classes', compute='_compute_teacher_stats')
-    student_count = fields.Integer(string='Students', compute='_compute_teacher_stats')
+    class_count = fields.Integer(string='Class Count', compute='_compute_teacher_stats')
+    student_count = fields.Integer(string='Student Count', compute='_compute_teacher_stats')
+    subject_count = fields.Integer(string='Subject Count', compute='_compute_teacher_stats')
 
-    @api.depends('class_ids', 'class_ids.student_ids')
+    @api.depends('class_ids', 'class_ids.student_ids', 'subject_ids')
     def _compute_teacher_stats(self):
         for rec in self:
             rec.class_count = len(rec.class_ids)
             students = rec.class_ids.mapped('student_ids')
             rec.student_count = len(students)
+            rec.subject_count = len(rec.subject_ids)
 
     def action_view_classes(self):
         self.ensure_one()
@@ -49,6 +51,12 @@ class SchoolTeacher(models.Model):
         action['domain'] = [('id', 'in', student_ids)]
         return action
 
+    def action_view_subjects(self):
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_subject')
+        action['domain'] = [('id', 'in', self.subject_ids.ids)]
+        return action
+
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
@@ -58,66 +66,54 @@ class SchoolTeacher(models.Model):
         existing_user = self.env['res.users'].sudo().search([('login', '=', login)], limit=1)
         group_teacher = self.env.ref('school_management.group_school_teacher')
         group_internal = self.env.ref('base.group_user')
-        group_portal = self.env.ref('base.group_portal', raise_if_not_found=False)
-        action_student = self.env.ref('school_management.action_student', raise_if_not_found=False)
-
-        default_pwd = 'password123'
-        groups_to_add = [(4, group_teacher.id), (4, group_internal.id)]
-        if group_portal:
-            groups_to_add.append((3, group_portal.id))
 
         if existing_user:
             existing_user.sudo().write({
-                'name': self.name,
-                'email': self.email,
-                'group_ids': groups_to_add,
-                'action_id': action_student.id if action_student else False,
+                'groups_id': [(4, group_teacher.id), (4, group_internal.id)]
             })
-            self.sudo().write({'user_id': existing_user.id})
+            self.user_id = existing_user.id
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _('User Account Linked'),
-                    'message': _('Linked to existing user account.\nEmail / Login: %s\nPassword: %s') % (login, default_pwd),
+                    'title': _("Account Linked"),
+                    'message': _("Existing user account (%s) linked as teacher.") % login,
                     'type': 'success',
-                    'sticky': True,
-                }
-            }
-        else:
-            new_user = self.env['res.users'].sudo().create({
-                'name': self.name,
-                'login': login,
-                'email': self.email,
-                'password': default_pwd,
-                'group_ids': [(6, 0, [group_teacher.id, group_internal.id])],
-                'action_id': action_student.id if action_student else False,
-            })
-            self.sudo().write({'user_id': new_user.id})
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Login Created Successfully'),
-                    'message': _('Created login account for Teacher %s!\nEmail / Login: %s\nPassword: %s') % (self.name, login, default_pwd),
-                    'type': 'success',
-                    'sticky': True,
+                    'sticky': False,
                 }
             }
 
-    def action_reset_user_password(self):
-        self.ensure_one()
-        if not self.user_id:
-            raise UserError(_("No user account is linked to this teacher."))
-        default_pwd = 'password123'
-        self.user_id.sudo().write({'password': default_pwd})
+        user_vals = {
+            'name': self.name,
+            'login': login,
+            'email': login,
+            'groups_id': [(6, 0, [group_internal.id, group_teacher.id])],
+        }
+        new_user = self.env['res.users'].sudo().create(user_vals)
+        self.user_id = new_user.id
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Password Reset'),
-                'message': _('Password for %s has been reset to: %s') % (self.user_id.login, default_pwd),
+                'title': _("Account Created"),
+                'message': _("User account (%s) created successfully.") % login,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_reset_user_password(self):
+        self.ensure_one()
+        if not self.user_id:
+            raise UserError(_("No login account is associated with this teacher."))
+        self.user_id.action_reset_password()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Password Reset Sent"),
+                'message': _("A password reset email has been sent to %s.") % self.user_id.email,
                 'type': 'info',
-                'sticky': True,
+                'sticky': False,
             }
         }

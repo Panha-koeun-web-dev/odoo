@@ -1,0 +1,130 @@
+<odoo>
+    <!-- ======================= SELECT EXAM STUDENTS WIZARD VIEW ======================= -->
+    <record id="view_school_exam_select_student_wizard_form" model="ir.ui.view">
+        <field name="name">school.exam.select.student.wizard.form</field>
+        <field name="model">school.exam.select.student.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Students for Exam">
+                <sheet>
+                    <!-- Exam Details Banner -->
+                    <div class="card border rounded-3 p-3 mb-3 bg-light-subtle">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <label for="exam_id" class="form-label fw-bold mb-0">Examination</label>
+                                <field name="exam_id" options="{'no_create': True}" placeholder="Select Exam..."/>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small d-block">Class / Subject</span>
+                                <div class="fw-semibold">
+                                    <field name="class_id" class="d-inline"/>
+                                    <span class="text-muted"> - </span>
+                                    <field name="subject_id" class="d-inline text-primary"/>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small d-block">Exam Schedule &amp; Room</span>
+                                <div class="fw-semibold">
+                                    <i class="fa fa-calendar-check-o text-primary me-1" title="Schedule"/>
+                                    <field name="exam_start_datetime" class="d-inline"/>
+                                    <span class="ms-1 text-muted" invisible="not exam_room">
+                                        (<field name="exam_room" class="d-inline"/>)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Toolbar & Counter -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button name="action_populate_class_students" type="object"
+                                    string="Class Students" class="btn btn-sm btn-outline-primary"
+                                    icon="fa-users" title="Populate available students from the exam's class"/>
+                            <button name="action_populate_all_students" type="object"
+                                    string="All Active Students" class="btn btn-sm btn-outline-secondary"
+                                    icon="fa-globe" title="Populate all active students across all classes"/>
+                            <button name="action_clear_selection" type="object"
+                                    string="Clear" class="btn btn-sm btn-outline-danger"
+                                    icon="fa-trash-o" title="Clear student selection"/>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary fs-6 px-3 py-2">
+                                <i class="fa fa-user-check me-1" title="Selected Students"/>
+                                <field name="student_count"/> Student(s) Selected
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Student Selection Table -->
+                    <div class="card border rounded-3 mb-3 p-0 overflow-hidden">
+                        <field name="student_ids" nolabel="1" widget="many2many">
+                            <list string="Selected Students" no_open="1">
+                                <field name="student_id" string="Student ID"/>
+                                <field name="name" string="Full Name" class="fw-bold"/>
+                                <field name="class_id" string="Class"/>
+                                <field name="gender" widget="badge"
+                                       decoration-info="gender == 'male'"
+                                       decoration-danger="gender == 'female'"/>
+                                <field name="study_status" widget="badge" string="Status"
+                                       decoration-success="study_status == 'studying'"
+                                       decoration-danger="study_status == 'stopped'"/>
+                                <field name="attendance_rate" widget="badge" string="Attendance"
+                                       decoration-success="attendance_rate &gt;= 80"
+                                       decoration-warning="attendance_rate &lt; 80 and attendance_rate &gt;= 60"
+                                       decoration-danger="attendance_rate &lt; 60"/>
+                            </list>
+                        </field>
+                    </div>
+
+                    <!-- Scheduling Options Card -->
+                    <div class="card border rounded-3 p-3 bg-light">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="fa fa-clock-o text-primary me-2" title="Schedule"/>Timeslot &amp; Venue Options
+                            </h6>
+                            <field name="schedule_mode" widget="radio" options="{'horizontal': true}"/>
+                        </div>
+
+                        <div class="row g-3 mt-1 pt-2 border-top" invisible="schedule_mode != 'custom'">
+                            <div class="col-md-3">
+                                <label for="specific_start_datetime" class="form-label fw-semibold">Specific Start Time</label>
+                                <field name="specific_start_datetime"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="specific_end_datetime" class="form-label fw-semibold">Specific End Time</label>
+                                <field name="specific_end_datetime"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="room" class="form-label fw-semibold">Specific Room / Seat</label>
+                                <field name="room" placeholder="e.g. Lab 2, Hall C, Room 101"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="attendance_status" class="form-label fw-semibold">Initial Status</label>
+                                <field name="attendance_status"/>
+                            </div>
+                            <div class="col-12">
+                                <label for="schedule_notes" class="form-label fw-semibold">Reason / Notes</label>
+                                <field name="schedule_notes" placeholder="e.g. Makeup exam slot, Oral test, Special accommodation"/>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_add_students_to_exam" string="Add Selected Students to Exam"
+                            type="object" class="btn-primary" icon="fa-user-plus"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Selecting Students from Student List View (Action -> Add to Exam) -->
+    <record id="action_student_add_to_exam_wizard" model="ir.actions.act_window">
+        <field name="name">Add to Exam</field>
+        <field name="res_model">school.exam.select.student.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
+</odoo>

@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, AccessError
 from datetime import timedelta
 
 
@@ -204,6 +204,8 @@ class SchoolStudentYearPayment(models.Model):
     def action_sync_from_class(self):
         """Re-sync payment schedule to follow the assigned class."""
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to synchronize payment schedules."))
         cls = self.class_id or self.student_id.class_id
         if not cls:
             raise UserError(_('No class is associated with this student.'))
@@ -239,6 +241,8 @@ class SchoolStudentYearPayment(models.Model):
 
     def action_reset_to_class_deadline(self):
         """Reset custom deadline schedule to follow the class default schedule."""
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to reset payment deadlines."))
         for rec in self:
             cls = rec.class_id or rec.student_id.class_id
             if cls:
@@ -263,6 +267,8 @@ class SchoolStudentYearPayment(models.Model):
     def action_open_deadline_wizard(self):
         """Open popup wizard to set specific deadline schedule."""
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to configure payment deadlines."))
         return {
             'name': _('Set Deadline Schedule - %s') % self.student_id.name,
             'type': 'ir.actions.act_window',
@@ -404,6 +410,8 @@ class SchoolStudentYearPayment(models.Model):
 
     def action_pay_installment_1(self):
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to record student tuition payments."))
         return {
             'name': _('Pay Installment 1'),
             'type': 'ir.actions.act_window',
@@ -419,6 +427,8 @@ class SchoolStudentYearPayment(models.Model):
 
     def action_pay_installment_2(self):
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to record student tuition payments."))
         return {
             'name': _('Pay Installment 2'),
             'type': 'ir.actions.act_window',
@@ -465,6 +475,8 @@ class SchoolStudentYearPaymentPayWizard(models.TransientModel):
 
     def action_confirm(self):
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to register payments."))
         year_payment = self.year_payment_id
 
         if self.installment == '1':
@@ -559,6 +571,8 @@ class SchoolStudentYearPaymentDeadlineWizard(models.TransientModel):
 
     def action_apply_deadlines(self):
         self.ensure_one()
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators are permitted to configure payment deadlines."))
         if not self.year_payment_ids:
             raise UserError(_('No payment records selected.'))
 

@@ -4,15 +4,106 @@
         <field name="name">school.exam.tree</field>
         <field name="model">school.exam</field>
         <field name="arch" type="xml">
-            <list>
+            <list decoration-info="state == 'draft'"
+                  decoration-warning="state == 'scheduled'"
+                  decoration-primary="state == 'in_progress'"
+                  decoration-success="state == 'completed'"
+                  decoration-muted="state == 'cancelled'">
                 <field name="name"/>
                 <field name="subject_id"/>
                 <field name="class_id"/>
                 <field name="exam_type" widget="badge"/>
-                <field name="date"/>
+                <field name="start_datetime" string="Start Date &amp; Time"/>
+                <field name="end_datetime" string="End Date &amp; Time" optional="show"/>
+                <field name="duration_hours" widget="float_time" string="Duration" optional="show"/>
+                <field name="room" string="Room / Hall"/>
+                <field name="total_students_count" string="Students" optional="show"/>
+                <field name="custom_schedule_count" string="Custom Slots" optional="show"/>
                 <field name="total_marks"/>
                 <field name="passing_marks"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'scheduled'"
+                       decoration-primary="state == 'in_progress'"
+                       decoration-success="state == 'completed'"
+                       decoration-muted="state == 'cancelled'"/>
             </list>
+        </field>
+    </record>
+
+    <!-- ======================= CALENDAR VIEW ======================= -->
+    <record id="view_exam_calendar" model="ir.ui.view">
+        <field name="name">school.exam.calendar</field>
+        <field name="model">school.exam</field>
+        <field name="arch" type="xml">
+            <calendar string="Exams Schedule"
+                      date_start="start_datetime"
+                      date_stop="end_datetime"
+                      color="subject_id"
+                      mode="month"
+                      quick_create="0"
+                      event_open_popup="1">
+                <field name="name"/>
+                <field name="subject_id"/>
+                <field name="class_id"/>
+                <field name="room"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_exam_kanban" model="ir.ui.view">
+        <field name="name">school.exam.kanban</field>
+        <field name="model">school.exam</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_group_by="state">
+                <field name="name"/>
+                <field name="subject_id"/>
+                <field name="class_id"/>
+                <field name="start_datetime"/>
+                <field name="room"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold text-primary mb-0">
+                                    <field name="name"/>
+                                </h5>
+                                <field name="state" widget="badge"
+                                       decoration-info="state == 'draft'"
+                                       decoration-warning="state == 'scheduled'"
+                                       decoration-primary="state == 'in_progress'"
+                                       decoration-success="state == 'completed'"
+                                       decoration-muted="state == 'cancelled'"/>
+                            </div>
+                            <div class="text-muted small mb-1">
+                                <i class="fa fa-book me-1" title="Subject"/><field name="subject_id"/>
+                                <span class="mx-1">•</span>
+                                <i class="fa fa-users me-1" title="Class"/><field name="class_id"/>
+                            </div>
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-calendar-check-o text-success me-1" title="Start Time"/>
+                                <field name="start_datetime"/>
+                                <t t-if="record.room.raw_value">
+                                    <span class="mx-1">•</span>
+                                    <i class="fa fa-map-marker text-danger me-1" title="Room"/>
+                                    <field name="room"/>
+                                </t>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="fa fa-graduation-cap me-1" title="Students"/><field name="total_students_count"/> Students
+                                </span>
+                                <span t-if="record.custom_schedule_count.raw_value" class="badge bg-warning-subtle text-warning border border-warning">
+                                    <field name="custom_schedule_count"/> Custom Slots
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
@@ -22,30 +113,186 @@
         <field name="model">school.exam</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_open_select_students_wizard" string="Select Students"
+                            type="object" class="btn-primary" icon="fa-user-plus"
+                            invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_populate_students" string="Add All Class Students"
+                            type="object" class="btn-outline-primary" icon="fa-users"
+                            invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_open_schedule_wizard" string="Set Specific Timeslots"
+                            type="object" class="btn-info text-white" icon="fa-clock-o"
+                            invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_set_scheduled" string="Confirm Schedule"
+                            type="object" class="btn-success" invisible="state != 'draft'"/>
+                    <button name="action_start_exam" string="Start Exam"
+                            type="object" class="btn-warning" invisible="state != 'scheduled'"/>
+                    <button name="action_done_exam" string="Complete Exam"
+                            type="object" class="btn-success" invisible="state != 'in_progress'"/>
+                    <button name="action_reset_draft" string="Reset to Draft"
+                            type="object" class="btn-outline-secondary" invisible="state not in ('completed', 'cancelled')"/>
+                    <button name="action_cancel_exam" string="Cancel Exam"
+                            type="object" class="btn-outline-danger" invisible="state in ('draft', 'completed', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,in_progress,completed"/>
+                </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Exam Name"/>
+                    <!-- Header Title -->
+                    <div class="oe_title mb-3">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Academic Examination</span>
+                        <h1 class="fw-bold mb-1">
+                            <field name="name" placeholder="Exam Name (e.g. Midterm Physics Assessment)"/>
                         </h1>
-                        <h4 class="text-muted">
-                            <field name="exam_type" widget="badge" bg_color="exam_type == 'final' ? 'bg-blue-100 text-blue-800' : exam_type == 'midterm' ? 'bg-indigo-100 text-indigo-800' : exam_type == 'quiz' ? 'bg-yellow-100 text-yellow-800' : 'bg-purple-100 text-purple-800'"/>
-                        </h4>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <field name="exam_type" widget="badge"
+                                   decoration-primary="exam_type == 'midterm'"
+                                   decoration-success="exam_type == 'final'"
+                                   decoration-warning="exam_type == 'quiz'"
+                                   decoration-info="exam_type == 'assignment'"/>
+                            <span class="text-muted">•</span>
+                            <span class="text-muted"><i class="fa fa-book me-1" title="Subject"/><field name="subject_id" class="d-inline" placeholder="Subject"/></span>
+                            <span class="text-muted">•</span>
+                            <span class="text-muted"><i class="fa fa-users me-1" title="Class"/><field name="class_id" class="d-inline" placeholder="Class Section"/></span>
+                        </div>
                     </div>
-                    <group class="mt-3">
-                        <group string="Exam Details">
-                            <field name="subject_id"/>
-                            <field name="class_id"/>
-                            <field name="date"/>
-                        </group>
-                        <group string="Marking">
-                            <field name="total_marks"/>
-                            <field name="passing_marks"/>
-                            <field name="active"/>
-                        </group>
-                    </group>
-                    <group string="Results" class="mt-3">
-                        <field name="grade_ids"/>
-                    </group>
+
+                    <!-- Metric KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md d-flex">
+                            <div class="card border rounded-3 shadow-sm text-center py-2 bg-light w-100 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small text-uppercase fw-semibold">Total Students</div>
+                                <h3 class="fw-bold text-primary mb-0"><field name="total_students_count"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md d-flex">
+                            <div class="card border rounded-3 shadow-sm text-center py-2 bg-light w-100 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small text-uppercase fw-semibold">Custom Slots</div>
+                                <h3 class="fw-bold text-warning mb-0"><field name="custom_schedule_count"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md d-flex">
+                            <div class="card border rounded-3 shadow-sm text-center py-2 bg-light w-100 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small text-uppercase fw-semibold">Attended</div>
+                                <h3 class="fw-bold text-success mb-0"><field name="attended_count"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md d-flex">
+                            <div class="card border rounded-3 shadow-sm text-center py-2 bg-light w-100 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small text-uppercase fw-semibold">Absent</div>
+                                <h3 class="fw-bold text-danger mb-0"><field name="absent_count"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md d-flex">
+                            <div class="card border rounded-3 shadow-sm text-center py-2 bg-light w-100 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small text-uppercase fw-semibold">Passed</div>
+                                <h3 class="fw-bold text-success mb-0"><field name="passed_count"/></h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date, Time & Venue Card -->
+                    <div class="card border rounded-3 shadow-sm mb-4 p-3 bg-light-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <h5 class="fw-bold text-primary mb-0">
+                                <i class="fa fa-calendar-check-o me-2" title="Schedule"/>Exam Schedule &amp; Timetable
+                            </h5>
+                            <span class="badge bg-secondary-subtle text-secondary border">
+                                Date: <field name="date" class="d-inline fw-semibold"/>
+                            </span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="start_datetime" class="form-label fw-bold">Exam Start Date &amp; Time</label>
+                                <field name="start_datetime" class="fw-bold text-primary"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="end_datetime" class="form-label fw-bold">Exam End Date &amp; Time</label>
+                                <field name="end_datetime"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="duration_hours" class="form-label fw-bold">Duration (Hours)</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <field name="duration_hours" widget="float_time"/>
+                                    <span class="text-muted small">hrs</span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="room" class="form-label fw-bold">Exam Room / Hall / Online Meeting Link</label>
+                                <field name="room" placeholder="e.g. Examination Hall A, Lab 3, or Zoom / Teams Link"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marks & Grading Section -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4 d-flex">
+                            <div class="card p-3 border rounded-3 bg-light w-100 h-100 d-flex flex-column justify-content-between">
+                                <label for="total_marks" class="form-label fw-bold text-muted small text-uppercase">Total Marks</label>
+                                <field name="total_marks" class="fs-4 fw-bold text-dark"/>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex">
+                            <div class="card p-3 border rounded-3 bg-light w-100 h-100 d-flex flex-column justify-content-between">
+                                <label for="passing_marks" class="form-label fw-bold text-muted small text-uppercase">Passing Marks</label>
+                                <field name="passing_marks" class="fs-4 fw-bold text-primary"/>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex">
+                            <div class="card p-3 border rounded-3 bg-light w-100 h-100 d-flex flex-column justify-content-between">
+                                <label for="active" class="form-label fw-bold text-muted small text-uppercase">Active Status</label>
+                                <div><field name="active" widget="boolean_toggle"/></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Schedules & Grades Notebook -->
+                    <notebook>
+                        <page name="student_schedules" string="Student Schedules &amp; Grades">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <span class="text-muted small">
+                                    <i class="fa fa-info-circle me-1" title="Note"/>Add individual students below or click <strong>Select Students</strong> for bulk selection with filters and custom timeslots.
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <button name="action_open_select_students_wizard" string="Select Students"
+                                            type="object" class="btn btn-sm btn-primary" icon="fa-user-plus"
+                                            invisible="state in ('completed', 'cancelled')"/>
+                                    <button name="action_populate_students" string="Add All Class Students"
+                                            type="object" class="btn btn-sm btn-outline-secondary" icon="fa-refresh"
+                                            invisible="state in ('completed', 'cancelled')"/>
+                                </div>
+                            </div>
+
+                            <field name="grade_ids">
+                                <list editable="bottom"
+                                      decoration-success="result == 'pass'"
+                                      decoration-danger="result == 'fail'"
+                                      decoration-warning="is_custom_schedule">
+                                    <field name="student_id" required="1" options="{'no_create': True}" class="fw-bold"/>
+                                    <field name="exam_datetime" string="Student Start Time"/>
+                                    <field name="exam_end_datetime" string="Student End Time"/>
+                                    <field name="schedule_type" widget="badge" string="Timeslot"
+                                           decoration-warning="schedule_type == 'custom'"
+                                           decoration-info="schedule_type == 'standard'"/>
+                                    <field name="is_custom_schedule" column_invisible="True"/>
+                                    <field name="room" string="Room / Seat"/>
+                                    <field name="attendance_status" widget="badge"
+                                           decoration-info="attendance_status == 'scheduled'"
+                                           decoration-success="attendance_status == 'present'"
+                                           decoration-danger="attendance_status == 'absent'"
+                                           decoration-warning="attendance_status == 'excused'"/>
+                                    <field name="marks_obtained" string="Score" class="fw-bold"/>
+                                    <field name="percentage" string="%" readonly="1"/>
+                                    <field name="grade_letter" widget="badge" string="Grade" readonly="1"/>
+                                    <field name="result" widget="badge" string="Result" readonly="1"/>
+                                    <field name="schedule_notes" optional="show" placeholder="Custom slot reason"/>
+                                    <button name="action_open_student_schedule_wizard" type="object"
+                                            icon="fa-clock-o" title="Set Specific Schedule" class="btn-sm btn-link"/>
+                                    <button name="action_reset_to_default_schedule" type="object"
+                                            icon="fa-undo" title="Reset to General Exam Time" class="btn-sm btn-link text-secondary"
+                                            invisible="not is_custom_schedule"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -60,22 +307,36 @@
                 <field name="name"/>
                 <field name="subject_id"/>
                 <field name="class_id"/>
+                <field name="room"/>
+                <separator/>
+                <filter name="filter_scheduled" string="Scheduled" domain="[('state','=','scheduled')]"/>
+                <filter name="filter_in_progress" string="In Progress" domain="[('state','=','in_progress')]"/>
+                <filter name="filter_completed" string="Completed" domain="[('state','=','completed')]"/>
+                <separator/>
                 <filter name="filter_midterm" string="Midterm" domain="[('exam_type','=','midterm')]"/>
                 <filter name="filter_final" string="Final" domain="[('exam_type','=','final')]"/>
-                <filter name="filter_quiz" string="Quiz" domain="[('exam_type','=','quiz')]"/>
                 <separator/>
-                <filter string="Subject" name="group_subject" domain="[]" context="{'group_by':'subject_id'}"/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
-                <filter string="Type" name="group_type" domain="[]" context="{'group_by':'exam_type'}"/>
+                <filter string="Subject" name="group_subject" domain="[]" context="{'group_by':'subject_id'}"/>
+                <filter string="Exam Type" name="group_type" domain="[]" context="{'group_by':'exam_type'}"/>
+                <filter string="Status" name="group_state" domain="[]" context="{'group_by':'state'}"/>
                 <filter string="Date" name="group_date" domain="[]" context="{'group_by':'date'}"/>
             </search>
         </field>
     </record>
 
+    <!-- ======================= ACTION ======================= -->
     <record id="action_exam" model="ir.actions.act_window">
-        <field name="name">Exams</field>
+        <field name="name">Examinations</field>
         <field name="res_model">school.exam</field>
-        <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_exam_search"/>
+        <field name="view_mode">list,calendar,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new examination!
+            </p>
+            <p>
+                Schedule exam dates and start/end times, assign venues, select students, and record student grades.
+            </p>
+        </field>
     </record>
 </odoo>

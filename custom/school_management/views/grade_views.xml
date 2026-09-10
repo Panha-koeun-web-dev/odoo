@@ -4,10 +4,24 @@
         <field name="name">school.grade.tree</field>
         <field name="model">school.grade</field>
         <field name="arch" type="xml">
-            <list decoration-success="result == 'pass'" decoration-danger="result == 'fail'">
+            <list decoration-success="result == 'pass'"
+                  decoration-danger="result == 'fail'"
+                  decoration-warning="is_custom_schedule">
                 <field name="student_id"/>
                 <field name="exam_id"/>
                 <field name="subject_id"/>
+                <field name="exam_datetime" string="Exam Date &amp; Time"/>
+                <field name="room" string="Room / Seat" optional="show"/>
+                <field name="schedule_type" widget="badge" string="Timeslot"
+                       decoration-warning="schedule_type == 'custom'"
+                       decoration-info="schedule_type == 'standard'"
+                       optional="show"/>
+                <field name="is_custom_schedule" column_invisible="True"/>
+                <field name="attendance_status" widget="badge"
+                       decoration-info="attendance_status == 'scheduled'"
+                       decoration-success="attendance_status == 'present'"
+                       decoration-danger="attendance_status == 'absent'"
+                       decoration-warning="attendance_status == 'excused'"/>
                 <field name="marks_obtained"/>
                 <field name="total_marks"/>
                 <field name="percentage" string="%"/>
@@ -44,10 +58,13 @@
                                 <div class="text-muted">
                                     <i class="fa fa-file-text-o me-1" title="Exam"/><field name="exam_id"/>
                                 </div>
+                                <div class="text-muted small mt-1" invisible="not exam_datetime">
+                                    <i class="fa fa-clock-o me-1" title="Time"/><field name="exam_datetime"/>
+                                </div>
                             </div>
                             <div class="oe_kanban_footer mt-2">
                                 <field name="percentage" widget="progressbar"
-                                       progress="percentage > 100 ? 100 : percentage" string="Score"/>
+                                       progress="percentage &gt; 100 ? 100 : percentage" string="Score"/>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
                                     <field name="grade_letter" widget="badge"/>
                                     <span class="text-muted">Score</span>
@@ -60,14 +77,42 @@
         </field>
     </record>
 
+    <!-- ======================= CALENDAR VIEW ======================= -->
+    <record id="view_grade_calendar" model="ir.ui.view">
+        <field name="name">school.grade.calendar</field>
+        <field name="model">school.grade</field>
+        <field name="arch" type="xml">
+            <calendar string="Student Exam Timetable"
+                      date_start="exam_datetime"
+                      date_stop="exam_end_datetime"
+                      color="subject_id"
+                      mode="month"
+                      quick_create="0">
+                <field name="student_id"/>
+                <field name="exam_id"/>
+                <field name="subject_id"/>
+                <field name="room"/>
+                <field name="attendance_status"/>
+            </calendar>
+        </field>
+    </record>
+
     <!-- ======================= FORM VIEW ======================= -->
     <record id="view_grade_form" model="ir.ui.view">
         <field name="name">school.grade.form</field>
         <field name="model">school.grade</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_open_student_schedule_wizard" string="Set Specific Timeslot"
+                            type="object" class="btn-primary" icon="fa-clock-o"/>
+                    <button name="action_reset_to_default_schedule" string="Reset to Exam General Time"
+                            type="object" class="btn-outline-secondary" icon="fa-undo"
+                            invisible="not is_custom_schedule"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Student Exam Record</span>
                         <h1>
                             <field name="student_id" placeholder="Student"/>
                         </h1>
@@ -75,15 +120,45 @@
                             <field name="subject_id"/>
                         </h4>
                     </div>
+
+                    <!-- Exam Schedule Section -->
+                    <div class="card border rounded-3 shadow-sm mb-4 p-3 bg-light">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fa fa-calendar-check-o me-2" title="Schedule"/>Student Exam Timetable
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="exam_datetime" class="form-label fw-semibold">Exam Start Time</label>
+                                <field name="exam_datetime" class="fw-bold text-primary"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="exam_end_datetime" class="form-label fw-semibold">Exam End Time</label>
+                                <field name="exam_end_datetime"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="room" class="form-label fw-semibold">Room / Seat</label>
+                                <field name="room"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="attendance_status" class="form-label fw-semibold">Attendance</label>
+                                <field name="attendance_status" widget="badge"/>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-muted small" invisible="not is_custom_schedule">
+                            <span class="badge bg-warning text-dark me-2">Custom Timeslot</span>
+                            <field name="schedule_notes" placeholder="Notes regarding custom timeslot"/>
+                        </div>
+                    </div>
+
                     <group class="mt-3">
                         <group string="Exam">
                             <field name="exam_id"/>
                         </group>
                         <group string="Result">
                             <field name="percentage" widget="progressbar"
-                                   progress="percentage > 100 ? 100 : percentage" string="Score"/>
+                                   progress="percentage &gt; 100 ? 100 : percentage" string="Score"/>
                             <div class="d-flex gap-2 mt-1">
-                <field name="result" widget="badge"/>
+                                <field name="result" widget="badge"/>
                                 <field name="grade_letter" widget="badge"/>
                             </div>
                         </group>
@@ -111,21 +186,30 @@
                 <field name="student_id"/>
                 <field name="exam_id"/>
                 <field name="subject_id"/>
+                <field name="room"/>
+                <separator/>
+                <filter name="filter_custom_schedule" string="Custom Timeslots" domain="[('is_custom_schedule','=',True)]"/>
+                <separator/>
+                <filter name="filter_scheduled" string="Scheduled" domain="[('attendance_status','=','scheduled')]"/>
+                <filter name="filter_present" string="Present" domain="[('attendance_status','=','present')]"/>
+                <filter name="filter_absent" string="Absent" domain="[('attendance_status','=','absent')]"/>
+                <separator/>
                 <filter name="filter_pass" string="Pass" domain="[('result','=','pass')]"/>
                 <filter name="filter_fail" string="Fail" domain="[('result','=','fail')]"/>
                 <separator/>
                 <filter string="Student" name="group_student" domain="[]" context="{'group_by':'student_id'}"/>
                 <filter string="Exam" name="group_exam" domain="[]" context="{'group_by':'exam_id'}"/>
                 <filter string="Subject" name="group_subject" domain="[]" context="{'group_by':'subject_id'}"/>
+                <filter string="Attendance" name="group_attendance" domain="[]" context="{'group_by':'attendance_status'}"/>
                 <filter string="Result" name="group_result" domain="[]" context="{'group_by':'result'}"/>
             </search>
         </field>
     </record>
 
     <record id="action_grade" model="ir.actions.act_window">
-        <field name="name">Grades</field>
+        <field name="name">Student Exam Schedules &amp; Grades</field>
         <field name="res_model">school.grade</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
         <field name="search_view_id" ref="view_grade_search"/>
     </record>
 </odoo>

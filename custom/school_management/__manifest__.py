@@ -13,6 +13,7 @@
         'data/email_templates.xml',
         'wizards/enroll_students_views.xml',
         'wizards/daily_attendance_views.xml',
+        'wizards/select_exam_students_views.xml',
         'views/student_views.xml',
         'views/teacher_views.xml',
         'views/class_views.xml',

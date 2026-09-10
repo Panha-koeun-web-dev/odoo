@@ -683,7 +683,10 @@
                                         </h6>
                                         <small class="text-muted">Recorded exam results, total marks, percentage, and pass/fail evaluation.</small>
                                     </div>
-                                    <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button name="action_open_add_to_exam_wizard" type="object"
+                                                string="Enroll in Exam" class="btn btn-sm btn-primary" icon="fa-user-plus"
+                                                groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                                             Avg Score: <field name="average_score" class="fw-bold d-inline"/>%
                                         </span>
@@ -694,6 +697,16 @@
                                         <list decoration-success="result == 'pass'" decoration-danger="result == 'fail'">
                                             <field name="exam_id" string="Exam"/>
                                             <field name="subject_id" string="Subject"/>
+                                            <field name="exam_datetime" string="Exam Time"/>
+                                            <field name="schedule_type" widget="badge" string="Timeslot"
+                                                   decoration-warning="schedule_type == 'custom'"
+                                                   decoration-info="schedule_type == 'standard'" optional="show"/>
+                                            <field name="room" string="Room/Seat" optional="show"/>
+                                            <field name="attendance_status" widget="badge" string="Status"
+                                                   decoration-info="attendance_status == 'scheduled'"
+                                                   decoration-success="attendance_status == 'present'"
+                                                   decoration-danger="attendance_status == 'absent'"
+                                                   decoration-warning="attendance_status == 'excused'"/>
                                             <field name="marks_obtained" string="Score" class="fw-bold"/>
                                             <field name="total_marks" string="Max Marks"/>
                                             <field name="percentage" string="Percentage (%)" class="fw-semibold"/>

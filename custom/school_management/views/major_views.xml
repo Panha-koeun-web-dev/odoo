@@ -44,15 +44,15 @@
                             </div>
                             <div class="oe_kanban_details">
                                 <div class="text-muted">
-                                    <i class="fa fa-building-o me-1"/><field name="department" placeholder="Department"/>
+                                    <i class="fa fa-building-o me-1" title="Department"/><field name="department" placeholder="Department"/>
                                 </div>
                                 <div class="text-muted">
-                                    <i class="fa fa-clock-o me-1"/><field name="duration_years"/> years
+                                    <i class="fa fa-clock-o me-1" title="Duration"/><field name="duration_years"/> years
                                 </div>
                             </div>
                             <div class="oe_kanban_footer">
                                 <span class="text-muted">
-                                    <i class="fa fa-users me-1"/><field name="student_count"/> students
+                                    <i class="fa fa-users me-1" title="Students"/><field name="student_count"/> students
                                 </span>
                             </div>
                         </div>
@@ -145,8 +145,8 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_drop_student" string="Kick Out / Drop" type="object" class="oe_highlight btn-danger" invisible="status != 'enrolled'"/>
-                    <button name="action_reenroll_student" string="Re-enroll" type="object" class="oe_highlight btn-success" invisible="status == 'enrolled'"/>
+                    <button name="action_drop_student" string="Kick Out / Drop" type="object" class="oe_highlight btn-danger" invisible="status != 'enrolled'" groups="school_management.group_school_admin"/>
+                    <button name="action_reenroll_student" string="Re-enroll" type="object" class="oe_highlight btn-success" invisible="status == 'enrolled'" groups="school_management.group_school_admin"/>
                     <field name="status" widget="statusbar" statusbar_visible="enrolled,completed,dropped"/>
                 </header>
                 <sheet>

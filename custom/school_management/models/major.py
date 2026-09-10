@@ -1,19 +1,21 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, AccessError
 
 
 class SchoolMajor(models.Model):
     _name = 'school.major'
-    _description = 'Student Major / Program of Study'
+    _description = 'Academic Major / Program'
     _order = 'name'
 
     name = fields.Char(string='Major Name', required=True)
-    code = fields.Char(string='Code')
-    department = fields.Char(string='Department')
-    duration_years = fields.Integer(string='Duration (years)', default=4)
+    code = fields.Char(string='Major Code', required=True)
     description = fields.Text(string='Description')
-    active = fields.Boolean(string='Active', default=True)
+    department = fields.Char(string='Department / Faculty')
+    duration_years = fields.Integer(string='Duration (Years)', default=4)
+    total_credits = fields.Integer(string='Total Credits')
+    active = fields.Boolean(default=True)
 
+    student_count = fields.Integer(string='Enrolled Students', compute='_compute_student_count')
     enrollment_ids = fields.One2many('school.major.enrollment', 'major_id', string='Enrollments')
     class_ids = fields.One2many('school.class', 'major_id', string='Classes')
     student_ids = fields.Many2many(
@@ -21,37 +23,46 @@ class SchoolMajor(models.Model):
         'school_major_student_rel',
         'major_id',
         'student_id',
-        string='Students',
-        compute='_compute_students',
+        string='Students'
     )
-    student_count = fields.Integer(string='Student Count', compute='_compute_students')
+    subject_ids = fields.Many2many(
+        'school.subject',
+        'school_major_subject_rel',
+        'major_id',
+        'subject_id',
+        string='Curriculum Subjects'
+    )
 
-    @api.depends('enrollment_ids.student_id')
-    def _compute_students(self):
+    _code_uniq = models.Constraint('UNIQUE (code)', 'Major code must be unique!')
+
+    @api.depends('enrollment_ids')
+    def _compute_student_count(self):
         for rec in self:
-            rec.student_ids = rec.enrollment_ids.mapped('student_id')
-            rec.student_count = len(rec.student_ids)
+            rec.student_count = len(rec.enrollment_ids.filtered(lambda e: e.status == 'enrolled'))
 
-    def action_open_major_students(self):
+    def action_view_students(self):
+        self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Students - %s') % self.name,
-            'res_model': 'school.student',
+            'name': _('Enrolled Students'),
+            'res_model': 'school.major.enrollment',
             'view_mode': 'list,form',
-            'domain': [('id', 'in', self.student_ids.ids)],
-            'context': dict(self.env.context),
+            'domain': [('major_id', '=', self.id), ('status', '=', 'enrolled')],
+            'context': {'default_major_id': self.id},
         }
+
+    def action_open_major_students(self):
+        return self.action_view_students()
 
 
 class SchoolMajorEnrollment(models.Model):
     _name = 'school.major.enrollment'
-    _inherit = ['school.state.notification']
     _description = 'Student Major Enrollment'
-    _order = 'enrollment_date desc, id desc'
+    _order = 'enrollment_date desc'
     _rec_name = 'student_id'
 
     student_id = fields.Many2one('school.student', string='Student', required=True, ondelete='cascade')
-    student_code = fields.Char(string='Student ID', related='student_id.student_id')
+    student_code = fields.Char(related='student_id.student_id', string='Student ID', readonly=True, store=True)
     major_id = fields.Many2one('school.major', string='Major', required=True, ondelete='cascade')
     academic_year = fields.Char(string='Academic Year', required=True, default='2025-2026')
     status = fields.Selection([
@@ -62,11 +73,10 @@ class SchoolMajorEnrollment(models.Model):
     enrollment_date = fields.Date(string='Enrollment Date', default=fields.Date.today)
     notes = fields.Text(string='Notes')
 
-    _sql_constraints = [
-        ('unique_major_enrollment',
-         'unique(student_id, major_id, academic_year)',
-         'This student is already enrolled in this major for the selected academic year!'),
-    ]
+    _unique_major_enrollment = models.Constraint(
+        'UNIQUE(student_id, major_id, academic_year)',
+        'This student is already enrolled in this major for the selected academic year!'
+    )
 
     def _get_state_email_template(self):
         return 'school_management.email_template_major_enrollment_status'
@@ -75,9 +85,19 @@ class SchoolMajorEnrollment(models.Model):
         return self.student_id.email or self.student_id.parent_email
 
     def action_drop_student(self):
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators can update enrollment status."))
         for rec in self:
             rec.status = 'dropped'
 
+    def action_complete_student(self):
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators can update enrollment status."))
+        for rec in self:
+            rec.status = 'completed'
+
     def action_reenroll_student(self):
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise AccessError(_("Only administrators can update enrollment status."))
         for rec in self:
             rec.status = 'enrolled'

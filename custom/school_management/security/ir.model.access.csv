@@ -19,6 +19,8 @@ access_admin_student_year_payment,admin.student.year.payment,model_school_studen
 access_admin_student_year_payment_pay_wizard,admin.student.year.payment.pay.wizard,model_school_student_year_payment_pay_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_student_year_payment_deadline_wizard,admin.student.year.payment.deadline.wizard,model_school_student_year_payment_deadline_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_student_stop_wizard,admin.student.stop.wizard,model_school_student_stop_wizard,school_management.group_school_admin,1,1,1,1
+access_admin_exam_student_schedule_wizard,admin.exam.student.schedule.wizard,model_school_exam_student_schedule_wizard,school_management.group_school_admin,1,1,1,1
+access_admin_exam_select_student_wizard,admin.exam.select.student.wizard,model_school_exam_select_student_wizard,school_management.group_school_admin,1,1,1,1
 access_teacher_student,teacher.student,model_school_student,school_management.group_school_teacher,1,1,0,0
 access_teacher_teacher,teacher.teacher,model_school_teacher,school_management.group_school_teacher,1,0,0,0
 access_teacher_class,teacher.class,model_school_class,school_management.group_school_teacher,1,0,0,0
@@ -35,6 +37,8 @@ access_teacher_major_enrollment,teacher.major.enrollment,model_school_major_enro
 access_teacher_dashboard,teacher.dashboard,model_school_dashboard,school_management.group_school_teacher,1,0,0,0
 access_teacher_fee,teacher.fee,model_school_fee,school_management.group_school_teacher,1,0,0,0
 access_teacher_payment,teacher.payment,model_school_student_year_payment,school_management.group_school_teacher,1,0,0,0
+access_teacher_exam_student_schedule_wizard,teacher.exam.student.schedule.wizard,model_school_exam_student_schedule_wizard,school_management.group_school_teacher,1,1,1,1
+access_teacher_exam_select_student_wizard,teacher.exam.select.student.wizard,model_school_exam_select_student_wizard,school_management.group_school_teacher,1,1,1,1
 access_student_student,student.student,model_school_student,school_management.group_school_student,1,0,0,0
 access_student_teacher,student.teacher,model_school_teacher,school_management.group_school_student,1,0,0,0
 access_student_class,student.class,model_school_class,school_management.group_school_student,1,0,0,0
