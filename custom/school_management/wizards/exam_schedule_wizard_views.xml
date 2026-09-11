@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================= EXAM SCHEDULE WIZARD VIEW ======================= -->
+    <record id="view_school_exam_student_schedule_wizard_form" model="ir.ui.view">
+        <field name="name">school.exam.student.schedule.wizard.form</field>
+        <field name="model">school.exam.student.schedule.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Set Specific Student Exam Schedule">
+                <sheet>
+                    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" role="status">
+                        <i class="fa fa-clock-o fa-lg me-2 text-primary" title="Information"/>
+                        <div>
+                            Configure individual or group exam time slots, rooms, or reschedule students independently from the default class exam schedule.
+                        </div>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="exam_id" readonly="1"/>
+                            <field name="student_count" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="attendance_status"/>
+                            <field name="room" placeholder="e.g. Lab 2, Room 101, Online Meeting"/>
+                        </group>
+                    </group>
+                    <group string="Exam Time Slot">
+                        <group>
+                            <field name="specific_start_datetime"/>
+                        </group>
+                        <group>
+                            <field name="specific_end_datetime"/>
+                        </group>
+                    </group>
+                    <group string="Reschedule Reason / Notes">
+                        <field name="schedule_notes" nolabel="1" placeholder="Reason for custom scheduling or special arrangement..."/>
+                    </group>
+                    <notebook>
+                        <page name="students" string="Selected Students">
+                            <field name="grade_ids" readonly="1">
+                                <list>
+                                    <field name="student_id"/>
+                                    <field name="class_id"/>
+                                    <field name="exam_datetime" string="Current Start Time"/>
+                                    <field name="schedule_type" widget="badge"/>
+                                    <field name="attendance_status" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_apply_schedule" string="Apply Schedule" type="object" class="btn-primary" icon="fa-check"/>
+                    <button name="action_reset_to_exam_schedule" string="Reset to Default Schedule" type="object" class="btn-outline-warning" icon="fa-undo"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================= DEADLINE WIZARD VIEW ======================= -->
+    <record id="view_student_year_payment_deadline_wizard" model="ir.ui.view">
+        <field name="name">school.student.year.payment.deadline.wizard.form</field>
+        <field name="model">school.student.year.payment.deadline.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Set Specific Payment Deadline Schedule">
+                <sheet>
+                    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" role="status">
+                        <i class="fa fa-info-circle fa-lg me-2 text-primary" title="Information"/>
+                        <div>
+                            Set custom payment deadlines for the selected student(s). Once marked as <strong>Custom Schedule</strong>, class-wide updates will not overwrite this student's schedule.
+                        </div>
+                    </div>
+
+                    <!-- Single Student Info Header -->
+                    <div class="card bg-light border-0 mb-3 p-3" invisible="student_count != 1">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <span class="text-muted small d-block">Student</span>
+                                <h5 class="fw-bold mb-0 text-primary"><field name="single_student_name" readonly="1"/></h5>
+                                <small class="text-muted">Class: <field name="single_class_name" readonly="1"/> | Academic Year: <field name="single_year" readonly="1"/></small>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <span class="text-muted small d-block">Remaining Balance to Pay</span>
+                                <h4 class="fw-bold mb-0 text-danger">
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="single_balance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multi Student Notice -->
+                    <div class="alert alert-warning py-2 px-3 mb-3" role="status" invisible="student_count &lt;= 1">
+                        <i class="fa fa-users me-1"/>You are setting the deadline schedule for <strong><field name="student_count" readonly="1"/></strong> students simultaneously.
+                    </div>
+
+                    <group string="Deadline Schedule Configuration">
+                        <group string="Installment Deadlines">
+                            <field name="installment_1_due_date"/>
+                            <field name="installment_2_due_date"/>
+                        </group>
+                        <group string="Final Settlement &amp; Settings">
+                            <field name="payment_deadline"/>
+                            <field name="is_custom_deadline" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <group string="Reason / Notes">
+                        <field name="deadline_notes" nolabel="1" placeholder="e.g. Special installment agreement, approved extension until end of month"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply_deadlines" string="Save &amp; Apply Schedule" type="object" class="btn-primary" icon="fa-check"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Contextual Action to Set Deadlines in Bulk from List View -->
+    <record id="action_bulk_set_payment_deadline" model="ir.actions.act_window">
+        <field name="name">Set Deadline Schedule</field>
+        <field name="res_model">school.student.year.payment.deadline.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_school_student_year_payment"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <!-- ======================= PAY WIZARD VIEW ======================= -->
+    <record id="view_student_year_payment_pay_wizard" model="ir.ui.view">
+        <field name="name">school.student.year.payment.pay.wizard.form</field>
+        <field name="model">school.student.year.payment.pay.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay Installment">
+                <group string="Payment Details">
+                    <group>
+                        <field name="year_payment_id" invisible="1"/>
+                        <field name="installment" invisible="1"/>
+                    </group>
+                    <group>
+                        <field name="amount" required="1"/>
+                        <field name="paid_date" required="1"/>
+                    </group>
+                    <group>
+                        <field name="payment_method" required="1"/>
+                        <field name="receipt_number"/>
+                    </group>
+                    <group>
+                        <field name="notes" colspan="2"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Confirm Payment" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

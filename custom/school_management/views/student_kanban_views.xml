@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_student_kanban" model="ir.ui.view">
+        <field name="name">school.student.kanban</field>
+        <field name="model">school.student</field>
+        <field name="arch" type="xml">
+            <kanban class="o_school_kanban">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="photo"/>
+                <field name="gender"/>
+                <field name="age"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="parent_phone"/>
+                <field name="parent_name"/>
+                <field name="study_period"/>
+                <field name="study_status"/>
+                <field name="year_payment_status"/>
+                <field name="absent_count"/>
+                <field name="attendance_rate"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card" class="flex-row">
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                        <widget name="web_ribbon" title="Stopped" bg_color="text-bg-danger" invisible="study_status != 'stopped'"/>
+                        <aside class="o_kanban_aside_full">
+                            <t t-if="record.photo.raw_value">
+                                <field name="photo" class="o_kanban_image_fill w-100 h-100" widget="image" options="{'zoom': true, 'zoom_delay': 1000, 'img_class': 'object-fit-cover w-100 h-100'}" alt="Student Photo"/>
+                            </t>
+                            <div t-else="" class="d-flex align-items-center justify-content-center bg-100 bg-gradient h-100 text-muted">
+                                <svg class="w-50 h-50 opacity-50" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <g fill="currentColor">
+                                        <path d="M 10 11 C 4.08 11 2 14 2 16 L 2 19 L 18 19 L 18 16 C 18 14 15.92 11 10 11 Z"/>
+                                        <circle cx="10" cy="5.5" r="4.5"/>
+                                    </g>
+                                </svg>
+                            </div>
+                        </aside>
+                        <main class="ms-2 flex-grow-1 d-flex flex-column justify-content-between py-1">
+                            <div>
+                                <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
+                                    <field class="fw-bold fs-5 text-truncate mb-0" name="name" placeholder="Student's Name"/>
+                                    <field name="study_status" widget="badge"
+                                           decoration-success="study_status == 'studying'"
+                                           decoration-danger="study_status == 'stopped'"/>
+                                </div>
+                                <div class="text-muted d-flex align-items-center flex-wrap gap-1 mb-2">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <i class="fa fa-id-card-o me-1" title="Student ID"/>
+                                        <field name="student_id"/>
+                                    </span>
+                                    <span t-if="record.class_id.raw_value" class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        <i class="fa fa-graduation-cap me-1" title="Class"/>
+                                        <field name="class_id"/>
+                                    </span>
+                                </div>
+                                <div t-if="record.email.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-envelope text-primary" title="Email"/>
+                                    <field name="email"/>
+                                </div>
+                                <div t-if="record.phone.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-phone text-primary" title="Phone"/>
+                                    <field name="phone"/>
+                                </div>
+                                <div t-if="record.parent_phone.raw_value" class="text-truncate text-muted small mb-1" title="Parent Contact">
+                                    <i class="fa fa-fw me-2 fa-users text-primary" title="Parent Phone"/>
+                                    <span>Parent: </span><field name="parent_phone"/>
+                                    <span t-if="record.parent_name.raw_value" class="text-muted"> (<field name="parent_name"/>)</span>
+                                </div>
+                                <div t-if="record.study_period.raw_value" class="text-truncate text-muted small mb-1">
+                                    <i class="fa fa-fw me-2 fa-calendar text-primary" title="Academic Year"/>
+                                    <span>Academic Year: </span><field name="study_period"/>
+                                </div>
+                            </div>
+                            <footer class="pt-2 mt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-1">
+                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                    <field name="gender" widget="badge"
+                                           decoration-info="gender == 'male'"
+                                           decoration-danger="gender == 'female'"/>
+                                    <span t-if="record.age.raw_value" class="badge bg-light text-dark border">
+                                        <i class="fa fa-birthday-cake me-1 text-muted"/><t t-esc="record.age.raw_value"/> yrs
+                                    </span>
+                                    <span t-if="record.absent_count.raw_value &gt; 0" class="badge bg-danger text-white" title="Absent Days">
+                                        <i class="fa fa-user-times me-1"/><t t-esc="record.absent_count.raw_value"/> Absent
+                                    </span>
+                                    <span t-elif="record.attendance_rate.raw_value" class="badge bg-success-subtle text-success border border-success-subtle" title="Attendance Rate">
+                                        <i class="fa fa-check-circle me-1"/><t t-esc="record.attendance_rate.raw_value"/>% Att.
+                                    </span>
+                                </div>
+                                <div class="ms-auto" t-if="record.year_payment_status.raw_value and record.year_payment_status.raw_value != 'no_record'">
+                                    <field name="year_payment_status" widget="badge"
+                                           decoration-success="year_payment_status == 'paid'"
+                                           decoration-danger="year_payment_status == 'overdue'"
+                                           decoration-warning="year_payment_status == 'partial'"
+                                           decoration-info="year_payment_status == 'pending'"/>
+                                </div>
+                            </footer>
+                        </main>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

@@ -4,13 +4,16 @@
         <field name="name">school.teacher.tree</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
-            <list decoration-muted="not active">
-                <field name="employee_id"/>
-                <field name="photo" widget="image" class="o_image_64_cover" options="{'no_attachment_counter': True}"/>
-                <field name="name"/>
-                <field name="email"/>
-                <field name="phone"/>
-                <field name="gender" widget="badge"/>
+            <list class="o_school_list" decoration-muted="not active" sample="1">
+                <field name="photo" widget="image" nolabel="1" width="44"
+                       options="{'size': [36, 36], 'img_class': 'rounded-circle object-fit-cover shadow-sm'}"/>
+                <field name="employee_id" string="Teacher ID" decoration-bf="1"/>
+                <field name="name" string="Teacher Name" decoration-bf="1"/>
+                <field name="gender" widget="badge" optional="show"
+                       decoration-info="gender == 'male'"
+                       decoration-danger="gender == 'female'"/>
+                <field name="email" widget="email" optional="show"/>
+                <field name="phone" widget="phone" optional="show"/>
                 <field name="hire_date" optional="show"/>
                 <field name="active" optional="hide"/>
             </list>
