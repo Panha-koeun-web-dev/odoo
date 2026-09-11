@@ -31,6 +31,7 @@
         'report/fee_report.xml',
         'report/attendance_report.xml',
         'report/certificate_report.xml',
+        'report/transcript_report.xml',
     ],
     'assets': {
         'web.assets_backend': [

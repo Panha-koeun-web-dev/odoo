@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Paperformat: A4 Portrait for Official Academic Transcripts & Term Report Cards -->
+    <record id="paperformat_transcript" model="report.paperformat">
+        <field name="name">A4 Academic Transcript Portrait</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">6</field>
+        <field name="margin_bottom">6</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+        <field name="css_margins" eval="False"/>
+        <field name="disable_shrinking" eval="True"/>
+    </record>
+
+    <!-- Report Action -->
+    <record id="action_report_school_transcript" model="ir.actions.report">
+        <field name="name">Academic Transcript &amp; Term Report Card</field>
+        <field name="model">school.certificate</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_academic_transcript</field>
+        <field name="report_file">school_management.report_academic_transcript</field>
+        <field name="print_report_name">'Transcript-%s-%s' % (object.student_code or 'STU', object.name)</field>
+        <field name="binding_model_id" ref="model_school_certificate"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="school_management.paperformat_transcript"/>
+    </record>
+
+    <!-- Main HTML Container Template -->
+    <template id="report_academic_transcript">
+        <t t-call="web.html_container">
+            <t t-if="not transcripts">
+                <div class="page" style="width:194mm; height:280mm; padding:20mm; box-sizing:border-box; font-family:'Segoe UI', Arial, sans-serif; text-align:center;">
+                    <div style="height:100%; border:2px dashed #94a3b8; border-radius:8px; padding-top:100mm; color:#64748b; font-size:16px;">
+                        No transcript records were selected for printing.
+                    </div>
+                </div>
+            </t>
+            <t t-foreach="transcripts" t-as="doc">
+                <div class="article page o_transcript_page"
+                     t-att-data-oe-model="'school.certificate'"
+                     t-att-data-oe-id="doc['cert'].id"
+                     style="page-break-after:always; width:194mm; min-height:280mm; margin:0 auto; padding:0; box-sizing:border-box; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1e293b; -webkit-print-color-adjust:exact; print-color-adjust:exact; background:#ffffff;">
+                    
+                    <!-- Decorative Top Header Stripe -->
+                    <div style="height:5px; background:linear-gradient(90deg, #0f172a 0%, #1e3a8a 50%, #d97706 100%); margin-bottom:8px; border-radius:2px;"></div>
+
+                    <!-- Institutional Header Section -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
+                        <tr>
+                            <!-- School Logo (Left) -->
+                            <td style="width:58px; vertical-align:middle; text-align:left; padding-right:12px;">
+                                <img t-if="company_logo" t-att-src="company_logo" style="max-height:55px; max-width:55px; object-fit:contain;" alt="Logo"/>
+                                <div t-else="" style="width:52px; height:52px; border-radius:8px; background:#0f172a; color:#ffffff; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:800; font-size:18px; line-height:52px; margin:0 auto;">
+                                    SCH
+                                </div>
+                            </td>
+
+                            <!-- Institutional Name & Accreditation (Center-Left) -->
+                            <td style="vertical-align:middle; text-align:left;">
+                                <div style="font-size:16px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:0.8px; line-height:1.2;">
+                                    <t t-esc="company.name if company.name and company.name != 'My Company' else 'Passerelles Numériques Cambodia'"/>
+                                </div>
+                                <div style="font-size:9px; color:#64748b; font-weight:500; margin-top:2px; letter-spacing:0.3px;">
+                                    Department of Academic Affairs &amp; Student Registrar • Ministry Accredited Higher Education
+                                </div>
+                                <div style="font-size:8.5px; color:#475569; margin-top:1px;">
+                                    Phnom Penh, Cambodia • Web: pnc.org • Contact: admissions@pnc.org
+                                </div>
+                            </td>
+
+                            <!-- Document Badge & Verification Metadata (Right) -->
+                            <td style="width:180px; vertical-align:middle; text-align:right;">
+                                <div style="display:inline-block; border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:4px 8px; text-align:right;">
+                                    <div style="font-size:8px; font-weight:700; color:#0f172a; text-transform:uppercase; letter-spacing:0.5px;">
+                                        RECORD NO: <span style="color:#d97706;" t-esc="doc['doc_number']"/>
+                                    </div>
+                                    <div style="font-size:8px; color:#64748b; margin-top:1px;">
+                                        Issue Date: <strong style="color:#1e293b;" t-esc="doc['issue_date']"/>
+                                    </div>
+                                    <div style="margin-top:2px;">
+                                        <span style="display:inline-block; background:#dcfce7; color:#166534; font-size:7.5px; font-weight:700; padding:1px 6px; border-radius:4px; border:1px solid #bbf7d0;">
+                                            CERTIFIED OFFICIAL RECORD
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Banner Title -->
+                    <div style="background:#0f172a; color:#ffffff; padding:6px 14px; border-radius:5px; text-align:center; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:12.5px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#ffffff; margin:0 auto;">
+                            ACADEMIC TRANSCRIPT &amp; TERM REPORT CARD
+                        </div>
+                    </div>
+
+                    <!-- Student Profile & Information Block -->
+                    <div style="border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc; padding:8px 10px; margin-bottom:10px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:9px;">
+                            <tr>
+                                <!-- Student Avatar / Photo (if present) -->
+                                <td t-if="doc['has_photo'] and doc['photo_uri']" style="width:48px; vertical-align:top; padding-right:10px;">
+                                    <img t-att-src="doc['photo_uri']" style="width:46px; height:54px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;" alt="Student Photo"/>
+                                </td>
+
+                                <!-- Column 1: Student Primary Info -->
+                                <td style="vertical-align:top; width:34%; line-height:1.45;">
+                                    <div style="color:#64748b; font-size:8px; text-transform:uppercase; font-weight:600;">Student Full Name</div>
+                                    <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-bottom:4px;">
+                                        <t t-esc="doc['student_name']"/>
+                                    </div>
+                                    <div><span style="color:#64748b;">Student ID:</span> <strong style="color:#0f172a;"><t t-esc="doc['student_code'] or 'N/A'"/></strong></div>
+                                    <div><span style="color:#64748b;">Date of Birth:</span> <strong style="color:#1e293b;"><t t-esc="doc['dob']"/></strong></div>
+                                    <div><span style="color:#64748b;">Gender:</span> <strong style="color:#1e293b;"><t t-esc="doc['gender']"/></strong></div>
+                                </td>
+
+                                <!-- Column 2: Enrollment & Program -->
+                                <td style="vertical-align:top; width:33%; line-height:1.45; border-left:1px solid #e2e8f0; padding-left:10px;">
+                                    <div style="color:#64748b; font-size:8px; text-transform:uppercase; font-weight:600;">Academic Enrollment</div>
+                                    <div style="font-size:11px; font-weight:700; color:#1e3a8a; margin-bottom:4px;">
+                                        <t t-esc="doc['class_name']"/>
+                                    </div>
+                                    <div><span style="color:#64748b;">Major / Track:</span> <strong style="color:#1e293b;"><t t-esc="doc['majors']"/></strong></div>
+                                    <div><span style="color:#64748b;">Academic Year:</span> <strong style="color:#1e293b;"><t t-esc="doc['academic_year']"/></strong></div>
+                                    <div><span style="color:#64748b;">Evaluation Term:</span> <strong style="color:#d97706;"><t t-esc="doc['term_label']"/></strong></div>
+                                </td>
+
+                                <!-- Column 3: Faculty & Standing Snapshot -->
+                                <td style="vertical-align:top; width:33%; line-height:1.45; border-left:1px solid #e2e8f0; padding-left:10px;">
+                                    <div style="color:#64748b; font-size:8px; text-transform:uppercase; font-weight:600;">Faculty Advisor &amp; Standing</div>
+                                    <div style="font-size:9.5px; font-weight:700; color:#0f172a; margin-bottom:4px;">
+                                        <t t-esc="doc['homeroom_teacher']"/>
+                                    </div>
+                                    <div><span style="color:#64748b;">Class Standing:</span> <strong style="color:#b45309;"><t t-esc="doc['class_rank']"/></strong></div>
+                                    <div><span style="color:#64748b;">Academic Standing:</span> <strong style="color:#15803d;"><t t-esc="doc['academic_standing']"/></strong></div>
+                                    <div><span style="color:#64748b;">Attendance Rate:</span> <strong style="color:#0284c7;"><t t-esc="doc['attendance_rate']"/></strong></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Course & Grade Breakdown Matrix Table -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:8px; font-size:8.5px;">
+                        <thead>
+                            <tr style="background:#0f172a; color:#ffffff; text-align:left;">
+                                <th style="padding:4.5px 5px; width:22px; text-align:center; border-top-left-radius:4px; color:#94a3b8;">#</th>
+                                <th style="padding:4.5px 6px; width:58px; color:#f8fafc;">Code</th>
+                                <th style="padding:4.5px 6px; color:#f8fafc;">Subject / Course Title</th>
+                                <th style="padding:4.5px 5px; width:40px; text-align:center; color:#f8fafc;">Credits</th>
+                                <th style="padding:4.5px 5px; width:42px; text-align:right; color:#f8fafc;">Marks</th>
+                                <th style="padding:4.5px 5px; width:36px; text-align:right; color:#94a3b8;">Max</th>
+                                <th style="padding:4.5px 5px; width:42px; text-align:right; color:#f8fafc;">%</th>
+                                <th style="padding:4.5px 5px; width:38px; text-align:center; color:#f8fafc;">Grade</th>
+                                <th style="padding:4.5px 5px; width:36px; text-align:center; color:#f8fafc;">GP</th>
+                                <th style="padding:4.5px 5px; width:44px; text-align:center; color:#f8fafc;">Status</th>
+                                <th style="padding:4.5px 6px; border-top-right-radius:4px; color:#f8fafc;">Faculty Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="row_idx" t-value="0"/>
+                            <t t-foreach="doc['courses']" t-as="crs">
+                                <t t-set="row_idx" t-value="row_idx + 1"/>
+                                <tr t-attf-style="border-bottom:1px solid #e2e8f0; background:#{ '#ffffff' if row_idx % 2 != 0 else '#f8fafc' };">
+                                    <td style="padding:4px 5px; text-align:center; color:#64748b; font-weight:600;"><t t-esc="crs['index']"/></td>
+                                    <td style="padding:4px 6px; font-weight:700; color:#334155; font-family:monospace; font-size:8px;"><t t-esc="crs['code']"/></td>
+                                    <td style="padding:4px 6px; font-weight:600; color:#0f172a;">
+                                        <t t-esc="crs['name']"/>
+                                        <span style="font-size:7.5px; color:#64748b; margin-left:4px;">(<t t-esc="crs['department']"/>)</span>
+                                    </td>
+                                    <td style="padding:4px 5px; text-align:center; font-weight:600; color:#334155;"><t t-esc="crs['credits']"/></td>
+                                    <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['marks_obtained']"/></td>
+                                    <td style="padding:4px 5px; text-align:right; color:#64748b;"><t t-esc="crs['total_marks']"/></td>
+                                    <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['percentage']"/>%</td>
+                                    <td style="padding:4px 5px; text-align:center;">
+                                        <span t-attf-style="display:inline-block; padding:1px 5px; font-weight:800; font-size:8px; border-radius:3px; background:#{ '#dcfce7' if crs['grade_letter'] in ('A+', 'A') else '#e0f2fe' if crs['grade_letter'] in ('B+', 'B') else '#fef3c7' if crs['grade_letter'] in ('C+', 'C') else '#fee2e2' }; color:#{ '#166534' if crs['grade_letter'] in ('A+', 'A') else '#0369a1' if crs['grade_letter'] in ('B+', 'B') else '#92400e' if crs['grade_letter'] in ('C+', 'C') else '#991b1b' };">
+                                            <t t-esc="crs['grade_letter']"/>
+                                        </span>
+                                    </td>
+                                    <td style="padding:4px 5px; text-align:center; font-weight:700; color:#334155;"><t t-esc="crs['grade_point']"/></td>
+                                    <td style="padding:4px 5px; text-align:center;">
+                                        <span t-if="crs['result'] == 'pass'" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:3px;">
+                                            PASS
+                                        </span>
+                                        <span t-else="" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; border-radius:3px;">
+                                            FAIL
+                                        </span>
+                                    </td>
+                                    <td style="padding:4px 6px; font-size:7.5px; color:#475569; font-style:italic;">
+                                        <t t-esc="crs['remarks']"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#f1f5f9; border-top:2px solid #0f172a; font-size:8.5px; font-weight:700; color:#0f172a;">
+                                <td colspan="3" style="padding:5px 6px; text-align:right;">CURRICULUM TOTALS &amp; CREDITS SUMMARY:</td>
+                                <td style="padding:5px; text-align:center; color:#1e3a8a;"><t t-esc="doc['total_credits']"/> CR</td>
+                                <td colspan="2" style="padding:5px; text-align:center; color:#166534;">Earned: <t t-esc="doc['earned_credits']"/> CR</td>
+                                <td colspan="5" style="padding:5px 6px; text-align:right;">
+                                    Term GPA: <span style="font-size:10.5px; color:#1e3a8a; font-weight:800;" t-esc="doc['gpa']"/> / 4.00
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- Executive Academic Summary KPI Strip (4 Pillars) -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:9px;">
+                        <tr>
+                            <!-- 1. Term GPA -->
+                            <td style="width:25%; padding-right:5px;">
+                                <div style="border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:6px 8px; text-align:center; border-top:3px solid #1e3a8a;">
+                                    <div style="font-size:7.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Term GPA</div>
+                                    <div style="font-size:15px; font-weight:800; color:#0f172a; margin-top:1px;">
+                                        <t t-esc="doc['gpa']"/>
+                                        <span style="font-size:8.5px; color:#64748b; font-weight:500;">/ 4.00</span>
+                                    </div>
+                                    <div style="font-size:7.5px; color:#166534; font-weight:600; margin-top:1px;">Cumulative: <t t-esc="doc['cumulative_gpa']"/></div>
+                                </div>
+                            </td>
+
+                            <!-- 2. Class Standing -->
+                            <td style="width:25%; padding:0 3px;">
+                                <div style="border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:6px 8px; text-align:center; border-top:3px solid #d97706;">
+                                    <div style="font-size:7.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Class Standing</div>
+                                    <div style="font-size:13.5px; font-weight:800; color:#b45309; margin-top:2px;">
+                                        <t t-esc="doc['class_rank']"/>
+                                    </div>
+                                    <div style="font-size:7.5px; color:#64748b; margin-top:1px;">Cohort Size: <t t-esc="doc['total_students_in_class']"/> Students</div>
+                                </div>
+                            </td>
+
+                            <!-- 3. Attendance Rate -->
+                            <td style="width:25%; padding:0 3px;">
+                                <div style="border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:6px 8px; text-align:center; border-top:3px solid #0284c7;">
+                                    <div style="font-size:7.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Attendance Record</div>
+                                    <div style="font-size:15px; font-weight:800; color:#0369a1; margin-top:1px;">
+                                        <t t-esc="doc['attendance_rate']"/>
+                                    </div>
+                                    <div style="font-size:7.5px; color:#475569; margin-top:1px;">
+                                        <span style="color:#166534;"><t t-esc="doc['present_days']"/> Present</span> • 
+                                        <span style="color:#b91c1c;"><t t-esc="doc['absent_days']"/> Absent</span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- 4. Academic Standing -->
+                            <td style="width:25%; padding-left:5px;">
+                                <div style="border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc; padding:6px 8px; text-align:center; border-top:3px solid #16a34a;">
+                                    <div style="font-size:7.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Academic Standing</div>
+                                    <div style="font-size:9.5px; font-weight:800; color:#15803d; margin-top:4px; line-height:1.2;">
+                                        <t t-esc="doc['academic_standing']"/>
+                                    </div>
+                                    <div style="font-size:7.5px; color:#166534; margin-top:3px;">Good Standing</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Grading Scale Key & Academic Policy Reference -->
+                    <div style="border:1px solid #e2e8f0; border-radius:5px; background:#f8fafc; padding:5px 8px; margin-bottom:8px; font-size:7.5px; color:#475569;">
+                        <div style="font-weight:700; color:#0f172a; margin-bottom:2px; text-transform:uppercase; font-size:7.5px; letter-spacing:0.5px;">
+                            Official Standard 4.0 Grading Scale &amp; Performance Key:
+                        </div>
+                        <div style="line-height:1.35;">
+                            <strong>A+</strong> (90–100% | 4.00 GP • Outstanding) &#8226;
+                            <strong>A</strong> (80–89% | 4.00 GP • Excellent) &#8226;
+                            <strong>B+</strong> (70–79% | 3.30 GP • Very Good) &#8226;
+                            <strong>B</strong> (60–69% | 3.00 GP • Good) &#8226;
+                            <strong>C+</strong> (50–59% | 2.30 GP • Satisfactory) &#8226;
+                            <strong>C</strong> (40–49% | 2.00 GP • Minimum Passing) &#8226;
+                            <strong>D</strong> (30–39% | 1.00 GP • Conditional) &#8226;
+                            <strong>F</strong> (&lt;30% | 0.00 GP • Failing)
+                        </div>
+                        <div style="font-size:7px; color:#64748b; margin-top:2px;">
+                            * Minimum cumulative GPA for good academic standing and graduation is 2.00. Quality Points = Grade Points &#215; Course Credit Hours.
+                        </div>
+                    </div>
+
+                    <!-- Faculty Evaluator & Dean Remarks -->
+                    <div style="border-left:3px solid #1e3a8a; background:#f0f4f8; padding:5px 9px; border-radius:0 4px 4px 0; margin-bottom:12px; font-size:8px;">
+                        <div style="font-weight:700; color:#0f172a; text-transform:uppercase; font-size:7.5px; margin-bottom:1px;">
+                            Faculty &amp; Academic Board Evaluation Remarks:
+                        </div>
+                        <div style="color:#334155; font-style:italic; line-height:1.35;">
+                            &quot;<t t-esc="doc['general_remarks']"/>&quot;
+                        </div>
+                    </div>
+
+                    <!-- Signatures & Official Stamp Section -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:14px; margin-bottom:10px;">
+                        <tr>
+                            <!-- Signature 1: Homeroom Teacher / Faculty Advisor (Left) -->
+                            <td style="width:34%; text-align:center; vertical-align:bottom; padding:0 8px;">
+                                <div style="font-family:'Brush Script MT', 'Dancing Script', 'Times New Roman', cursive; font-size:18px; color:#1e3a8a; line-height:1; height:24px;">
+                                    <t t-esc="doc['homeroom_teacher']"/>
+                                </div>
+                                <div style="border-top:1px solid #64748b; width:130px; margin:3px auto 4px auto;"></div>
+                                <div style="font-size:9px; font-weight:700; color:#0f172a;">
+                                    <t t-esc="doc['homeroom_teacher']"/>
+                                </div>
+                                <div style="font-size:7.5px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">
+                                    Homeroom Teacher / Faculty Advisor
+                                </div>
+                                <div style="font-size:7px; color:#94a3b8; margin-top:1px;">
+                                    Date: <t t-esc="doc['issue_date']"/>
+                                </div>
+                            </td>
+
+                            <!-- Center: Official Institutional Seal Emblem (SVG) -->
+                            <td style="width:32%; text-align:center; vertical-align:middle;">
+                                <svg width="76" height="76" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Outermost Rosette / Fluted Circle -->
+                                    <circle cx="50" cy="50" r="47" stroke="#b45309" stroke-width="1.2" stroke-dasharray="2 1.5" fill="#fffbeb"/>
+                                    <!-- Concentric Rings -->
+                                    <circle cx="50" cy="50" r="42" stroke="#d97706" stroke-width="1.5" fill="none"/>
+                                    <circle cx="50" cy="50" r="37" fill="#0f172a"/>
+                                    <circle cx="50" cy="50" r="34" stroke="#d97706" stroke-width="0.8" stroke-dasharray="1.5 1" fill="none"/>
+                                    
+                                    <!-- Central Academic Crest & Star -->
+                                    <path d="M50 24 L53 32 L62 33 L55 38 L57 47 L50 42 L43 47 L45 38 L38 33 L47 32 Z" fill="#fbbf24"/>
+                                    
+                                    <!-- Seal Text Elements -->
+                                    <text x="50" y="56" text-anchor="middle" fill="#ffffff" font-size="6" font-weight="800" font-family="'Segoe UI', Arial, sans-serif" letter-spacing="1">ACADEMIC</text>
+                                    <text x="50" y="63" text-anchor="middle" fill="#fbbf24" font-size="5" font-weight="700" font-family="'Segoe UI', Arial, sans-serif" letter-spacing="1.2">REGISTRAR</text>
+                                    <text x="50" y="69" text-anchor="middle" fill="#94a3b8" font-size="4" font-family="'Segoe UI', Arial, sans-serif" letter-spacing="0.8">OFFICIAL SEAL</text>
+                                    
+                                    <!-- Small Stars at Base -->
+                                    <circle cx="44" cy="74" r="0.9" fill="#fbbf24"/>
+                                    <circle cx="50" cy="74" r="1.2" fill="#fbbf24"/>
+                                    <circle cx="56" cy="74" r="0.9" fill="#fbbf24"/>
+                                </svg>
+                            </td>
+
+                            <!-- Signature 2: Principal / Academic Dean (Right) -->
+                            <td style="width:34%; text-align:center; vertical-align:bottom; padding:0 8px;">
+                                <div style="font-family:'Brush Script MT', 'Dancing Script', 'Times New Roman', cursive; font-size:18px; color:#1e3a8a; line-height:1; height:24px;">
+                                    <t t-esc="doc['principal_name']"/>
+                                </div>
+                                <div style="border-top:1px solid #64748b; width:130px; margin:3px auto 4px auto;"></div>
+                                <div style="font-size:9px; font-weight:700; color:#0f172a;">
+                                    <t t-esc="doc['principal_name']"/>
+                                </div>
+                                <div style="font-size:7.5px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">
+                                    Principal / Academic Dean
+                                </div>
+                                <div style="font-size:7px; color:#94a3b8; margin-top:1px;">
+                                    Date: <t t-esc="doc['issue_date']"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Security & Audit Footer -->
+                    <div style="border-top:1px solid #cbd5e1; padding-top:4px; margin-top:6px; font-size:7px; color:#64748b; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="text-align:left;">
+                            Transcript ID: <strong style="color:#0f172a;"><t t-esc="doc['doc_number']"/></strong> • Student ID: <strong style="color:#0f172a;"><t t-esc="doc['student_code']"/></strong>
+                        </div>
+                        <div style="text-align:center; font-style:italic;">
+                            Official Academic Record • Valid only with authorized faculty signatures and registrar seal
+                        </div>
+                        <div style="text-align:right;">
+                            Page 1 of 1 • System Certified Record
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

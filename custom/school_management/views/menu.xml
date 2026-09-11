@@ -96,8 +96,8 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="50"/>
 
-    <!-- ================= Certificates ================= -->
-    <menuitem id="menu_school_certificate" name="Certificates"
+    <!-- ================= Academic Transcripts & Report Cards ================= -->
+    <menuitem id="menu_school_certificate" name="Transcripts &amp; Report Cards"
               parent="menu_school_root"
               action="action_certificate"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"

@@ -246,7 +246,8 @@ class SchoolStudent(models.Model):
         """Action button on student form to ensure payment follows the assigned class."""
         self.ensure_one()
         if not self.class_id:
-            raise UserError(_('This student is not assigned to any class.'))
+            raise UserError(_('This student is not assigned to any class.'))\
+
         self._sync_year_payment_with_class()
         return {
             'type': 'ir.actions.client',
@@ -365,7 +366,7 @@ class SchoolStudent(models.Model):
     def _check_study_dates(self):
         for rec in self:
             if rec.study_start_date and rec.study_end_date and rec.study_end_date < rec.study_start_date:
-                raise ValidationError(_('Study End Date must be after Study Start Date.'))\
+                raise ValidationError(_('Study End Date must be after Study Start Date.'))
 
     @api.depends('attendance_ids.status')
     def _compute_attendance_stats(self):
@@ -468,23 +469,36 @@ class SchoolStudent(models.Model):
 
     def action_generate_certificate(self):
         self.ensure_one()
-        certs = self.env['school.certificate'].generate_certificates(self)
+        is_student = self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin()
+        certs = self.env['school.certificate'].sudo().generate_certificates(self, certificate_type='transcript')
         cert = certs[:1]
         if not cert:
             return {
                 'type': 'ir.actions.act_window_close',
             }
-        return {
-            'name': _('Certificate'),
+        action = {
+            'name': _('Academic Transcript & Report Card'),
             'type': 'ir.actions.act_window',
             'res_model': 'school.certificate',
             'view_mode': 'form',
             'res_id': cert.id,
             'target': 'current',
         }
+        if is_student:
+            action['context'] = {'create': False, 'edit': False, 'delete': False}
+            action['flags'] = {'mode': 'readonly'}
+        return action
+
+    def action_print_academic_transcript(self):
+        """Directly generate and print the official Academic Transcript / Report Card PDF."""
+        self.ensure_one()
+        certs = self.env['school.certificate'].generate_certificates(self, certificate_type='transcript')
+        if not certs:
+            return {'type': 'ir.actions.act_window_close'}
+        return certs[:1].action_print_transcript()
 
     def action_print_student_certificates(self):
-        certs = self.env['school.certificate'].generate_certificates(self)
+        certs = self.env['school.certificate'].generate_certificates(self, certificate_type='completion')
         if not certs:
             return {
                 'type': 'ir.actions.act_window_close',
