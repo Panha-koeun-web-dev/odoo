@@ -8,6 +8,16 @@ understand how the code works and how the whole project comes together.
 
 ---
 
+## Documentation Index & Guides
+For specialized documentation, see the [doc/](doc/) directory:
+- [Role & Permissions Architecture](doc/role.md) — Admin, Teacher, and Student access controls & record rules.
+- [Authentication & Login Portal](doc/login.md) — Multi-role redirects and student account provisioning.
+- [Demo Walkthrough Script](doc/demo.md) — Step-by-step presentation scenario.
+- [Troubleshooting & Bug Fixes](doc/fix.md) — Technical notes on past environment & RelaxNG fixes.
+- [Project Architecture Specification](doc/PROJECT_STRUCTURE.md) — Detailed schema and component breakdown.
+
+---
+
 ## Table of Contents
 
 1. [Big Picture: What is an Odoo Module?](#1-big-picture-what-is-an-odoo-module)

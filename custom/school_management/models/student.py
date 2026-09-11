@@ -542,11 +542,16 @@ class SchoolStudent(models.Model):
                 }
             }
         else:
+            partner_vals = {'name': self.name, 'email': self.email}
+            if 'autopost_bills' in self.env['res.partner']._fields:
+                partner_vals['autopost_bills'] = 'never'
+            partner = self.env['res.partner'].sudo().create(partner_vals)
             new_user = self.env['res.users'].sudo().create({
                 'name': self.name,
                 'login': login,
                 'email': self.email,
                 'password': default_pwd,
+                'partner_id': partner.id,
                 'group_ids': [(6, 0, [group_student.id, group_internal.id])],
                 'action_id': action_student.id if action_student else False,
             })

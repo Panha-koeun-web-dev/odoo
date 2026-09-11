@@ -1,7 +1,8 @@
 import base64
 from pathlib import Path
 
-from odoo import models, fields
+from odoo import models, fields, _
+from odoo.exceptions import UserError
 from odoo.tools import format_date, format_datetime
 from odoo.tools.image import image_data_uri
 
@@ -63,20 +64,39 @@ class SchoolTranscriptReport(models.AbstractModel):
 
         if isinstance(candidate_ids, int):
             candidate_ids = [candidate_ids]
+        elif candidate_ids and not isinstance(candidate_ids, list):
+            candidate_ids = list(candidate_ids)
 
-        if candidate_ids and active_model == 'school.student':
+        # 1. If explicit active_model is student
+        if candidate_ids and (active_model == 'school.student' or self.env.context.get('active_model') == 'school.student'):
             students = student_model.browse(candidate_ids).exists()
-            return cert_model.generate_certificates(students, certificate_type='transcript')
+            if students:
+                return cert_model.generate_certificates(students, certificate_type='transcript')
 
-        docs = cert_model.browse(candidate_ids or []).exists()
-        if docs:
-            return docs
+        # 2. Check if candidate_ids are certificates
+        if candidate_ids:
+            docs = cert_model.browse(candidate_ids).exists()
+            if docs:
+                return docs
 
+            # 3. If not certificates, candidate_ids may be student IDs
+            students = student_model.browse(candidate_ids).exists()
+            if students:
+                return cert_model.generate_certificates(students, certificate_type='transcript')
+
+        # 4. If logged-in user is a student, automatically find or generate their transcript
+        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin():
+            my_student = student_model.search([('user_id', '=', self.env.user.id)], limit=1)
+            if my_student:
+                return cert_model.generate_certificates(my_student, certificate_type='transcript')
+
+        # 5. If active_model is student in context
         if active_model == 'school.student' and context_ids:
             if isinstance(context_ids, int):
                 context_ids = [context_ids]
             students = student_model.browse(context_ids).exists()
-            return cert_model.generate_certificates(students, certificate_type='transcript')
+            if students:
+                return cert_model.generate_certificates(students, certificate_type='transcript')
 
         return cert_model
 
