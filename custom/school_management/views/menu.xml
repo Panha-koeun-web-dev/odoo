@@ -2,6 +2,7 @@
     <!-- Root Menu -->
     <menuitem id="menu_school_root"
               name="School"
+              web_icon="school_management,static/description/icon.png"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
 
@@ -13,107 +14,122 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="5"/>
 
-    <!-- ================= Enrollments ================= -->
-    <menuitem id="menu_school_enrollment"
-              name="Enrollments"
-              parent="menu_school_root"
-              action="action_enrollment"
-              groups="school_management.group_school_admin"
-              sequence="12"/>
-
     <!-- ================= Students ================= -->
-    <menuitem id="menu_school_student_parent" name="Students"
+    <menuitem id="menu_school_student_parent"
+              name="Students"
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
-    <menuitem id="menu_school_student" name="All Students"
+    <menuitem id="menu_school_student"
+              name="Students"
               parent="menu_school_student_parent"
               action="action_student"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
+    <menuitem id="menu_school_enrollment"
+              name="Enrollments"
+              parent="menu_school_student_parent"
+              action="action_enrollment"
+              groups="school_management.group_school_admin"
+              sequence="20"/>
 
     <!-- ================= Teachers ================= -->
-    <menuitem id="menu_school_teacher_parent" name="Teachers"
+    <menuitem id="menu_school_teacher_parent"
+              name="Teachers"
               parent="menu_school_root"
+              action="action_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
-    <menuitem id="menu_school_teacher" name="All Teachers"
+    <menuitem id="menu_school_teacher"
+              name="All Teachers"
               parent="menu_school_teacher_parent"
               action="action_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
+              active="False"
               sequence="10"/>
 
     <!-- ================= Academics ================= -->
-    <menuitem id="menu_school_academic_parent" name="Academics"
+    <menuitem id="menu_school_academic_parent"
+              name="Academics"
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="30"/>
-    <menuitem id="menu_school_class" name="Classes"
+    <menuitem id="menu_school_class"
+              name="Classes"
               parent="menu_school_academic_parent"
               action="action_class"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
-    <menuitem id="menu_school_subject" name="Subjects"
+    <menuitem id="menu_school_subject"
+              name="Subjects"
               parent="menu_school_academic_parent"
               action="action_subject"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
-    <menuitem id="menu_school_major" name="Majors"
+    <menuitem id="menu_school_major"
+              name="Majors"
               parent="menu_school_academic_parent"
               action="action_major"
               groups="school_management.group_school_admin"
               sequence="30"/>
-    <menuitem id="menu_school_major_enrollment_parent" name="Major Enrollment"
+    <menuitem id="menu_school_major_enrollment"
+              name="Major Enrollments"
               parent="menu_school_academic_parent"
-              groups="school_management.group_school_admin"
-              sequence="40"/>
-    <menuitem id="menu_school_major_enrollment" name="All Major Enrollments"
-              parent="menu_school_major_enrollment_parent"
               action="action_major_enrollment"
               groups="school_management.group_school_admin"
-              sequence="10"/>
+              sequence="40"/>
 
     <!-- ================= Examinations ================= -->
-    <menuitem id="menu_school_exam_parent" name="Examinations"
+    <menuitem id="menu_school_exam_parent"
+              name="Examinations"
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="40"/>
-    <menuitem id="menu_school_exam" name="Exams"
+    <menuitem id="menu_school_exam"
+              name="Exams"
               parent="menu_school_exam_parent"
               action="action_exam"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
-    <menuitem id="menu_school_grade" name="Grades"
+    <menuitem id="menu_school_grade"
+              name="Grades"
               parent="menu_school_exam_parent"
               action="action_grade"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
 
     <!-- ================= Attendance ================= -->
-    <menuitem id="menu_school_attendance" name="Attendance Records"
+    <menuitem id="menu_school_attendance"
+              name="Attendance"
               parent="menu_school_root"
               action="action_attendance"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="50"/>
 
     <!-- ================= Academic Transcripts & Report Cards ================= -->
-    <menuitem id="menu_school_certificate" name="Transcripts &amp; Report Cards"
+    <menuitem id="menu_school_certificate"
+              name="Transcripts &amp; Certificates"
               parent="menu_school_root"
               action="action_certificate"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="55"/>
 
-    <!-- ================= Fees ================= -->
-    <menuitem id="menu_school_fee" name="Fees"
+    <!-- ================= Finance ================= -->
+    <menuitem id="menu_school_finance_parent"
+              name="Finance"
               parent="menu_school_root"
+              groups="school_management.group_school_admin,school_management.group_school_student"
+              sequence="60"/>
+    <menuitem id="menu_school_fee"
+              name="Fees &amp; Structure"
+              parent="menu_school_finance_parent"
               action="action_fee"
               groups="school_management.group_school_admin"
-              sequence="60"/>
-
-    <!-- ================= Student Year Payment ================= -->
-    <menuitem id="menu_school_year_payment" name="Student Year Payment"
-              parent="menu_school_root"
+              sequence="10"/>
+    <menuitem id="menu_school_year_payment"
+              name="Student Year Payments"
+              parent="menu_school_finance_parent"
               action="action_student_year_payment"
               groups="school_management.group_school_admin,school_management.group_school_student"
-              sequence="65"/>
+              sequence="20"/>
 </odoo>

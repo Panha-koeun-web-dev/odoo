@@ -36,8 +36,6 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'school_management/static/src/sidebar/sidebar.js',
-            'school_management/static/src/sidebar/sidebar.scss',
             'school_management/static/src/dashboard/school_dashboard.js',
             'school_management/static/src/dashboard/school_dashboard.scss',
             'school_management/static/src/dashboard/school_dashboard.xml',
