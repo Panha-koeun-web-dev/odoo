@@ -19,6 +19,7 @@
         <field name="disable_shrinking" eval="True"/>
     </record>
 
+    <!-- Report Action Bound to Certificate Model -->
     <record id="action_report_school_certificate" model="ir.actions.report">
         <field name="name">Student Certificate</field>
         <field name="model">school.certificate</field>
@@ -27,6 +28,19 @@
         <field name="report_file">school_management.certificate_report</field>
         <field name="print_report_name">'Certificate-%s' % (object.name,)</field>
         <field name="binding_model_id" ref="model_school_certificate"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="school_management.paperformat_certificate"/>
+    </record>
+
+    <!-- Report Action Bound to Student Model for direct student printing -->
+    <record id="action_report_school_certificate_student" model="ir.actions.report">
+        <field name="name">Student Certificate</field>
+        <field name="model">school.student</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.certificate_report</field>
+        <field name="report_file">school_management.certificate_report</field>
+        <field name="print_report_name">'Certificate-%s' % (object.name,)</field>
+        <field name="binding_model_id" ref="model_school_student"/>
         <field name="binding_type">report</field>
         <field name="paperformat_id" ref="school_management.paperformat_certificate"/>
     </record>
@@ -58,259 +72,118 @@
                     <t t-set="company" t-value="company"/>
                     <t t-set="school_name" t-value="school_name"/>
                     <t t-set="company_logo" t-value="company_logo"/>
+                    <t t-set="has_company_logo" t-value="has_company_logo"/>
+                    <t t-set="generated_on" t-value="generated_on"/>
                 </t>
             </div>
         </t>
     </template>
 
+    <!-- Certificate Card Template (Classic Landscape Diploma) -->
     <template id="certificate_page">
-        <!-- Color Palette Definition based on Template Style & Custom Accent Color -->
-        <t t-set="is_custom" t-value="bool(row.get('cert').accent_color)"/>
-        <t t-set="template_style" t-value="row.get('template') or 'elegant'"/>
+        <div class="cert_container"
+             t-att-style="'position:relative; width:297mm; height:210mm; background-color:#ffffff; box-sizing:border-box; overflow:hidden; font-family:\'Georgia\', \'Times New Roman\', serif; ' + (row['styles'].get('bg', ''))">
 
-        <t t-set="accent" t-value="row.get('cert').accent_color or ('#0f766e' if template_style == 'modern' else '#1a4d7c' if template_style == 'classic' else '#b8860b')"/>
-        <t t-set="accent_dark" t-value="row.get('cert').accent_color or ('#0b5f59' if template_style == 'modern' else '#0f3458' if template_style == 'classic' else '#7d5c08')"/>
-        <t t-set="accent_light" t-value="'#5eead4' if template_style == 'modern' and not is_custom else '#6ba3d6' if template_style == 'classic' and not is_custom else '#e8c872' if not is_custom else accent"/>
-        <t t-set="ribbon_color" t-value="'#064e3b' if template_style == 'modern' and not is_custom else '#123a5e' if template_style == 'classic' and not is_custom else '#9a6a14' if not is_custom else accent"/>
-        <t t-set="paper_bg" t-value="'#f8fdfb' if template_style == 'modern' else '#f9fbfd' if template_style == 'classic' else '#fefdfa'"/>
-        <t t-set="text_dark" t-value="'#132826' if template_style == 'modern' else '#182430' if template_style == 'classic' else '#231f1a'"/>
-        <t t-set="text_muted" t-value="'#45625f' if template_style == 'modern' else '#4a5b6d' if template_style == 'classic' else '#5c5549'"/>
-        <t t-set="display_school" t-value="school_name or (company.name if company.name and company.name != 'My Company' else 'Passerelles Numeriques Cambodia')"/>
+            <!-- Elegant Outer Border -->
+            <div style="position:absolute; top:8mm; left:8mm; right:8mm; bottom:8mm; border:2.5mm solid #1e3a8a; pointer-events:none; box-sizing:border-box;"/>
 
-        <div t-attf-style="width:297mm; height:210mm; margin:0; padding:0; box-sizing:border-box; overflow:hidden; position:relative; background:#{paper_bg}; font-family:'Times New Roman', Georgia, serif; color:#{text_dark}; -webkit-print-color-adjust:exact;">
-            
-            <!-- Vignette Background Pattern -->
-            <div t-attf-style="position:absolute; top:0; left:0; right:0; bottom:0; background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.6) 55%, #{accent}1a 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.007) 0px, rgba(0,0,0,0.007) 1px, transparent 1px, transparent 8px); z-index:1;"></div>
+            <!-- Fine Inner Gold Accent Border -->
+            <div style="position:absolute; top:12mm; left:12mm; right:12mm; bottom:12mm; border:0.8mm solid #b8860b; pointer-events:none; box-sizing:border-box;"/>
 
-            <!-- Multi-Layered Borders -->
-            <div t-attf-style="position:absolute; top:7mm; left:7mm; right:7mm; bottom:7mm; border:2mm solid #{accent}; border-radius:3mm; z-index:2;"></div>
-            <div t-attf-style="position:absolute; top:10mm; left:10mm; right:10mm; bottom:10mm; border:0.35mm solid #{accent_light}; border-radius:2mm; z-index:2;"></div>
-            <div t-attf-style="position:absolute; top:12.5mm; left:12.5mm; right:12.5mm; bottom:12.5mm; border:0.7mm solid #{accent_dark}; border-radius:1.5mm; z-index:2;"></div>
+            <!-- Corner Ornaments (Top Left, Top Right, Bottom Left, Bottom Right) -->
+            <div style="position:absolute; top:14mm; left:14mm; width:12mm; height:12mm; border-top:1.5mm solid #b8860b; border-left:1.5mm solid #b8860b; pointer-events:none;"/>
+            <div style="position:absolute; top:14mm; right:14mm; width:12mm; height:12mm; border-top:1.5mm solid #b8860b; border-right:1.5mm solid #b8860b; pointer-events:none;"/>
+            <div style="position:absolute; bottom:14mm; left:14mm; width:12mm; height:12mm; border-bottom:1.5mm solid #b8860b; border-left:1.5mm solid #b8860b; pointer-events:none;"/>
+            <div style="position:absolute; bottom:14mm; right:14mm; width:12mm; height:12mm; border-bottom:1.5mm solid #b8860b; border-right:1.5mm solid #b8860b; pointer-events:none;"/>
 
-            <!-- Classical SVG Corner Florets -->
-            <!-- Top Left -->
-            <div style="position:absolute; top:12.5mm; left:12.5mm; z-index:3;">
-                <svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2 H43 V6 H6 V43 H2 Z" t-att-fill="accent"/>
-                    <path d="M8 8 H35 V10 H10 V35 H8 Z" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="12" r="2.5" t-att-fill="accent"/>
-                    <circle cx="20" cy="12" r="1.5" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="20" r="1.5" t-att-fill="accent_light"/>
-                    <path d="M12 12 Q24 14 28 28" t-att-stroke="accent" stroke-width="0.8" fill="none"/>
-                    <circle cx="4" cy="4" r="1.5" t-att-fill="accent_dark"/>
-                </svg>
-            </div>
-            <!-- Top Right -->
-            <div style="position:absolute; top:12.5mm; right:12.5mm; z-index:3; transform:scaleX(-1);">
-                <svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2 H43 V6 H6 V43 H2 Z" t-att-fill="accent"/>
-                    <path d="M8 8 H35 V10 H10 V35 H8 Z" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="12" r="2.5" t-att-fill="accent"/>
-                    <circle cx="20" cy="12" r="1.5" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="20" r="1.5" t-att-fill="accent_light"/>
-                    <path d="M12 12 Q24 14 28 28" t-att-stroke="accent" stroke-width="0.8" fill="none"/>
-                    <circle cx="4" cy="4" r="1.5" t-att-fill="accent_dark"/>
-                </svg>
-            </div>
-            <!-- Bottom Left -->
-            <div style="position:absolute; bottom:12.5mm; left:12.5mm; z-index:3; transform:scaleY(-1);">
-                <svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2 H43 V6 H6 V43 H2 Z" t-att-fill="accent"/>
-                    <path d="M8 8 H35 V10 H10 V35 H8 Z" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="12" r="2.5" t-att-fill="accent"/>
-                    <circle cx="20" cy="12" r="1.5" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="20" r="1.5" t-att-fill="accent_light"/>
-                    <path d="M12 12 Q24 14 28 28" t-att-stroke="accent" stroke-width="0.8" fill="none"/>
-                    <circle cx="4" cy="4" r="1.5" t-att-fill="accent_dark"/>
-                </svg>
-            </div>
-            <!-- Bottom Right -->
-            <div style="position:absolute; bottom:12.5mm; right:12.5mm; z-index:3; transform:scale(-1);">
-                <svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2 H43 V6 H6 V43 H2 Z" t-att-fill="accent"/>
-                    <path d="M8 8 H35 V10 H10 V35 H8 Z" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="12" r="2.5" t-att-fill="accent"/>
-                    <circle cx="20" cy="12" r="1.5" t-att-fill="accent_light"/>
-                    <circle cx="12" cy="20" r="1.5" t-att-fill="accent_light"/>
-                    <path d="M12 12 Q24 14 28 28" t-att-stroke="accent" stroke-width="0.8" fill="none"/>
-                    <circle cx="4" cy="4" r="1.5" t-att-fill="accent_dark"/>
-                </svg>
-            </div>
+            <!-- Central Content Box -->
+            <div style="position:absolute; top:18mm; left:22mm; right:22mm; bottom:18mm; display:flex; flex-direction:column; align-items:center; justify-content:space-between; text-align:center; padding:4mm 10mm; box-sizing:border-box;">
 
-            <!-- Student Photo Badge (if available) -->
-            <t t-if="row.get('has_photo') and row.get('photo_uri')">
-                <div t-attf-style="position:absolute; right:18mm; top:18mm; width:22mm; height:27mm; padding:1.2mm; border:0.8mm solid #{accent}; border-radius:2.5mm; background:#ffffff; box-shadow:0 1mm 3mm rgba(0,0,0,0.15); z-index:10;">
-                    <img t-att-src="row.get('photo_uri')" style="width:100%; height:100%; object-fit:cover; border-radius:1.5mm;" alt="Student"/>
-                </div>
-            </t>
-
-            <!-- Main Certificate Content Area -->
-            <div style="position:relative; z-index:5; padding:16mm 24mm 10mm 24mm; height:100%; box-sizing:border-box; text-align:center;">
-                
-                <!-- School Header -->
-                <table style="width:100%; border-collapse:collapse; margin-bottom:1.5mm;">
-                    <tr>
-                        <td style="width:30mm; text-align:left; vertical-align:middle;">
-                            <img t-if="company_logo" t-att-src="company_logo" style="max-height:15mm; max-width:24mm; object-fit:contain;" alt="Logo"/>
-                        </td>
-                        <td style="text-align:center; vertical-align:middle;">
-                            <div t-attf-style="font-size:5.6mm; font-weight:700; color:#{accent_dark}; letter-spacing:1.6mm; text-transform:uppercase; line-height:1.15; margin-bottom:0.8mm;">
-                                <span t-esc="display_school"/>
-                            </div>
-                            <div t-attf-style="font-size:2.2mm; color:#{text_muted}; letter-spacing:2mm; text-transform:uppercase;">
-                                Excellence &#183; Integrity &#183; Leadership
-                            </div>
-                        </td>
-                        <td style="width:30mm; text-align:right; vertical-align:middle;">
-                            <!-- Space balancer for left logo -->
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Certificate Title & Flourish Divider -->
-                <div>
-                    <div t-attf-style="font-size:7.2mm; font-weight:800; letter-spacing:2.8mm; text-transform:uppercase; color:#{accent_dark}; line-height:1.1; margin-top:1mm;">
-                        <span t-esc="row.get('custom_title') or row.get('type_label') or 'Certificate of Completion'"/>
+                <!-- HEADER SECTION: Logo & Institution Name -->
+                <div style="width:100%;">
+                    <t t-if="has_company_logo">
+                        <img t-att-src="company_logo"
+                             alt="Institution Emblem"
+                             style="max-height:18mm; max-width:55mm; object-fit:contain; margin-bottom:2mm;"/>
+                    </t>
+                    <div style="font-size:7mm; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; color:#1e3a8a; line-height:1.1;"
+                         t-att-style="row['styles'].get('school_name', '')">
+                        <t t-esc="company.name or 'INTERNATIONAL ACADEMIC INSTITUTION'"/>
                     </div>
-                    <div style="margin:1mm 0 0 0;">
-                        <svg width="220" height="16" viewBox="0 0 220 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <line x1="0" y1="8" x2="85" y2="8" t-att-stroke="accent" stroke-width="0.75"/>
-                            <line x1="135" y1="8" x2="220" y2="8" t-att-stroke="accent" stroke-width="0.75"/>
-                            <path d="M95 8 Q102 3 110 8 Q118 13 125 8" t-att-stroke="accent" stroke-width="0.9" fill="none"/>
-                            <path d="M95 8 Q102 13 110 8 Q118 3 125 8" t-att-stroke="accent" stroke-width="0.9" fill="none"/>
-                            <circle cx="110" cy="8" r="2.5" t-att-fill="accent_dark"/>
-                            <circle cx="102" cy="8" r="1.2" t-att-fill="accent"/>
-                            <circle cx="118" cy="8" r="1.2" t-att-fill="accent"/>
-                            <circle cx="85" cy="8" r="1.5" t-att-fill="accent_light"/>
-                            <circle cx="135" cy="8" r="1.5" t-att-fill="accent_light"/>
-                        </svg>
+                    <div style="font-size:3.2mm; letter-spacing:2px; text-transform:uppercase; color:#64748b; margin-top:1mm;">
+                        Office of the Academic Dean &amp; Student Affairs
+                    </div>
+                    <div style="width:60mm; height:0.4mm; background:linear-gradient(to right, transparent, #b8860b, transparent); margin:2.5mm auto;"/>
+                </div>
+
+                <!-- TITLE SECTION -->
+                <div style="width:100%; margin-top:-1mm;">
+                    <div style="font-size:3.6mm; font-style:italic; color:#475569; letter-spacing:0.8px;">
+                        <t t-esc="row['custom_prelude'] or 'This is to proudly certify that'"/>
+                    </div>
+                    <div style="font-size:10.5mm; font-weight:bold; font-family:'Georgia', serif; color:#0f172a; letter-spacing:1px; margin:2mm 0 1mm 0; line-height:1.1;"
+                         t-att-style="row['styles'].get('student_name', '')">
+                        <t t-esc="row['student_name']"/>
+                    </div>
+                    <div style="display:inline-block; padding:1mm 4mm; background-color:#f1f5f9; border-radius:3mm; font-size:3.2mm; font-family:'Courier New', monospace; font-weight:bold; color:#334155; margin-bottom:1.5mm;">
+                        Student ID: <t t-esc="row['student_code'] or 'STU-OFFICIAL'"/>
                     </div>
                 </div>
 
-                <!-- Prelude -->
-                <div t-attf-style="font-size:3.6mm; font-style:italic; color:#{text_muted}; margin:2mm 0 1mm 0; letter-spacing:0.3mm;">
-                    <span t-esc="row.get('custom_prelude') or 'This is to proudly certify that'"/>
+                <!-- BODY / STATEMENT SECTION -->
+                <div style="width:88%; font-size:4.2mm; line-height:1.5; color:#334155;">
+                    <div>
+                        <t t-esc="row['custom_statement'] or 'has demonstrated academic commitment and fulfilled all curriculum criteria for'"/>
+                    </div>
+                    <div style="font-size:6.5mm; font-weight:bold; color:#1e3a8a; text-transform:uppercase; letter-spacing:1px; margin:2mm 0;"
+                         t-att-style="row['styles'].get('title', '')">
+                        <t t-esc="row['custom_title'] or row['type_label']"/>
+                    </div>
+                    <div style="font-size:3.8mm; color:#475569;">
+                        Major Specialization: <strong><t t-esc="row['majors'] or 'Computer Science &amp; Technology'"/></strong>
+                        <t t-if="row['academic_year']">
+                            | Academic Term / Period: <strong><t t-esc="row['academic_year']"/></strong>
+                        </t>
+                    </div>
                 </div>
 
-                <!-- Recipient Student Name -->
-                <div t-attf-style="font-size:12.5mm; font-weight:700; color:#{accent_dark}; letter-spacing:0.6mm; line-height:1.05; margin:1mm 0 1.5mm 0;">
-                    <span t-esc="row.get('student_name')"/>
+                <!-- FOOTER / SIGNATORIES SECTION -->
+                <div style="width:100%; display:flex; justify-content:space-between; align-items:flex-end; padding:0 8mm; box-sizing:border-box; margin-top:2mm;">
+                    <!-- Left Signatory -->
+                    <div style="width:65mm; text-align:center;">
+                        <div style="border-bottom:0.5mm solid #334155; width:55mm; margin:0 auto 1.5mm auto;"/>
+                        <div style="font-size:3.6mm; font-weight:bold; color:#0f172a;">
+                            <t t-esc="row['sign_one_name'] or 'Dr. Robert Sterling'"/>
+                        </div>
+                        <div style="font-size:3.0mm; color:#64748b; font-style:italic;">
+                            <t t-esc="row['sign_one_title'] or 'Academic Dean'"/>
+                        </div>
+                    </div>
+
+                    <!-- Center Official Seal -->
+                    <div style="width:40mm; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <div style="width:24mm; height:24mm; border:1mm double #b8860b; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; background-color:#fffbeb; box-sizing:border-box;"
+                             t-att-style="row['styles'].get('seal_ring', '')">
+                            <i class="fa fa-certificate" style="font-size:6mm; color:#b8860b; margin-bottom:0.5mm;"/>
+                            <span style="font-size:2.0mm; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#78350f;">OFFICIAL SEAL</span>
+                            <span style="font-size:1.8mm; color:#92400e;">VERIFIED</span>
+                        </div>
+                        <div style="font-size:2.5mm; color:#94a3b8; margin-top:1.5mm;">
+                            Issued: <t t-esc="row['issue_date'] or generated_on"/>
+                        </div>
+                    </div>
+
+                    <!-- Right Signatory -->
+                    <div style="width:65mm; text-align:center;">
+                        <div style="border-bottom:0.5mm solid #334155; width:55mm; margin:0 auto 1.5mm auto;"/>
+                        <div style="font-size:3.6mm; font-weight:bold; color:#0f172a;">
+                            <t t-esc="row['sign_two_name'] or 'Prof. David Vance'"/>
+                        </div>
+                        <div style="font-size:3.0mm; color:#64748b; font-style:italic;">
+                            <t t-esc="row['sign_two_title'] or 'Registrar &amp; Board President'"/>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Academic Statement -->
-                <div t-attf-style="font-size:3.6mm; line-height:1.65; color:#{text_dark}; max-width:215mm; margin:0 auto;">
-                    <span t-esc="row.get('custom_statement') or 'for distinguished academic performance and successfully fulfilling all curriculum requirements in'"/>
-                    <strong t-attf-style="color:#{accent_dark};">
-                        <t t-esc="row.get('majors') or row.get('class_name') or 'Prescribed Academic Program'"/>
-                    </strong>
-                    <span> during the academic period </span>
-                    <strong t-attf-style="color:#{accent_dark};">
-                        <t t-esc="row.get('study_period') or row.get('academic_year') or '2025-2026'"/>
-                    </strong>,
-                    <span> and is hereby conferred this certificate of academic excellence.</span>
-                </div>
-
-                <!-- Metadata Row (Single horizontal bar with elegant chips) -->
-                <table style="margin:3.5mm auto 0 auto; border-collapse:collapse; font-family:Arial, sans-serif; font-size:2.7mm;">
-                    <tr>
-                        <td style="padding:1.2mm 3mm; color:#5c5549;">
-                            <span t-attf-style="display:inline-block; background:rgba(255,255,255,0.9); border:0.3mm solid #{accent_light}; border-radius:999px; padding:1mm 4mm;">
-                                Student ID: <b t-attf-style="color:#{accent_dark};"><t t-esc="row.get('student_code') or 'N/A'"/></b>
-                            </span>
-                        </td>
-                        <td style="padding:1.2mm 3mm; color:#5c5549;">
-                            <span t-attf-style="display:inline-block; background:rgba(255,255,255,0.9); border:0.3mm solid #{accent_light}; border-radius:999px; padding:1mm 4mm;">
-                                Class: <b t-attf-style="color:#{accent_dark};"><t t-esc="row.get('class_name') or 'General'"/></b>
-                            </span>
-                        </td>
-                        <td t-if="row.get('subject_count')" style="padding:1.2mm 3mm; color:#5c5549;">
-                            <span t-attf-style="display:inline-block; background:rgba(255,255,255,0.9); border:0.3mm solid #{accent_light}; border-radius:999px; padding:1mm 4mm;">
-                                Subjects: <b t-attf-style="color:#{accent_dark};"><t t-esc="row.get('subject_count')"/></b>
-                            </span>
-                        </td>
-                        <td t-if="row.get('show_avg') and row.get('has_avg')" style="padding:1.2mm 3mm; color:#5c5549;">
-                            <span t-attf-style="display:inline-block; background:rgba(255,255,255,0.95); border:0.3mm solid #{accent}; border-radius:999px; padding:1mm 4mm;">
-                                Academic Average: <b t-attf-style="color:#{accent_dark};"><t t-esc="row.get('avg_percentage')"/></b>
-                            </span>
-                        </td>
-                        <td t-if="row.get('dob')" style="padding:1.2mm 3mm; color:#5c5549;">
-                            <span t-attf-style="display:inline-block; background:rgba(255,255,255,0.9); border:0.3mm solid #{accent_light}; border-radius:999px; padding:1mm 4mm;">
-                                Date of Birth: <b t-attf-style="color:#{accent_dark};"><t t-esc="row.get('dob')"/></b>
-                            </span>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Signatures & Official Gold Seal Section -->
-                <table style="width:100%; border-collapse:collapse; margin-top:4.5mm;">
-                    <tr>
-                        <!-- Signatory 1 (Left) -->
-                        <td style="width:36%; text-align:center; vertical-align:bottom;">
-                            <div t-if="row.get('sign_one_name')"
-                                 t-attf-style="font-family:'Brush Script MT', 'Dancing Script', 'Times New Roman', cursive; font-size:6.2mm; color:#{accent_dark}; line-height:1; margin-bottom:1.5mm;">
-                                <span t-esc="row.get('sign_one_name')"/>
-                            </div>
-                            <div t-else="" style="height:6.2mm; margin-bottom:1.5mm;"></div>
-                            <div t-attf-style="width:52mm; margin:0 auto 1.5mm auto; border-top:0.45mm solid #{accent_dark};"></div>
-                            <div t-attf-style="font-size:3.4mm; font-weight:700; color:#{text_dark};">
-                                <t t-esc="row.get('sign_one_name') or 'Academic Dean'"/>
-                            </div>
-                            <div t-attf-style="font-size:2.4mm; text-transform:uppercase; letter-spacing:0.9mm; color:#{text_muted}; margin-top:0.5mm;">
-                                <t t-esc="row.get('sign_one_title') or 'Dean of Academic Affairs'"/>
-                            </div>
-                        </td>
-
-                        <!-- Official Seal Medallion (Center) -->
-                        <td style="width:28%; text-align:center; vertical-align:middle;">
-                            <svg width="96" height="110" viewBox="0 0 96 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Ribbon Tails -->
-                                <polygon points="32,70 20,105 34,98 44,105 38,72" t-att-fill="ribbon_color" opacity="0.95"/>
-                                <polygon points="64,70 76,105 62,98 52,105 58,72" t-att-fill="ribbon_color" opacity="0.90"/>
-                                <!-- Rosette / Scalloped Edge -->
-                                <circle cx="48" cy="48" r="42" t-att-fill="accent_light" opacity="0.35"/>
-                                <circle cx="48" cy="48" r="38" t-att-fill="accent" t-att-stroke="accent_dark" stroke-width="1.2"/>
-                                <circle cx="48" cy="48" r="33" t-att-stroke="accent_light" stroke-width="0.8" stroke-dasharray="2 1.5"/>
-                                <circle cx="48" cy="48" r="29" t-att-fill="accent_dark"/>
-                                <circle cx="48" cy="48" r="27" t-att-stroke="accent_light" stroke-width="0.6"/>
-                                <!-- Center Star Emblem -->
-                                <path d="M48 28 L51 37 L60 38 L53 44 L55 53 L48 48 L41 53 L43 44 L36 38 L45 37 Z" t-att-fill="accent_light"/>
-                                <text x="48" y="60" text-anchor="middle" fill="#ffffff" font-size="5.5" font-weight="700" font-family="'Times New Roman', Georgia, serif" letter-spacing="0.8">OFFICIAL</text>
-                                <text x="48" y="66" text-anchor="middle" t-att-fill="accent_light" font-size="4.2" font-weight="600" font-family="'Times New Roman', Georgia, serif" letter-spacing="1">SEAL</text>
-                            </svg>
-                        </td>
-
-                        <!-- Signatory 2 (Right) -->
-                        <td style="width:36%; text-align:center; vertical-align:bottom;">
-                            <div t-if="row.get('sign_two_name')"
-                                 t-attf-style="font-family:'Brush Script MT', 'Dancing Script', 'Times New Roman', cursive; font-size:6.2mm; color:#{accent_dark}; line-height:1; margin-bottom:1.5mm;">
-                                <span t-esc="row.get('sign_two_name')"/>
-                            </div>
-                            <div t-else="" style="height:6.2mm; margin-bottom:1.5mm;"></div>
-                            <div t-attf-style="width:52mm; margin:0 auto 1.5mm auto; border-top:0.45mm solid #{accent_dark};"></div>
-                            <div t-attf-style="font-size:3.4mm; font-weight:700; color:#{text_dark};">
-                                <t t-esc="row.get('sign_two_name') or 'Executive Director'"/>
-                            </div>
-                            <div t-attf-style="font-size:2.4mm; text-transform:uppercase; letter-spacing:0.9mm; color:#{text_muted}; margin-top:0.5mm;">
-                                <t t-esc="row.get('sign_two_title') or 'Director of Institute'"/>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Bottom Verification Audit Line -->
-                <table t-attf-style="width:100%; border-collapse:collapse; border-top:0.25mm solid #{accent_light}; margin-top:3.5mm; padding-top:1.5mm; font-size:2.2mm; font-family:Arial, sans-serif; color:#{text_muted};">
-                    <tr>
-                        <td style="text-align:left; padding-top:1.5mm;">
-                            Certificate ID: <b t-attf-style="color:#{text_dark};"><t t-esc="row.get('cert_name')"/></b>
-                        </td>
-                        <td style="text-align:center; padding-top:1.5mm;">
-                            Issue Date: <b t-attf-style="color:#{text_dark};"><t t-esc="row.get('issue_date') or 'September 4, 2026'"/></b>
-                        </td>
-                        <td style="text-align:right; padding-top:1.5mm;">
-                            Official Institutional Credential &#183; Verified Record
-                        </td>
-                    </tr>
-                </table>
 
             </div>
         </div>

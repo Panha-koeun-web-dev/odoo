@@ -188,16 +188,26 @@ class SchoolCertificate(models.Model):
         'This document number already exists!',
     )
 
+    def _is_restricted_student(self):
+        """Return True if the current user is an authenticated student without administrative or teacher rights."""
+        return (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+
     @api.depends('student_id.grade_ids.percentage')
     def _compute_average_grade(self):
-        for rec in self:
+        for rec in self.sudo():
             grades = rec.student_id.grade_ids.mapped('percentage')
             rec.subject_count = len(grades)
             rec.average_grade = round(sum(grades) / len(grades), 1) if grades else 0.0
 
     @api.depends('student_id', 'student_id.class_id', 'student_id.class_id.teacher_id')
     def _compute_teachers(self):
-        for rec in self:
+        for rec in self.sudo():
             if rec.student_id and rec.student_id.class_id and rec.student_id.class_id.teacher_id:
                 rec.homeroom_teacher_id = rec.student_id.class_id.teacher_id
             elif not rec.homeroom_teacher_id:
@@ -227,7 +237,7 @@ class SchoolCertificate(models.Model):
             'd': 1.0, 'f': 0.0,
         }
 
-        for rec in self:
+        for rec in self.sudo():
             stu = rec.student_id
             if not stu:
                 rec.gpa = 0.0
@@ -311,7 +321,6 @@ class SchoolCertificate(models.Model):
                 for mate in class_mates:
                     m_grades = mate.grade_ids
                     if m_grades:
-                        # compute mate gpa or avg pct
                         m_pts = 0.0
                         m_cr = 0
                         for mg in m_grades:
@@ -469,23 +478,23 @@ class SchoolCertificate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin() and not self.env.su:
+        if self._is_restricted_student():
             raise UserError(_('Access Denied: Students are not permitted to create transcripts or certificates.'))
         return super().create(vals_list)
 
     def write(self, vals):
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin() and not self.env.su:
+        if self._is_restricted_student():
             raise UserError(_('Access Denied: Students are not permitted to edit transcripts or certificates.'))
         return super().write(vals)
 
     def unlink(self):
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin() and not self.env.su:
+        if self._is_restricted_student():
             raise UserError(_('Access Denied: Students are not permitted to delete transcripts or certificates.'))
         return super().unlink()
 
     def action_recompute_metrics(self):
         """Action button to manually trigger metric recalculation."""
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin():
+        if self._is_restricted_student():
             return self.action_print_transcript()
         self.sudo()._compute_academic_metrics()
         self.sudo()._compute_average_grade()
@@ -523,6 +532,8 @@ class SchoolCertificate(models.Model):
             ], limit=1)
             if existing:
                 existing.sudo()._compute_academic_metrics()
+                existing.sudo()._compute_average_grade()
+                existing.sudo()._compute_teachers()
                 generated |= existing
                 continue
             new_cert = self.sudo().create({
@@ -534,6 +545,9 @@ class SchoolCertificate(models.Model):
                 'status': 'issued',
                 'notes': extra.get('notes'),
             })
+            new_cert.sudo()._compute_academic_metrics()
+            new_cert.sudo()._compute_average_grade()
+            new_cert.sudo()._compute_teachers()
             generated |= new_cert
         return generated
 
@@ -575,7 +589,7 @@ class SchoolCertificate(models.Model):
 
     def action_issue(self):
         """Mark the transcript or certificate as issued."""
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin():
+        if self._is_restricted_student():
             raise UserError(_('Access Denied: Students cannot modify official document status.'))
         for rec in self:
             rec.status = 'issued'
@@ -585,7 +599,7 @@ class SchoolCertificate(models.Model):
 
     def action_draft(self):
         """Revert the transcript or certificate back to draft."""
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin():
+        if self._is_restricted_student():
             raise UserError(_('Access Denied: Students cannot modify official document status.'))
         for rec in self:
             rec.status = 'draft'

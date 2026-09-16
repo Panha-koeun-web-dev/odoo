@@ -69,24 +69,29 @@ class SchoolTranscriptReport(models.AbstractModel):
 
         # 1. If explicit active_model is student
         if candidate_ids and (active_model == 'school.student' or self.env.context.get('active_model') == 'school.student'):
-            students = student_model.browse(candidate_ids).exists()
+            students = student_model.sudo().browse(candidate_ids).exists()
             if students:
                 return cert_model.generate_certificates(students, certificate_type='transcript')
 
         # 2. Check if candidate_ids are certificates
         if candidate_ids:
-            docs = cert_model.browse(candidate_ids).exists()
+            docs = cert_model.sudo().browse(candidate_ids).exists()
             if docs:
                 return docs
 
             # 3. If not certificates, candidate_ids may be student IDs
-            students = student_model.browse(candidate_ids).exists()
+            students = student_model.sudo().browse(candidate_ids).exists()
             if students:
                 return cert_model.generate_certificates(students, certificate_type='transcript')
 
         # 4. If logged-in user is a student, automatically find or generate their transcript
-        if self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin():
-            my_student = student_model.search([('user_id', '=', self.env.user.id)], limit=1)
+        if (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+        ):
+            my_student = student_model.sudo().search([('user_id', '=', self.env.user.id)], limit=1)
             if my_student:
                 return cert_model.generate_certificates(my_student, certificate_type='transcript')
 
@@ -94,7 +99,7 @@ class SchoolTranscriptReport(models.AbstractModel):
         if active_model == 'school.student' and context_ids:
             if isinstance(context_ids, int):
                 context_ids = [context_ids]
-            students = student_model.browse(context_ids).exists()
+            students = student_model.sudo().browse(context_ids).exists()
             if students:
                 return cert_model.generate_certificates(students, certificate_type='transcript')
 
@@ -102,7 +107,11 @@ class SchoolTranscriptReport(models.AbstractModel):
 
     def _get_report_values(self, docids, data=None):
         common = self.env['school.report.common']
-        docs = self._get_transcript_docs(docids, data=data)
+        docs = self._get_transcript_docs(docids, data=data).sudo()
+        for rec in docs:
+            rec.sudo()._compute_academic_metrics()
+            rec.sudo()._compute_average_grade()
+            rec.sudo()._compute_teachers()
         docids = docs.ids
         company = self.env.company.sudo()
         from odoo.tools import format_date
@@ -110,7 +119,6 @@ class SchoolTranscriptReport(models.AbstractModel):
 
         transcripts = []
         for rec in docs:
-            rec._compute_academic_metrics()
             stu = rec.student_id
             courses = rec._get_transcript_courses()
             gender_label = dict(stu._fields['gender'].selection).get(stu.gender, stu.gender) if stu.gender else 'N/A'
@@ -211,6 +219,11 @@ class SchoolCertificateReport(models.AbstractModel):
         data = data or {}
         cert_model = self.env['school.certificate']
         student_model = self.env['school.student']
+        ctype = data.get('certificate_type')
+        if isinstance(ctype, list) and ctype:
+            ctype = ctype[0]
+        if not ctype or ctype == 'transcript':
+            ctype = 'completion'
 
         candidate_ids = docids or data.get('docids') or data.get('ids') or data.get('active_ids')
         active_model = data.get('active_model') or self.env.context.get('active_model')
@@ -221,26 +234,54 @@ class SchoolCertificateReport(models.AbstractModel):
 
         if isinstance(candidate_ids, int):
             candidate_ids = [candidate_ids]
+        elif candidate_ids and not isinstance(candidate_ids, list):
+            candidate_ids = list(candidate_ids)
 
-        if candidate_ids and active_model == 'school.student':
-            students = student_model.browse(candidate_ids).exists()
-            return cert_model.generate_certificates(students, certificate_type='completion')
+        # 1. If explicit active_model is student
+        if candidate_ids and (active_model == 'school.student' or self.env.context.get('active_model') == 'school.student'):
+            students = student_model.sudo().browse(candidate_ids).exists()
+            if students:
+                return cert_model.generate_certificates(students, certificate_type=ctype)
 
-        docs = cert_model.browse(candidate_ids or []).exists()
-        if docs:
-            return docs
+        # 2. Check if candidate_ids are certificates
+        if candidate_ids:
+            docs = cert_model.sudo().browse(candidate_ids).exists()
+            if docs:
+                return docs
 
+            # 3. If not certificates, candidate_ids may be student IDs
+            students = student_model.sudo().browse(candidate_ids).exists()
+            if students:
+                return cert_model.generate_certificates(students, certificate_type=ctype)
+
+        # 4. If logged-in user is a student, automatically find or generate their certificate
+        if (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+        ):
+            my_student = student_model.sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+            if my_student:
+                return cert_model.generate_certificates(my_student, certificate_type=ctype)
+
+        # 5. If active_model is student in context
         if active_model == 'school.student' and context_ids:
             if isinstance(context_ids, int):
                 context_ids = [context_ids]
-            students = student_model.browse(context_ids).exists()
-            return cert_model.generate_certificates(students, certificate_type='completion')
+            students = student_model.sudo().browse(context_ids).exists()
+            if students:
+                return cert_model.generate_certificates(students, certificate_type=ctype)
 
         return cert_model
 
     def _get_report_values(self, docids, data=None):
         common = self.env['school.report.common']
-        docs = self._get_certificate_docs(docids, data=data)
+        docs = self._get_certificate_docs(docids, data=data).sudo()
+        for rec in docs:
+            rec.sudo()._compute_academic_metrics()
+            rec.sudo()._compute_average_grade()
+            rec.sudo()._compute_teachers()
         docids = docs.ids
         company = self.env.company.sudo()
         from odoo.tools import format_date
@@ -350,38 +391,5 @@ class SchoolFeeReport(models.AbstractModel):
             'total_amount': _fmt_number(sum(docs.mapped('amount'))),
             'total_paid': _fmt_number(sum(docs.mapped('paid_amount'))),
             'total_balance': _fmt_number(sum(docs.mapped('balance'))),
-            'total_fees': len(docs),
-        }
-
-
-class SchoolAttendanceReport(models.AbstractModel):
-    _name = 'report.school_management.attendance_report'
-    _description = 'School Attendance Report'
-
-    def _get_report_values(self, docids, data=None):
-        common = self.env['school.report.common']
-        docs = self.env['school.attendance'].browse(docids)
-        attendance_rows = [{
-            'student_name': rec.student_id.name,
-            'student_id': rec.student_id.student_id,
-            'class_name': rec.class_id.name,
-            'date': common._format_date(rec.date),
-            'status': common._selection_label('school.attendance', 'status', rec.status),
-            'status_value': rec.status,
-            'notes': rec.notes,
-        } for rec in docs]
-        status_counts = {}
-        for status, _label in docs._fields['status'].selection:
-            status_counts[status] = len(docs.filtered(lambda d: d.status == status))
-        return {
-            'doc_ids': docids,
-            'doc_model': 'school.attendance',
-            'docs': docs,
-            'company': self.env.company.sudo(),
-            'generated_on': common._generated_on(),
-            'attendance_rows': attendance_rows,
-            'format_number': common._format_number,
-            'format_datetime': common._format_datetime,
-            'status_counts': status_counts,
-            'total_records': len(docs),
+            'user_name': self.env.user.name,
         }

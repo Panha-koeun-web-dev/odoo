@@ -1,5 +1,34 @@
 # -*- coding: utf-8 -*-
 from odoo import models, api, _
+from odoo.exceptions import AccessError
+
+
+class IrUiMenu(models.Model):
+    _inherit = 'ir.ui.menu'
+
+    def _filter_visible_menus(self):
+        """Filter visible menus and completely hide all dashboard apps and menus from students."""
+        menus = super()._filter_visible_menus()
+        user = self.env.user
+        is_restricted_student = (
+            user.has_group('school_management.group_school_student')
+            and not user.has_group('school_management.group_school_teacher')
+            and not user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+        if is_restricted_student:
+            dash_menus = menus.sudo().filtered(
+                lambda m: 'dashboard' in (m.name or '').lower()
+                or (m.action and 'dashboard' in (m.action.name or '').lower())
+            )
+            if dash_menus:
+                dash_ids = set(dash_menus.ids)
+                return menus.filtered(
+                    lambda m: m.id not in dash_ids
+                    and not (m.parent_id and m.parent_id.id in dash_ids)
+                )
+        return menus
 
 
 class SchoolDashboard(models.AbstractModel):
@@ -9,8 +38,19 @@ class SchoolDashboard(models.AbstractModel):
     @api.model
     def get_dashboard_data(self):
         """Aggregate statistical data for the OWL School Dashboard.
-        Uses SQL aggregations via _read_group and search_count for maximum performance.
+        Restricted to Teachers and Administrators only.
         """
+        user = self.env.user
+        is_restricted_student = (
+            user.has_group('school_management.group_school_student')
+            and not user.has_group('school_management.group_school_teacher')
+            and not user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+        if is_restricted_student:
+            raise AccessError(_('Access Denied: Students are not permitted to view the school dashboard.'))
+
         student_model = self.env['school.student']
         teacher_model = self.env['school.teacher']
         class_model = self.env['school.class']

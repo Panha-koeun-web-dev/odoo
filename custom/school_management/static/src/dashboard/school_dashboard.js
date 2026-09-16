@@ -3,6 +3,7 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { loadBundle } from "@web/core/assets";
+import { user } from "@web/core/user";
 import { Component, onWillStart, useEffect, useRef, useState } from "@odoo/owl";
 
 export class SchoolDashboard extends Component {
@@ -13,6 +14,7 @@ export class SchoolDashboard extends Component {
     super.setup();
     this.orm = useService("orm");
     this.action = useService("action");
+    this.user = user;
 
     this.state = useState({
       loading: true,
@@ -34,6 +36,17 @@ export class SchoolDashboard extends Component {
         await loadBundle("web.chartjs_lib");
       } catch (err) {
         console.warn("Could not load chartjs_lib bundle", err);
+      }
+      try {
+        const isTeacher = await this.user.hasGroup("school_management.group_school_teacher");
+        const isAdmin = await this.user.hasGroup("school_management.group_school_admin");
+        const isStudent = await this.user.hasGroup("school_management.group_school_student");
+        if (isStudent && !isTeacher && !isAdmin) {
+          this.action.doAction("school_management.action_student", { clear_breadcrumbs: true });
+          return;
+        }
+      } catch (err) {
+        console.warn("Group check fallback in dashboard:", err);
       }
       await this.loadData();
     });
@@ -60,6 +73,7 @@ export class SchoolDashboard extends Component {
       this.state.lastUpdated = new Date().toLocaleTimeString();
     } catch (error) {
       console.error("Failed to load school dashboard data:", error);
+      this.action.doAction("school_management.action_student", { clear_breadcrumbs: true });
     } finally {
       this.state.loading = false;
     }

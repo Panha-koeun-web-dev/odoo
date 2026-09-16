@@ -74,6 +74,8 @@
                 <!-- Action Buttons -->
                 <button name="action_print_academic_transcript" type="object" string="Transcript" icon="fa-file-text-o"
                         title="Print Official Academic Transcript / Report Card" class="btn btn-sm btn-outline-primary"/>
+                <button name="action_print_student_certificates" type="object" string="Certificate" icon="fa-certificate"
+                        title="Print Official Student Certificate" class="btn btn-sm btn-outline-secondary"/>
                 <button name="action_open_stop_study_wizard" type="object" string="Stop Study" icon="fa-ban"
                         title="Stop / Kick Student" class="btn btn-sm btn-outline-danger" invisible="study_status == 'stopped'"
                         groups="school_management.group_school_admin"/>
@@ -198,6 +200,8 @@
                 <header>
                     <button name="action_print_academic_transcript" type="object"
                             string="Print Transcript (PDF)" class="btn-primary" icon="fa-file-text-o"/>
+                    <button name="action_print_student_certificates" type="object"
+                            string="Print Certificate (PDF)" class="btn-secondary" icon="fa-certificate"/>
                     <button name="action_create_user" type="object"
                             string="Create Login Account" class="btn-primary" icon="fa-user-plus"
                             invisible="user_id"
@@ -354,9 +358,6 @@
                                                    decoration-warning="today_attendance_status == 'late'"
                                                    decoration-info="today_attendance_status == 'excused'"/>
                                             <field name="study_period"/>
-                                            <field name="recontinue_date" invisible="not recontinue_date"/>
-                                            <field name="stop_date" invisible="study_status != 'stopped'"/>
-                                            <field name="stop_reason" invisible="study_status != 'stopped'"/>
                                         </group>
                                     </div>
                                 </div>

@@ -218,29 +218,50 @@
         }
     }
 
-    /* Tabs Styling */
-    .nav-tabs {
-        border-bottom: 1px solid #e2e8f0;
-        margin-bottom: 1.25rem;
+    /* Notebook & Tabs Styling */
+    .o_notebook {
+        .o_notebook_headers {
+            margin-bottom: 1.25rem !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+        }
 
-        .nav-link {
-            font-weight: 600;
-            color: #64748b;
-            font-size: 0.88rem;
-            padding: 0.65rem 1.15rem;
-            border: none;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s ease;
+        .nav-tabs {
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 0 !important;
 
-            &:hover {
-                color: #1e293b;
-                border-bottom-color: #cbd5e1;
+            .nav-item {
+                position: relative;
             }
 
-            &.active {
-                color: #2563eb !important;
-                border-bottom: 2px solid #2563eb !important;
-                background: transparent !important;
+            .nav-link {
+                position: relative;
+                z-index: 1;
+                font-weight: 600;
+                color: #64748b;
+                font-size: 0.88rem;
+                padding: 0.65rem 1.15rem;
+                border: none;
+                border-bottom: 2px solid transparent;
+                cursor: pointer !important;
+                pointer-events: auto !important;
+                user-select: none;
+                transition: color 0.2s ease, border-color 0.2s ease;
+
+                &:hover {
+                    color: #1e293b;
+                    border-bottom-color: #cbd5e1;
+                    cursor: pointer !important;
+                }
+
+                &.active {
+                    color: #2563eb !important;
+                    border-bottom: 2px solid #2563eb !important;
+                    background: transparent !important;
+                    cursor: default;
+                    z-index: 2;
+                }
             }
         }
     }

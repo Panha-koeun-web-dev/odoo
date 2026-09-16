@@ -469,7 +469,12 @@ class SchoolStudent(models.Model):
 
     def action_generate_certificate(self):
         self.ensure_one()
-        is_student = self.env.user.has_group('school_management.group_school_student') and not self.env.is_admin()
+        is_student = (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+        )
         certs = self.env['school.certificate'].sudo().generate_certificates(self, certificate_type='transcript')
         cert = certs[:1]
         if not cert:
@@ -491,21 +496,21 @@ class SchoolStudent(models.Model):
 
     def action_print_academic_transcript(self):
         """Directly generate and print the official Academic Transcript / Report Card PDF."""
-        self.ensure_one()
         certs = self.env['school.certificate'].generate_certificates(self, certificate_type='transcript')
         if not certs:
             return {'type': 'ir.actions.act_window_close'}
-        return certs[:1].action_print_transcript()
+        if len(certs) == 1:
+            return certs.action_print_transcript()
+        return self.env.ref('school_management.action_report_school_transcript_student').report_action(self)
 
     def action_print_student_certificates(self):
+        """Directly generate and print the official Student Certificate PDF."""
         certs = self.env['school.certificate'].generate_certificates(self, certificate_type='completion')
         if not certs:
-            return {
-                'type': 'ir.actions.act_window_close',
-            }
-        return self.env.ref('school_management.action_report_school_certificate').report_action(
-            certs)
-
+            return {'type': 'ir.actions.act_window_close'}
+        if len(certs) == 1:
+            return certs.action_print_certificate()
+        return self.env.ref('school_management.action_report_school_certificate_student').report_action(self)
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
