@@ -32,6 +32,12 @@
               action="action_enrollment"
               groups="school_management.group_school_admin"
               sequence="20"/>
+    <menuitem id="menu_school_student_export_xlsx"
+              name="Export Students (XLSX)"
+              parent="menu_school_student_parent"
+              action="action_school_report_student_xlsx"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="30"/>
 
     <!-- ================= Teachers ================= -->
     <menuitem id="menu_school_teacher_parent"
@@ -78,6 +84,12 @@
               action="action_major_enrollment"
               groups="school_management.group_school_admin"
               sequence="40"/>
+    <menuitem id="menu_school_class_export_xlsx"
+              name="Export Classes (XLSX)"
+              parent="menu_school_academic_parent"
+              action="action_school_report_class_xlsx"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="50"/>
 
     <!-- ================= Examinations ================= -->
     <menuitem id="menu_school_exam_parent"
@@ -97,14 +109,31 @@
               action="action_grade"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
+    <menuitem id="menu_school_grade_export_xlsx"
+              name="Export Exam Grades (XLSX)"
+              parent="menu_school_exam_parent"
+              action="action_school_report_grade_xlsx"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="30"/>
 
     <!-- ================= Attendance ================= -->
-    <menuitem id="menu_school_attendance"
+    <menuitem id="menu_school_attendance_parent"
               name="Attendance"
               parent="menu_school_root"
-              action="action_attendance"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="50"/>
+    <menuitem id="menu_school_attendance"
+              name="Attendance Records"
+              parent="menu_school_attendance_parent"
+              action="action_attendance"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="10"/>
+    <menuitem id="menu_school_attendance_export_xlsx"
+              name="Export Attendance (XLSX)"
+              parent="menu_school_attendance_parent"
+              action="action_school_report_attendance_xlsx"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="20"/>
 
     <!-- ================= Academic Transcripts & Report Cards ================= -->
     <menuitem id="menu_school_certificate"
@@ -132,4 +161,17 @@
               action="action_student_year_payment"
               groups="school_management.group_school_admin,school_management.group_school_student"
               sequence="20"/>
+    <menuitem id="menu_school_fee_export_xlsx"
+              name="Export Fees (XLSX)"
+              parent="menu_school_finance_parent"
+              action="action_school_report_fee_xlsx"
+              groups="school_management.group_school_admin"
+              sequence="30"/>
+    <menuitem id="menu_school_year_payment_export_xlsx"
+              name="Export Tuition &amp; Payments (XLSX)"
+              parent="menu_school_finance_parent"
+              action="action_school_report_year_payment_xlsx"
+              groups="school_management.group_school_admin"
+              sequence="40"/>
+
 </odoo>

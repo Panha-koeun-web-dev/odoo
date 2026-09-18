@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================= -->
+    <!-- SERVER ACTIONS: EXPORT TO XLSX (Contextual Action Menu)          -->
+    <!-- ================================================================= -->
+
+    <!-- 1. Fee Invoices: Export to XLSX -->
+    <record id="action_server_export_fee_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_fee"/>
+        <field name="binding_model_id" ref="model_school_fee"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+    <!-- 2. Year Payments: Export to XLSX -->
+    <record id="action_server_export_year_payment_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_student_year_payment"/>
+        <field name="binding_model_id" ref="model_school_student_year_payment"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+    <!-- 3. Attendance: Export to XLSX -->
+    <record id="action_server_export_attendance_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_attendance"/>
+        <field name="binding_model_id" ref="model_school_attendance"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+    <!-- 4. Grades: Export to XLSX -->
+    <record id="action_server_export_grade_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_grade"/>
+        <field name="binding_model_id" ref="model_school_grade"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+    <!-- 5. Students: Export to XLSX -->
+    <record id="action_server_export_student_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+    <!-- 6. Classes: Export to XLSX -->
+    <record id="action_server_export_class_xlsx" model="ir.actions.server">
+        <field name="name">Export to XLSX</field>
+        <field name="model_id" ref="model_school_class"/>
+        <field name="binding_model_id" ref="model_school_class"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_export_xlsx()
+        </field>
+    </record>
+
+</odoo>

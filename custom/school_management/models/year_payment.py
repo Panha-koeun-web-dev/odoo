@@ -453,6 +453,29 @@ class SchoolStudentYearPayment(models.Model):
             'context': {'default_student_id': self.student_id.id},
         }
 
+    def _generate_receipt_number(self):
+        year = fields.Date.today().year
+        return f"REC-YPAY-{year}-{self.id:04d}"
+
+    def action_print_receipt(self):
+        self.ensure_one()
+        if not self.receipt_number:
+            self.receipt_number = self._generate_receipt_number()
+        return self.env.ref('school_management.action_report_student_year_payment_receipt').with_context(
+            active_model='school.student.year.payment',
+            active_id=self.id,
+            active_ids=[self.id]
+        ).report_action(self, data={'active_model': 'school.student.year.payment'})
+
+    def action_export_xlsx(self):
+        ids = self.ids or self.env.context.get('active_ids') or []
+        ids_str = ','.join(str(x) for x in ids) if ids else ''
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/school_management/export_report_xlsx?report_type=year_payment&ids={ids_str}',
+            'target': 'self',
+        }
+
 
 class SchoolStudentYearPaymentPayWizard(models.TransientModel):
     _name = 'school.student.year.payment.pay.wizard'
@@ -478,25 +501,32 @@ class SchoolStudentYearPaymentPayWizard(models.TransientModel):
         if not self.env.user.has_group('school_management.group_school_admin'):
             raise AccessError(_("Only administrators are permitted to register payments."))
         year_payment = self.year_payment_id
+        receipt_num = self.receipt_number or year_payment.receipt_number or year_payment._generate_receipt_number()
 
+        vals = {
+            'payment_method': self.payment_method,
+            'receipt_number': receipt_num,
+            'notes': self.notes,
+        }
         if self.installment == '1':
-            year_payment.write({
+            vals.update({
                 'installment_1_paid_amount': year_payment.installment_1_paid_amount + self.amount,
                 'installment_1_paid_date': self.paid_date,
-                'payment_method': self.payment_method,
-                'receipt_number': self.receipt_number,
-                'notes': self.notes,
             })
         else:
-            year_payment.write({
+            vals.update({
                 'installment_2_paid_amount': year_payment.installment_2_paid_amount + self.amount,
                 'installment_2_paid_date': self.paid_date,
-                'payment_method': self.payment_method,
-                'receipt_number': self.receipt_number,
-                'notes': self.notes,
             })
 
+        year_payment.write(vals)
         return {'type': 'ir.actions.act_window_close'}
+
+    def action_confirm_and_print(self):
+        self.ensure_one()
+        year_payment = self.year_payment_id
+        self.action_confirm()
+        return year_payment.action_print_receipt()
 
 
 class SchoolStudentYearPaymentDeadlineWizard(models.TransientModel):

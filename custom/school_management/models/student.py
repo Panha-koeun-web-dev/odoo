@@ -614,6 +614,31 @@ class SchoolStudent(models.Model):
         }
 
 
+
+    def action_print_payment_receipt(self):
+        self.ensure_one()
+        payment = self.year_payment_ids.filtered(lambda p: p.overall_status in ('paid', 'partial'))[:1]
+        if payment:
+            return payment.action_print_receipt()
+        fee = self.fee_ids.filtered(lambda f: f.status in ('paid', 'partial'))[:1]
+        if fee:
+            return fee.action_print_receipt()
+        if self.year_payment_ids:
+            return self.year_payment_ids[0].action_print_receipt()
+        if self.fee_ids:
+            return self.fee_ids[0].action_print_receipt()
+        raise UserError(_("No payment or fee records found for student %s.") % self.name)
+
+
+    def action_export_xlsx(self):
+        ids = self.ids or self.env.context.get('active_ids') or []
+        ids_str = ','.join(str(x) for x in ids) if ids else ''
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/school_management/export_report_xlsx?report_type=student&ids={ids_str}',
+            'target': 'self',
+        }
+
 class SchoolStudentStopWizard(models.TransientModel):
     _name = 'school.student.stop.wizard'
     _description = 'Stop Student Study Wizard'
@@ -650,3 +675,4 @@ class SchoolStudentStopWizard(models.TransientModel):
                 'sticky': False,
             }
         }
+

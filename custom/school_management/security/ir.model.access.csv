@@ -53,3 +53,5 @@ access_student_fee,student.fee,model_school_fee,school_management.group_school_s
 access_student_enrollment,student.enrollment,model_school_enrollment,school_management.group_school_student,1,0,0,0
 access_student_major_enrollment,student.major.enrollment,model_school_major_enrollment,school_management.group_school_student,1,0,0,0
 access_student_dashboard,student.dashboard,model_school_dashboard,school_management.group_school_student,1,0,0,0
+access_admin_export_report_xlsx_wizard,admin.export.report.xlsx.wizard,model_school_report_export_xlsx_wizard,school_management.group_school_admin,1,1,1,1
+access_teacher_export_report_xlsx_wizard,teacher.export.report.xlsx.wizard,model_school_report_export_xlsx_wizard,school_management.group_school_teacher,1,1,1,1

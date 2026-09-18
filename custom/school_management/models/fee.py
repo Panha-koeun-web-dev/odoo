@@ -48,8 +48,35 @@ class SchoolFee(models.Model):
     def _get_state_change_recipients(self):
         return self.student_id.email or self.student_id.parent_email
 
+    def _generate_receipt_number(self):
+        year = fields.Date.today().year
+        return f"REC-FEE-{year}-{self.id:04d}"
+
     def action_mark_paid(self):
         for rec in self:
             rec.status = 'paid'
             rec.paid_date = fields.Date.today()
             rec.paid_amount = rec.amount
+            if not rec.payment_method:
+                rec.payment_method = 'cash'
+            if not rec.receipt_number:
+                rec.receipt_number = rec._generate_receipt_number()
+
+    def action_print_receipt(self):
+        self.ensure_one()
+        if not self.receipt_number:
+            self.receipt_number = self._generate_receipt_number()
+        return self.env.ref('school_management.action_report_student_fee_receipt').with_context(
+            active_model='school.fee',
+            active_id=self.id,
+            active_ids=[self.id]
+        ).report_action(self, data={'active_model': 'school.fee'})
+
+    def action_export_xlsx(self):
+        ids = self.ids or self.env.context.get('active_ids') or []
+        ids_str = ','.join(str(x) for x in ids) if ids else ''
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/school_management/export_report_xlsx?report_type=fee&ids={ids_str}',
+            'target': 'self',
+        }

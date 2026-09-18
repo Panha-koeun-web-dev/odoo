@@ -8,6 +8,10 @@
                   decoration-success="overall_status == 'paid'"
                   decoration-warning="overall_status == 'partial' or deadline_status == 'today'"
                   decoration-muted="overall_status == 'pending'">
+                <header>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                </header>
                 <field name="student_id"/>
                 <field name="class_id" optional="show"/>
                 <field name="year"/>
@@ -45,6 +49,8 @@
                 <field name="payment_method" optional="hide"/>
                 <field name="receipt_number" optional="hide"/>
                 
+                <button name="action_export_xlsx" type="object" string="XLSX"
+                        icon="fa-file-excel-o" title="Export this record to Excel" class="btn-sm btn-outline-success"/>
                 <button name="action_open_deadline_wizard" type="object" string="Set Deadline"
                         class="btn-sm btn-outline-primary" icon="fa-calendar-check-o" title="Set specific payment deadline schedule"
                         groups="school_management.group_school_admin"/>
@@ -218,6 +224,8 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_export_xlsx" type="object" string="Export XLSX"
+                            class="btn-outline-primary" icon="fa-file-excel-o"/>
                     <button name="action_open_deadline_wizard" type="object" string="Set Specific Deadline"
                             class="btn-primary" icon="fa-calendar-check-o"
                             groups="school_management.group_school_admin"/>

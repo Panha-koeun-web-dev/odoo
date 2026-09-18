@@ -12,6 +12,8 @@
                 <header>
                     <button name="%(school_management.action_daily_attendance_wizard)d" type="action"
                             string="Take Daily Attendance" class="btn-primary" icon="fa-calendar-check-o" display="always"/>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
                 </header>
                 <field name="date"/>
                 <field name="student_code" optional="show"/>
@@ -82,6 +84,8 @@
                 <header>
                     <button name="%(school_management.action_daily_attendance_wizard)d" type="action"
                             string="Take Daily Attendance" class="btn-outline-primary" icon="fa-calendar-check-o"/>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o"/>
                     <button name="action_set_present" string="Set Present" type="object" class="btn-outline-success" invisible="status == 'present'"/>
                     <button name="action_set_absent" string="Set Absent" type="object" class="btn-outline-danger" invisible="status == 'absent'"/>
                     <button name="action_set_late" string="Set Late" type="object" class="btn-outline-warning" invisible="status == 'late'"/>

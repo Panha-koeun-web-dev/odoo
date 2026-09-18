@@ -32,6 +32,10 @@
                   decoration-muted="study_status == 'stopped' or not active"
                   multi_edit="1"
                   sample="1">
+                <header>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                </header>
                 <field name="photo" widget="image" nolabel="1" width="44"
                        options="{'size': [36, 36], 'img_class': 'rounded-circle object-fit-cover shadow-sm'}"/>
                 <field name="student_id" string="Student ID" decoration-bf="1"/>
@@ -72,6 +76,8 @@
                 <field name="active" optional="hide"/>
 
                 <!-- Action Buttons -->
+                <button name="action_export_xlsx" type="object" string="XLSX" icon="fa-file-excel-o"
+                        title="Export Student Record to Excel" class="btn btn-sm btn-outline-success"/>
                 <button name="action_print_academic_transcript" type="object" string="Transcript" icon="fa-file-text-o"
                         title="Print Official Academic Transcript / Report Card" class="btn btn-sm btn-outline-primary"/>
                 <button name="action_print_student_certificates" type="object" string="Certificate" icon="fa-certificate"
@@ -198,6 +204,8 @@
         <field name="arch" type="xml">
             <form class="o_school_form">
                 <header>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o"/>
                     <button name="action_print_academic_transcript" type="object"
                             string="Print Transcript (PDF)" class="btn-primary" icon="fa-file-text-o"/>
                     <button name="action_print_student_certificates" type="object"

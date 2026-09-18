@@ -43,3 +43,12 @@ class SchoolAttendance(models.Model):
 
     def action_set_excused(self):
         self.write({'status': 'excused'})
+
+    def action_export_xlsx(self):
+        ids = self.ids or self.env.context.get('active_ids') or []
+        ids_str = ','.join(str(x) for x in ids) if ids else ''
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/school_management/export_report_xlsx?report_type=attendance&ids={ids_str}',
+            'target': 'self',
+        }

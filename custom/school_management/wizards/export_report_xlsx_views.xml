@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_school_report_export_xlsx_wizard_form" model="ir.ui.view">
+        <field name="name">school.report.export.xlsx.wizard.form</field>
+        <field name="model">school.report.export.xlsx.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Export Data Report to Excel (XLSX)">
+                <field name="state" invisible="1"/>
+
+                <!-- ================= STATE: CHOOSE FILTERS ================= -->
+                <div invisible="state != 'choose'" class="o_report_export_dialog">
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                        <i class="fa fa-file-excel-o fa-2x me-3 text-success" title="Excel Spreadsheet"/>
+                        <div>
+                            <h5 class="alert-heading mb-1">Generate Formatted Excel Spreadsheet</h5>
+                            <div class="text-muted small">
+                                Select report category and criteria below. Formatted sheets include executive KPI cards, summary charts, and totals.
+                            </div>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Report Configuration">
+                            <field name="report_type" widget="radio"/>
+                            <field name="record_count" readonly="1" string="Matching Records"
+                                   help="Number of records matching the current criteria"/>
+                        </group>
+                        <group string="Scope &amp; Scope Filters">
+                            <field name="class_id" options="{'no_create': True}"/>
+                            <field name="student_id" options="{'no_create': True}"
+                                   invisible="report_type in ('class',)"/>
+                            <field name="academic_year" placeholder="e.g. 2025-2026"
+                                   invisible="report_type not in ('year_payment', 'class')"/>
+                            <field name="date_from"
+                                   invisible="report_type not in ('fee', 'attendance')"/>
+                            <field name="date_to"
+                                   invisible="report_type not in ('fee', 'attendance')"/>
+                            <field name="fee_status"
+                                   invisible="report_type != 'fee'"/>
+                            <field name="payment_status"
+                                   invisible="report_type != 'year_payment'"/>
+                            <field name="attendance_status"
+                                   invisible="report_type != 'attendance'"/>
+                            <field name="grade_result"
+                                   invisible="report_type != 'grade'"/>
+                            <field name="student_status"
+                                   invisible="report_type != 'student'"/>
+                        </group>
+                    </group>
+                </div>
+
+                <!-- ================= STATE: GET FILE ================= -->
+                <div invisible="state != 'get'" class="py-3 text-center">
+                    <div class="mb-3">
+                        <i class="fa fa-check-circle text-success" title="Report Ready" style="font-size: 54px;"/>
+                    </div>
+                    <h4 class="text-dark fw-bold">Your Excel Report is Ready!</h4>
+                    <p class="text-muted mb-3">
+                        File: <strong class="text-primary"><field name="file_name" readonly="1"/></strong>
+                    </p>
+                    <p class="text-muted small">
+                        If your download did not start automatically, click the button below to download the file directly.
+                    </p>
+                    <field name="file_data" filename="file_name" invisible="1"/>
+                </div>
+
+                <footer>
+                    <div invisible="state != 'choose'">
+                        <button name="action_export_xlsx" type="object"
+                                string="Download XLSX Report"
+                                class="btn-primary"
+                                icon="fa-download"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </div>
+                    <div invisible="state != 'get'">
+                        <button name="action_download_again" type="object"
+                                string="Download File"
+                                class="btn-success"
+                                icon="fa-download"/>
+                        <button name="action_reset" type="object"
+                                string="Export Another Report"
+                                class="btn-outline-primary"
+                                icon="fa-refresh"/>
+                        <button string="Close" class="btn-secondary" special="cancel"/>
+                    </div>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- General action to open wizard -->
+    <record id="action_school_report_export_xlsx_wizard" model="ir.actions.act_window">
+        <field name="name">Export Data Report (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Specific Pre-filtered Actions -->
+    <record id="action_school_report_fee_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Fees (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'fee'}</field>
+    </record>
+
+    <record id="action_school_report_year_payment_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Tuition &amp; Payments (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'year_payment'}</field>
+    </record>
+
+    <record id="action_school_report_attendance_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Attendance Log (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'attendance'}</field>
+    </record>
+
+    <record id="action_school_report_grade_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Exam Grades (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'grade'}</field>
+    </record>
+
+    <record id="action_school_report_student_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Student Directory (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'student'}</field>
+    </record>
+
+    <record id="action_school_report_class_xlsx" model="ir.actions.act_window">
+        <field name="name">Export Classes (XLSX)</field>
+        <field name="res_model">school.report.export.xlsx.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'class'}</field>
+    </record>
+</odoo>

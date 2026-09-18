@@ -184,3 +184,12 @@ class SchoolGrade(models.Model):
                 rec.result = 'pass'
             else:
                 rec.result = 'fail'
+
+    def action_export_xlsx(self):
+        ids = self.ids or self.env.context.get('active_ids') or []
+        ids_str = ','.join(str(x) for x in ids) if ids else ''
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/school_management/export_report_xlsx?report_type=grade&ids={ids_str}',
+            'target': 'self',
+        }

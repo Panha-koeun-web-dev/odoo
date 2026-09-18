@@ -7,6 +7,10 @@
             <list decoration-success="result == 'pass'"
                   decoration-danger="result == 'fail'"
                   decoration-warning="is_custom_schedule">
+                <header>
+                    <button name="action_export_xlsx" type="object"
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                </header>
                 <field name="student_id"/>
                 <field name="exam_id"/>
                 <field name="subject_id"/>
@@ -28,6 +32,9 @@
                 <field name="grade_letter" widget="badge"/>
                 <field name="result" widget="badge"/>
                 <field name="remarks" optional="hide"/>
+                <button name="action_export_xlsx" type="object" string="XLSX"
+                        class="btn-sm btn-outline-success" icon="fa-file-excel-o"
+                        title="Export this grade record to Excel"/>
             </list>
         </field>
     </record>
@@ -109,6 +116,8 @@
                     <button name="action_reset_to_default_schedule" string="Reset to Exam General Time"
                             type="object" class="btn-outline-secondary" icon="fa-undo"
                             invisible="not is_custom_schedule"/>
+                    <button name="action_export_xlsx" string="Export XLSX"
+                            type="object" class="btn-outline-primary" icon="fa-file-excel-o"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

@@ -56,7 +56,7 @@ class SchoolTranscriptReport(models.AbstractModel):
         student_model = self.env['school.student']
 
         candidate_ids = docids or data.get('docids') or data.get('ids') or data.get('active_ids')
-        active_model = data.get('active_model') or self.env.context.get('active_model')
+        active_model = data.get('active_model') or self.env.context.get('active_model') or self.env.context.get('params', {}).get('model') or self.env.context.get('default_model')
         context_ids = self.env.context.get('active_ids') or self.env.context.get('active_id')
 
         if not candidate_ids and context_ids:
@@ -392,4 +392,379 @@ class SchoolFeeReport(models.AbstractModel):
             'total_paid': _fmt_number(sum(docs.mapped('paid_amount'))),
             'total_balance': _fmt_number(sum(docs.mapped('balance'))),
             'user_name': self.env.user.name,
+        }
+
+
+class SchoolReceiptReport(models.AbstractModel):
+    _name = 'report.school_management.report_payment_receipt'
+    _description = 'Student Payment Receipt Report Parser'
+
+    def _company_receipt_logo_uri(self, company, max_width=240, max_height=80):
+        if not company.logo or company.uses_default_logo:
+            return False
+        try:
+            from PIL import Image
+            import io
+            raw_bytes = base64.b64decode(company.logo)
+            im = Image.open(io.BytesIO(raw_bytes))
+            im.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            fmt = 'PNG' if im.mode in ('RGBA', 'LA') else 'JPEG'
+            im.save(buf, format=fmt, quality=95)
+            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+            mime = 'image/png' if fmt == 'PNG' else 'image/jpeg'
+            return f'data:{mime};base64,{b64}'
+        except Exception:
+            return self.env['school.report.common']._company_logo_uri(company)
+
+    def _get_barcode_uri(self, code):
+        if not code:
+            return False
+        try:
+            from reportlab.graphics.barcode import createBarcodeDrawing
+            from reportlab.graphics import renderSVG
+            drawing = createBarcodeDrawing('Code128', value=str(code), width=210, height=28, humanReadable=False)
+            svg = renderSVG.drawToString(drawing)
+            b64 = base64.b64encode(svg.encode('utf-8')).decode('ascii')
+            return f'data:image/svg+xml;base64,{b64}'
+        except Exception:
+            return False
+
+    def _get_receipt_docs(self, docids, data=None):
+        data = data or {}
+        candidate_ids = docids or data.get('docids') or data.get('ids') or data.get('active_ids')
+        active_model = data.get('active_model') or self.env.context.get('active_model')
+        context_ids = self.env.context.get('active_ids') or self.env.context.get('active_id')
+
+        if not candidate_ids and context_ids:
+            candidate_ids = context_ids
+
+        if isinstance(candidate_ids, int):
+            candidate_ids = [candidate_ids]
+        elif candidate_ids and not isinstance(candidate_ids, list):
+            candidate_ids = list(candidate_ids)
+
+        if not candidate_ids:
+            return []
+
+        if active_model == 'school.student' or self.env.context.get('active_model') == 'school.student':
+            students = self.env['school.student'].sudo().browse(candidate_ids).exists()
+            records = []
+            for s in students:
+                yp = s.year_payment_ids.filtered(lambda p: p.overall_status in ('paid', 'partial'))[:1]
+                if yp:
+                    records.append(yp)
+                else:
+                    fee = s.fee_ids.filtered(lambda f: f.status in ('paid', 'partial'))[:1]
+                    if fee:
+                        records.append(fee)
+                    elif s.year_payment_ids:
+                        records.append(s.year_payment_ids[0])
+                    elif s.fee_ids:
+                        records.append(s.fee_ids[0])
+            return records
+
+        if active_model == 'school.student.year.payment' or self.env.context.get('active_model') == 'school.student.year.payment':
+            return self.env['school.student.year.payment'].sudo().browse(candidate_ids).exists()
+
+        if active_model == 'school.fee' or self.env.context.get('active_model') == 'school.fee':
+            return self.env['school.fee'].sudo().browse(candidate_ids).exists()
+
+        fee_matches = self.env['school.fee'].sudo().search([('id', 'in', candidate_ids), ('receipt_number', 'like', 'REC-FEE-%')])
+        if fee_matches:
+            return fee_matches
+        yp_matches = self.env['school.student.year.payment'].sudo().search([('id', 'in', candidate_ids), ('receipt_number', 'like', 'REC-YPAY-%')])
+        if yp_matches:
+            return yp_matches
+
+        docs = self.env['school.student.year.payment'].sudo().browse(candidate_ids).exists()
+        if docs:
+            return docs
+        docs = self.env['school.fee'].sudo().browse(candidate_ids).exists()
+        if docs:
+            return docs
+        docs = self.env['school.student'].sudo().browse(candidate_ids).exists()
+        if docs:
+            records = []
+            for s in docs:
+                yp = s.year_payment_ids.filtered(lambda p: p.overall_status in ('paid', 'partial'))[:1] or s.year_payment_ids[:1]
+                if yp:
+                    records.append(yp)
+            return records
+        return []
+
+    def _get_report_values(self, docids, data=None):
+        common = self.env['school.report.common']
+        docs = self._get_receipt_docs(docids, data=data)
+        company = self.env.company.sudo()
+        user = self.env.user
+
+        inst_name = company.name if (company.name and company.name != 'My Company') else 'Passerelles Numériques Cambodia'
+        inst_addr = (f"{company.street or ''}, {company.city or ''}").strip(', ')
+        if not inst_addr:
+            inst_addr = 'BP 511, Phum Tropeang Chhouk, Sangkat Teuk Thla, Khan Sen Sok, Phnom Penh'
+        inst_phone = company.phone or '+855 (0) 23 99 55 00'
+        inst_email = company.email or 'cambodia@passerellesnumeriques.org'
+        inst_web = company.website or 'www.passerellesnumeriques.org'
+
+        company_logo = self._company_receipt_logo_uri(company, max_width=240, max_height=80)
+        if not company_logo:
+            company_logo = common._static_image_uri('static/description/icon.png')
+
+        receipts = []
+        for rec in docs:
+            model_name = rec._name
+            if model_name == 'school.student.year.payment':
+                if not rec.receipt_number:
+                    rec.sudo().write({'receipt_number': rec._generate_receipt_number()})
+                stu = rec.student_id
+                line_items = []
+                currency_sym = rec.currency_id.symbol or '$'
+                if rec.installment_1_amount > 0:
+                    status_text = 'Paid' if rec.installment_1_status == 'paid' else ('Partially Paid' if rec.installment_1_status == 'partial' else 'Pending')
+                    if rec.installment_1_paid_date and rec.installment_1_status in ('paid', 'partial'):
+                        status_text += ' on ' + common._format_date(rec.installment_1_paid_date)
+                    fmt_amt = common._format_number(rec.installment_1_amount)
+                    line_items.append({
+                        'index': 1,
+                        'name': f"Tuition ({rec.year}) — Installment 1",
+                        'period': rec.year or 'Academic Year',
+                        'sub_text': status_text,
+                        'status': rec.installment_1_status,
+                        'status_label': 'Paid' if rec.installment_1_status == 'paid' else ('Partial' if rec.installment_1_status == 'partial' else 'Pending'),
+                        'amount': fmt_amt,
+                        'amount_display': f"{currency_sym} {fmt_amt}",
+                    })
+                if rec.installment_2_amount > 0:
+                    status_text = 'Paid' if rec.installment_2_status == 'paid' else ('Partially Paid' if rec.installment_2_status == 'partial' else 'Pending')
+                    if rec.installment_2_paid_date and rec.installment_2_status in ('paid', 'partial'):
+                        status_text += ' on ' + common._format_date(rec.installment_2_paid_date)
+                    fmt_amt = common._format_number(rec.installment_2_amount)
+                    line_items.append({
+                        'index': 2,
+                        'name': f"Tuition ({rec.year}) — Installment 2",
+                        'period': rec.year or 'Academic Year',
+                        'sub_text': status_text,
+                        'status': rec.installment_2_status,
+                        'status_label': 'Paid' if rec.installment_2_status == 'paid' else ('Partial' if rec.installment_2_status == 'partial' else 'Pending'),
+                        'amount': fmt_amt,
+                        'amount_display': f"{currency_sym} {fmt_amt}",
+                    })
+                if not line_items:
+                    fmt_amt = common._format_number(rec.total_amount)
+                    line_items.append({
+                        'index': 1,
+                        'name': f"Academic Tuition Fee ({rec.year})",
+                        'period': rec.year or 'Academic Year',
+                        'sub_text': 'Annual Full Tuition',
+                        'status': rec.overall_status,
+                        'status_label': 'Paid' if rec.overall_status == 'paid' else ('Partial' if rec.overall_status == 'partial' else 'Pending'),
+                        'amount': fmt_amt,
+                        'amount_display': f"{currency_sym} {fmt_amt}",
+                    })
+
+                pay_method_label = common._selection_label('school.student.year.payment', 'payment_method', rec.payment_method) or 'Cash'
+                paid_dt = rec.installment_2_paid_date or rec.installment_1_paid_date
+                receipt_date = common._format_date(paid_dt) if paid_dt else common._format_datetime(fields.Datetime.now())
+
+                subtot_fmt = common._format_number(rec.total_amount)
+                paid_fmt = common._format_number(rec.total_paid)
+                bal_fmt = common._format_number(rec.total_balance)
+                is_zero_balance = (rec.total_balance <= 0)
+
+                status_label = 'PAID IN FULL' if rec.overall_status == 'paid' else ('PARTIALLY PAID' if rec.overall_status == 'partial' else 'PENDING')
+                status_color = '#047857' if rec.overall_status == 'paid' else ('#b45309' if rec.overall_status == 'partial' else '#475569')
+                status_bg = '#ecfdf5' if rec.overall_status == 'paid' else ('#fffbeb' if rec.overall_status == 'partial' else '#f8fafc')
+                status_border = '#10b981' if rec.overall_status == 'paid' else ('#f59e0b' if rec.overall_status == 'partial' else '#cbd5e1')
+                status_badge_icon = '✔' if rec.overall_status == 'paid' else ('⏳' if rec.overall_status == 'partial' else '●')
+                cashier_disp = user.name if (user.name and user.name not in ('OdooBot', 'System')) else 'Administrator'
+
+                receipts.append({
+                    'doc_id': rec.id,
+                    'model_name': model_name,
+                    'logo_uri': company_logo,
+                    'receipt_number': rec.receipt_number,
+                    'receipt_date': receipt_date,
+                    'receipt_type_label': 'Annual Tuition Payment',
+                    'student_name': stu.name,
+                    'student_code': stu.student_id or f"STU-{stu.id:04d}",
+                    'student_email': stu.email or '',
+                    'student_phone': stu.phone or '',
+                    'parent_name': stu.parent_name or '',
+                    'class_name': rec.class_id.name or stu.class_id.name or 'QA Test Class',
+                    'academic_year': rec.year or stu.study_period or '2026',
+                    'has_photo': bool(stu.photo),
+                    'photo_uri': image_data_uri(stu.photo) if stu.photo else '',
+                    'line_items': line_items,
+                    'subtotal': subtot_fmt,
+                    'adjustment': '0.00',
+                    'discount': '0.00',
+                    'tax': '0.00',
+                    'total': subtot_fmt,
+                    'paid_amount': paid_fmt,
+                    'balance': bal_fmt,
+                    'is_zero_balance': is_zero_balance,
+                    'subtotal_display': f"{currency_sym} {subtot_fmt}",
+                    'adjustment_display': f"{currency_sym} 0.00",
+                    'discount_display': f"{currency_sym} 0.00",
+                    'tax_display': f"{currency_sym} 0.00",
+                    'total_display': f"{currency_sym} {subtot_fmt}",
+                    'paid_amount_display': f"{currency_sym} {paid_fmt}",
+                    'balance_display': f"{currency_sym} {bal_fmt}",
+                    'payment_method': pay_method_label,
+                    'status': rec.overall_status,
+                    'status_label': status_label,
+                    'status_color': status_color,
+                    'status_bg': status_bg,
+                    'status_border': status_border,
+                    'status_badge_icon': status_badge_icon,
+                    'cashier': cashier_disp,
+                    'currency_symbol': currency_sym,
+                    'barcode_uri': self._get_barcode_uri(rec.receipt_number),
+                    'barcode_text': rec.receipt_number,
+                    'inst_name': inst_name,
+                    'inst_addr': inst_addr,
+                    'inst_phone': inst_phone,
+                    'inst_email': inst_email,
+                    'inst_web': inst_web,
+                })
+            elif model_name == 'school.fee':
+                if not rec.receipt_number:
+                    rec.sudo().write({'receipt_number': rec._generate_receipt_number()})
+                stu = rec.student_id
+                fee_type_label = common._selection_label('school.fee', 'fee_type', rec.fee_type)
+                sub_text = 'Paid' if rec.status == 'paid' else ('Partially Paid' if rec.status == 'partial' else 'Pending')
+                if rec.paid_date and rec.status in ('paid', 'partial'):
+                    sub_text += ' on ' + common._format_date(rec.paid_date)
+                elif rec.due_date:
+                    sub_text += ' (Due: ' + common._format_date(rec.due_date) + ')'
+
+                currency_sym = '$'
+                fmt_amt = common._format_number(rec.amount)
+                line_items = [{
+                    'index': 1,
+                    'name': f"{fee_type_label} Invoice",
+                    'period': stu.study_period or '2026',
+                    'sub_text': sub_text,
+                    'status': rec.status,
+                    'status_label': 'Paid' if rec.status == 'paid' else ('Partial' if rec.status == 'partial' else 'Pending'),
+                    'amount': fmt_amt,
+                    'amount_display': f"{currency_sym} {fmt_amt}",
+                }]
+                pay_method_label = common._selection_label('school.fee', 'payment_method', rec.payment_method) or 'Cash'
+                receipt_date = common._format_date(rec.paid_date) if rec.paid_date else common._format_datetime(fields.Datetime.now())
+
+                subtot_fmt = fmt_amt
+                paid_fmt = common._format_number(rec.paid_amount)
+                bal_fmt = common._format_number(rec.balance)
+                is_zero_balance = (rec.balance <= 0)
+
+                status_label = 'PAID IN FULL' if rec.status == 'paid' else ('PARTIALLY PAID' if rec.status == 'partial' else 'PENDING')
+                status_color = '#047857' if rec.status == 'paid' else ('#b45309' if rec.status == 'partial' else '#475569')
+                status_bg = '#ecfdf5' if rec.status == 'paid' else ('#fffbeb' if rec.status == 'partial' else '#f8fafc')
+                status_border = '#10b981' if rec.status == 'paid' else ('#f59e0b' if rec.status == 'partial' else '#cbd5e1')
+                status_badge_icon = '✔' if rec.status == 'paid' else ('⏳' if rec.status == 'partial' else '●')
+                cashier_disp = user.name if (user.name and user.name not in ('OdooBot', 'System')) else 'Administrator'
+
+                receipts.append({
+                    'doc_id': rec.id,
+                    'model_name': model_name,
+                    'logo_uri': company_logo,
+                    'receipt_number': rec.receipt_number,
+                    'receipt_date': receipt_date,
+                    'receipt_type_label': f'{fee_type_label} Settlement',
+                    'student_name': stu.name,
+                    'student_code': stu.student_id or f"STU-{stu.id:04d}",
+                    'student_email': stu.email or '',
+                    'student_phone': stu.phone or '',
+                    'parent_name': stu.parent_name or '',
+                    'class_name': rec.class_id.name or stu.class_id.name or 'QA Test Class',
+                    'academic_year': stu.study_period or '2026',
+                    'has_photo': bool(stu.photo),
+                    'photo_uri': image_data_uri(stu.photo) if stu.photo else '',
+                    'line_items': line_items,
+                    'subtotal': subtot_fmt,
+                    'adjustment': '0.00',
+                    'discount': '0.00',
+                    'tax': '0.00',
+                    'total': subtot_fmt,
+                    'paid_amount': paid_fmt,
+                    'balance': bal_fmt,
+                    'is_zero_balance': is_zero_balance,
+                    'subtotal_display': f"{currency_sym} {subtot_fmt}",
+                    'adjustment_display': f"{currency_sym} 0.00",
+                    'discount_display': f"{currency_sym} 0.00",
+                    'tax_display': f"{currency_sym} 0.00",
+                    'total_display': f"{currency_sym} {subtot_fmt}",
+                    'paid_amount_display': f"{currency_sym} {paid_fmt}",
+                    'balance_display': f"{currency_sym} {bal_fmt}",
+                    'payment_method': pay_method_label,
+                    'status': rec.status,
+                    'status_label': status_label,
+                    'status_color': status_color,
+                    'status_bg': status_bg,
+                    'status_border': status_border,
+                    'status_badge_icon': status_badge_icon,
+                    'cashier': cashier_disp,
+                    'currency_symbol': currency_sym,
+                    'barcode_uri': self._get_barcode_uri(rec.receipt_number),
+                    'barcode_text': rec.receipt_number,
+                    'inst_name': inst_name,
+                    'inst_addr': inst_addr,
+                    'inst_phone': inst_phone,
+                    'inst_email': inst_email,
+                    'inst_web': inst_web,
+                })
+
+        return {
+            'doc_ids': [r['doc_id'] for r in receipts],
+            'doc_model': receipts[0]['model_name'] if receipts else 'school.fee',
+            'docs': docs,
+            'company': company,
+            'inst_name': inst_name,
+            'inst_addr': inst_addr,
+            'inst_phone': inst_phone,
+            'inst_email': inst_email,
+            'inst_web': inst_web,
+            'company_logo': company_logo,
+            'has_company_logo': bool(company_logo),
+            'receipts': receipts,
+            'user_name': user.name,
+        }
+
+
+class SchoolAttendanceReport(models.AbstractModel):
+    _name = 'report.school_management.attendance_report'
+    _description = 'School Attendance Report Parser'
+
+    def _get_report_values(self, docids, data=None):
+        common = self.env['school.report.common']
+        docs = self.env['school.attendance'].browse(docids) if docids else self.env['school.attendance'].search([])
+        company = self.env.company.sudo()
+        status_dict = dict(self.env['school.attendance']._fields['status'].selection)
+        attendance_rows = [{
+            'student_name': rec.student_id.name or '',
+            'student_id': rec.student_id.student_id or '',
+            'class_name': rec.class_id.name or '',
+            'date': common._format_date(rec.date),
+            'status': status_dict.get(rec.status, rec.status or ''),
+            'status_value': rec.status,
+            'notes': rec.notes or '',
+        } for rec in docs]
+        status_counts = {
+            'present': len(docs.filtered(lambda a: a.status == 'present')),
+            'absent': len(docs.filtered(lambda a: a.status == 'absent')),
+            'late': len(docs.filtered(lambda a: a.status == 'late')),
+            'excused': len(docs.filtered(lambda a: a.status == 'excused')),
+        }
+        return {
+            'doc_ids': docids,
+            'doc_model': 'school.attendance',
+            'docs': docs,
+            'company': company,
+            'total_records': len(docs),
+            'attendance_rows': attendance_rows,
+            'status_counts': status_counts,
+            'generated_on': common._generated_on(),
+            'user': self.env.user,
         }
