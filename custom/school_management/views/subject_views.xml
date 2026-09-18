@@ -100,6 +100,15 @@
                                 <span class="o_stat_text">Exams</span>
                             </div>
                         </button>
+                        <button name="action_view_students_studying" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="student_study_count"/></span>
+                                <span class="o_stat_text">Students Studying</span>
+                            </div>
+                        </button>
+                        <button name="action_view_teaching_assignments" type="object" class="oe_stat_button" icon="fa-briefcase">
+                            <div class="o_stat_info"><span class="o_stat_text">Assignments</span></div>
+                        </button>
                     </div>
 
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
@@ -151,6 +160,24 @@
                                     <field name="phone"/>
                                     <field name="email"/>
                                     <field name="hire_date" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Teaching Assignments" name="assignments">
+                            <field name="teaching_assignment_ids">
+                                <list>
+                                    <field name="teacher_id"/>
+                                    <field name="class_id"/>
+                                    <field name="weekly_hours" widget="float_time"/>
+                                    <field name="weekly_sessions"/>
+                                    <field name="scheduled_hours" widget="float_time"/>
+                                    <field name="student_count" string="Students"/>
+                                    <field name="schedule_status" widget="badge"
+                                           decoration-success="schedule_status == 'fully_scheduled'"
+                                           decoration-warning="schedule_status == 'under_scheduled'"
+                                           decoration-danger="schedule_status == 'over_scheduled'"
+                                           decoration-muted="schedule_status == 'not_scheduled'"/>
                                 </list>
                             </field>
                         </page>

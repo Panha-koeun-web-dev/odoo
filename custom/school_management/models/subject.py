@@ -45,17 +45,24 @@ class SchoolSubject(models.Model):
     )
     exam_ids = fields.One2many('school.exam', 'subject_id', string='Exams')
 
+    # Weekly Teaching & Study Assignments
+    teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'subject_id', string='Teaching Assignments')
+    student_subject_ids = fields.One2many('school.student.subject', 'subject_id', string='Enrolled Students Studying')
+
     # Stat counters
     teacher_count = fields.Integer(string='Total Teachers', compute='_compute_stats', store=True)
     class_count = fields.Integer(string='Total Classes', compute='_compute_stats', store=True)
     exam_count = fields.Integer(string='Total Exams', compute='_compute_stats', store=True)
+    student_study_count = fields.Integer(string='Students Studying', compute='_compute_stats', store=True)
 
-    @api.depends('teacher_ids', 'class_ids', 'exam_ids')
+    @api.depends('teacher_ids', 'class_ids', 'exam_ids', 'student_subject_ids', 'student_subject_ids.study_status')
     def _compute_stats(self):
         for rec in self:
             rec.teacher_count = len(rec.teacher_ids)
             rec.class_count = len(rec.class_ids)
             rec.exam_count = len(rec.exam_ids)
+            active_studies = rec.student_subject_ids.filtered(lambda s: s.study_status == 'active')
+            rec.student_study_count = len(active_studies)
 
     def action_view_teachers(self):
         self.ensure_one()
@@ -76,3 +83,26 @@ class SchoolSubject(models.Model):
         action['domain'] = [('subject_id', '=', self.id)]
         action['context'] = {'default_subject_id': self.id}
         return action
+
+    def action_view_students_studying(self):
+        self.ensure_one()
+        student_ids = self.student_subject_ids.mapped('student_id').ids
+        return {
+            'name': _("Students Studying - %s") % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student',
+            'view_mode': 'list,kanban,form',
+            'domain': [('id', 'in', student_ids)],
+            'context': {'default_subject_id': self.id},
+        }
+
+    def action_view_teaching_assignments(self):
+        self.ensure_one()
+        return {
+            'name': _("Teaching Assignments - %s") % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.teaching.assignment',
+            'view_mode': 'list,form',
+            'domain': [('subject_id', '=', self.id)],
+            'context': {'default_subject_id': self.id},
+        }

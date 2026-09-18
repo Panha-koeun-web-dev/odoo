@@ -12,3 +12,6 @@ from . import fee
 from . import major
 from . import dashboard
 from . import year_payment
+from . import timetable
+from . import teaching_assignment
+from . import student_subject

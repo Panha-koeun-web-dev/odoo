@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================= CALENDAR VIEW ======================= -->
+    <record id="view_school_timetable_calendar" model="ir.ui.view">
+        <field name="name">school.timetable.calendar</field>
+        <field name="model">school.timetable</field>
+        <field name="arch" type="xml">
+            <calendar string="Timetable Calendar"
+                      date_start="start_datetime"
+                      date_stop="end_datetime"
+                      color="color"
+                      mode="week"
+                      event_limit="5"
+                      scales="day,week,month">
+                <field name="display_name"/>
+                <field name="teacher_id"/>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="subject_ids"/>
+                <field name="subject_id"/>
+                <field name="room"/>
+                <field name="day_of_week"/>
+                <field name="period"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ======================= LIST VIEW ======================= -->
+    <record id="view_school_timetable_tree" model="ir.ui.view">
+        <field name="name">school.timetable.list</field>
+        <field name="model">school.timetable</field>
+        <field name="arch" type="xml">
+            <list string="Class &amp; Student Timetable" sample="1" multi_edit="1" default_order="day_of_week, start_time, class_id">
+                <field name="day_of_week" widget="badge"
+                       decoration-info="day_of_week in ('0', '1', '2')"
+                       decoration-primary="day_of_week in ('3', '4')"
+                       decoration-warning="day_of_week in ('5', '6')"/>
+                <field name="period" widget="badge"/>
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time" widget="float_time"/>
+                <field name="teacher_id" decoration-bf="1"/>
+                <field name="subject_ids" widget="many2many_tags" decoration-bf="1"/>
+                <field name="subject_id" optional="hide"/>
+                <field name="class_id"/>
+                <field name="student_id" optional="show"/>
+                <field name="room" optional="show"/>
+                <field name="start_datetime" optional="hide"/>
+                <field name="end_datetime" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_school_timetable_kanban" model="ir.ui.view">
+        <field name="name">school.timetable.kanban</field>
+        <field name="model">school.timetable</field>
+        <field name="arch" type="xml">
+            <kanban class="o_school_kanban" default_group_by="day_of_week" sample="1">
+                <field name="display_name"/>
+                <field name="class_id"/>
+                <field name="student_id"/>
+                <field name="subject_id"/>
+                <field name="subject_ids"/>
+                <field name="subjects_display"/>
+                <field name="teacher_id"/>
+                <field name="day_of_week"/>
+                <field name="period"/>
+                <field name="start_time"/>
+                <field name="end_time"/>
+                <field name="room"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="card" class="flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" t-if="record.student_id.raw_value">
+                                <i class="fa fa-user me-1" title="Student"/>
+                                <field name="student_id"/>
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" t-else="">
+                                <i class="fa fa-graduation-cap me-1" title="Class"/>
+                                <field name="class_id"/>
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" t-if="record.room.raw_value">
+                                <i class="fa fa-map-marker me-1" title="Room"/>
+                                <field name="room"/>
+                            </span>
+                        </div>
+                        <div class="fw-bold fs-5 text-dark mb-1">
+                            <field name="subjects_display"/>
+                        </div>
+                        <div class="text-muted small d-flex align-items-center mb-2">
+                            <i class="fa fa-user-circle me-1 text-primary" title="Teacher"/>
+                            <field name="teacher_id"/>
+                        </div>
+                        <div class="border-top pt-2 mt-auto d-flex justify-content-between align-items-center">
+                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                <field name="period"/>
+                            </span>
+                            <span class="small fw-semibold text-muted">
+                                <i class="fa fa-clock-o me-1" title="Time"/>
+                                <field name="start_time" widget="float_time"/> - <field name="end_time" widget="float_time"/>
+                            </span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
+    <record id="view_school_timetable_form" model="ir.ui.view">
+        <field name="name">school.timetable.form</field>
+        <field name="model">school.timetable</field>
+        <field name="arch" type="xml">
+            <form string="Timetable Session" class="o_school_form">
+                <header>
+                    <button name="action_view_class_students" type="object"
+                            string="View Assigned Students" class="btn-outline-primary" icon="fa-users"/>
+                    <button name="action_anchor_to_current_week" type="object"
+                            string="Re-anchor to Current Week" class="btn-secondary" icon="fa-calendar-check-o"
+                            groups="school_management.group_school_admin"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Session / Lesson Title"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Mathematics - Algebra &amp; Trigonometry"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Academic Assignment &amp; Participants">
+                            <field name="teacher_id" options="{'no_create': True}"/>
+                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True, 'color_field': 'color'}" placeholder="Select one or multiple subjects..." required="1"/>
+                            <field name="subject_id" invisible="1"/>
+                            <field name="subjects_display" invisible="1"/>
+                            <field name="class_id" options="{'no_create': True}"/>
+                            <field name="student_id" placeholder="Optional: Specific Student (1-on-1 tutoring / elective)" options="{'no_create': True}"/>
+                            <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select multiple students (for group study / electives)..." invisible="class_id"/>
+                            <field name="room" placeholder="e.g. Room 101 / Science Lab"/>
+                        </group>
+                        <group string="Schedule &amp; Timing">
+                            <field name="day_of_week"/>
+                            <field name="period"/>
+                            <label for="start_time" string="Time Range"/>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="start_time" widget="float_time" class="oe_inline"/>
+                                <span>to</span>
+                                <field name="end_time" widget="float_time" class="oe_inline"/>
+                            </div>
+                            <field name="start_datetime" groups="base.group_no_one"/>
+                            <field name="end_datetime" groups="base.group_no_one"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="notes" string="Notes &amp; Lesson Plan">
+                            <field name="notes" placeholder="Add preparation notes, lesson objectives, homework or classroom guidelines here..."/>
+                        </page>
+                        <page name="students" string="Enrolled / Assigned Students">
+                            <field name="student_ids">
+                                <list>
+                                    <field name="student_id"/>
+                                    <field name="name"/>
+                                    <field name="gender"/>
+                                    <field name="class_id"/>
+                                    <field name="study_status" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter reload_on_follower="True"/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= SEARCH VIEW ======================= -->
+    <record id="view_school_timetable_search" model="ir.ui.view">
+        <field name="name">school.timetable.search</field>
+        <field name="model">school.timetable</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="teacher_id"/>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <field name="room"/>
+                <separator/>
+                <filter name="filter_monday" string="Monday" domain="[('day_of_week', '=', '0')]"/>
+                <filter name="filter_tuesday" string="Tuesday" domain="[('day_of_week', '=', '1')]"/>
+                <filter name="filter_wednesday" string="Wednesday" domain="[('day_of_week', '=', '2')]"/>
+                <filter name="filter_thursday" string="Thursday" domain="[('day_of_week', '=', '3')]"/>
+                <filter name="filter_friday" string="Friday" domain="[('day_of_week', '=', '4')]"/>
+                <filter name="filter_weekend" string="Weekend" domain="[('day_of_week', 'in', ('5', '6'))]"/>
+                <separator/>
+                <filter name="filter_individual" string="1-on-1 Student Sessions" domain="[('student_id', '!=', False)]"/>
+                <filter name="filter_class_sessions" string="Class-wide Sessions" domain="[('student_id', '=', False)]"/>
+                <separator/>
+                <filter name="filter_morning" string="Morning Sessions" domain="[('start_time', '&lt;', 12.0)]"/>
+                <filter name="filter_afternoon" string="Afternoon Sessions" domain="[('start_time', '&gt;=', 12.0)]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Teacher" name="group_teacher" domain="[]" context="{'group_by': 'teacher_id'}"/>
+                <filter string="Student" name="group_student" domain="[]" context="{'group_by': 'student_id'}"/>
+                <filter string="Class" name="group_class" domain="[]" context="{'group_by': 'class_id'}"/>
+                <filter string="Subject" name="group_subject" domain="[]" context="{'group_by': 'subject_id'}"/>
+                <filter string="Day of Week" name="group_day" domain="[]" context="{'group_by': 'day_of_week'}"/>
+                <filter string="Period" name="group_period" domain="[]" context="{'group_by': 'period'}"/>
+                <filter string="Classroom / Room" name="group_room" domain="[]" context="{'group_by': 'room'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================= ACTIONS ======================= -->
+    <!-- 1. Master Timetable (Calendar, List, Kanban, Form) -->
+    <record id="action_timetable" model="ir.actions.act_window">
+        <field name="name">Master Timetable &amp; Schedules</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Plan and manage your school timetable!
+            </p>
+            <p>
+                Organize weekly class and student sessions by Teacher, Student, Subject, Day of Week, and Period/Room.
+                Enjoy conflict prevention and a complete interactive calendar schedule.
+            </p>
+        </field>
+    </record>
+
+    <!-- 2. Teacher Teaching Schedules (Grouped by Teacher) -->
+    <record id="action_timetable_teacher" model="ir.actions.act_window">
+        <field name="name">Teacher Teaching Schedules</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_group_teacher': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage Teacher Teaching Schedules!
+            </p>
+            <p>
+                View and schedule teaching sessions assigned to teachers across all classes and individual students.
+            </p>
+        </field>
+    </record>
+
+    <!-- 3. Student Study Schedules (Grouped by Student / Class) -->
+    <record id="action_timetable_student" model="ir.actions.act_window">
+        <field name="name">Student Study Schedules</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_group_student': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage Student Study Schedules!
+            </p>
+            <p>
+                View and schedule studying sessions for individual students and enrolled classes.
+            </p>
+        </field>
+    </record>
+
+</odoo>

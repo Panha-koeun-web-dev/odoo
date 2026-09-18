@@ -119,6 +119,27 @@ class SchoolStudent(models.Model):
 
     notes = fields.Text(string='Notes')
 
+    # Weekly Study Subjects & Workload
+    study_subject_ids = fields.One2many('school.student.subject', 'student_id', string='Weekly Study Subjects')
+    timetable_ids = fields.Many2many(
+        'school.timetable',
+        string='Timetable Sessions',
+        compute='_compute_timetable_ids',
+        help="All active timetable sessions for this student (both individual tutoring, elective groups, and class sessions)."
+    )
+    timetable_count = fields.Integer(
+        string='Scheduled Sessions',
+        compute='_compute_timetable_ids',
+        help="Total number of scheduled sessions in the student's weekly timetable."
+    )
+    study_subject_count = fields.Integer(string='Study Subjects Count', compute='_compute_study_stats')
+    total_weekly_study_hours = fields.Float(string='Total Weekly Study Hours', compute='_compute_study_stats')
+    total_weekly_study_sessions = fields.Integer(string='Total Weekly Sessions', compute='_compute_study_stats')
+    total_scheduled_study_hours = fields.Float(string='Total Scheduled Hours', compute='_compute_study_stats')
+    study_teacher_ids = fields.Many2many('school.teacher', string='Instructing Teachers', compute='_compute_study_stats')
+    study_teacher_count = fields.Integer(string='Teachers Count', compute='_compute_study_stats')
+    study_subject_all_ids = fields.Many2many('school.subject', string='Enrolled Subjects', compute='_compute_study_stats')
+
     @api.depends_context('company')
     def _compute_currency_id(self):
         currency = self.env.company.currency_id
@@ -230,23 +251,183 @@ class SchoolStudent(models.Model):
                 else:
                     existing.write(vals)
 
+    @api.depends(
+        'study_subject_ids',
+        'study_subject_ids.weekly_hours',
+        'study_subject_ids.weekly_sessions',
+        'study_subject_ids.scheduled_hours',
+        'study_subject_ids.study_status',
+        'study_subject_ids.active',
+    )
+    def _compute_study_stats(self):
+        for rec in self:
+            active_subs = rec.study_subject_ids.filtered(lambda s: s.active and s.study_status == 'active')
+            rec.study_subject_count = len(active_subs)
+            rec.total_weekly_study_hours = sum(active_subs.mapped('weekly_hours'))
+            rec.total_weekly_study_sessions = sum(active_subs.mapped('weekly_sessions'))
+            rec.total_scheduled_study_hours = sum(active_subs.mapped('scheduled_hours'))
+
+    def _compute_timetable_ids(self):
+        Timetable = self.env['school.timetable']
+        for student in self:
+            domain = [('active', '=', True)]
+            if student.class_id:
+                domain.extend([
+                    '|',
+                    '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', student.id),
+                    '&',
+                    ('student_id', '=', False),
+                    ('class_id', '=', student.class_id.id),
+                ])
+            else:
+                domain.extend([
+                    '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', student.id),
+                ])
+            sessions = Timetable.search(domain)
+            student.timetable_ids = [(6, 0, sessions.ids)]
+            student.timetable_count = len(sessions)
+
+    def action_sync_subjects_from_class(self):
+        """Populate or update student's weekly study subjects from class curriculum / teaching assignments and active timetable."""
+        StudentSubject = self.env['school.student.subject']
+        Timetable = self.env['school.timetable']
+        for student in self:
+            existing_by_sub = {rec.subject_id.id: rec for rec in student.study_subject_ids}
+
+            # 1. Sync from Class Teaching Assignments
+            if student.class_id:
+                assignments = student.class_id.teaching_assignment_ids
+                if assignments:
+                    for asg in assignments:
+                        if asg.subject_id.id in existing_by_sub:
+                            rec = existing_by_sub[asg.subject_id.id]
+                            rec.write({
+                                'teacher_id': asg.teacher_id.id,
+                                'weekly_hours': asg.weekly_hours,
+                                'weekly_sessions': asg.weekly_sessions,
+                                'class_id': student.class_id.id,
+                            })
+                        else:
+                            new_rec = StudentSubject.create({
+                                'student_id': student.id,
+                                'class_id': student.class_id.id,
+                                'subject_id': asg.subject_id.id,
+                                'teacher_id': asg.teacher_id.id,
+                                'weekly_hours': asg.weekly_hours,
+                                'weekly_sessions': asg.weekly_sessions,
+                                'subject_type': 'core',
+                            })
+                            existing_by_sub[asg.subject_id.id] = new_rec
+                elif student.class_id.subject_ids:
+                    for sub in student.class_id.subject_ids:
+                        if sub.id not in existing_by_sub:
+                            new_rec = StudentSubject.create({
+                                'student_id': student.id,
+                                'class_id': student.class_id.id,
+                                'subject_id': sub.id,
+                                'weekly_hours': 3.0,
+                                'weekly_sessions': 2,
+                                'subject_type': 'core',
+                            })
+                            existing_by_sub[sub.id] = new_rec
+
+            # 2. Sync from Scheduled Timetable Sessions
+            tt_domain = [('active', '=', True)]
+            if student.class_id:
+                tt_domain.extend([
+                    '|',
+                    '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', student.id),
+                    '&',
+                    ('student_id', '=', False),
+                    ('class_id', '=', student.class_id.id),
+                ])
+            else:
+                tt_domain.extend([
+                    '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', student.id),
+                ])
+            sessions = Timetable.search(tt_domain)
+            for sess in sessions:
+                subs = sess.subject_ids or (sess.subject_id if sess.subject_id else self.env['school.subject'])
+                duration = max(0.0, (sess.end_time or 0.0) - (sess.start_time or 0.0))
+                for sub in subs:
+                    if sub.id in existing_by_sub:
+                        rec = existing_by_sub[sub.id]
+                        if not rec.teacher_id and sess.teacher_id:
+                            rec.teacher_id = sess.teacher_id.id
+                    else:
+                        new_rec = StudentSubject.create({
+                            'student_id': student.id,
+                            'class_id': student.class_id.id if student.class_id else (sess.class_id.id if sess.class_id else False),
+                            'subject_id': sub.id,
+                            'teacher_id': sess.teacher_id.id if sess.teacher_id else False,
+                            'weekly_hours': duration or 2.0,
+                            'weekly_sessions': 1,
+                            'subject_type': 'core',
+                        })
+                        existing_by_sub[sub.id] = new_rec
+
+            # 3. Always recompute timetable stats for all student subjects
+            student.study_subject_ids._compute_timetable_stats()
+
+    def action_manual_sync_subjects_from_class(self):
+        self.ensure_one()
+        if not self.class_id:
+            raise UserError(_("This student is not assigned to any class."))
+        self.action_sync_subjects_from_class()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Weekly Subjects Synchronized"),
+                'message': _("Study plan synchronized with class '%s' (%d subjects).") % (
+                    self.class_id.name, len(self.study_subject_ids)
+                ),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_view_study_subjects(self):
+        self.ensure_one()
+        return {
+            'name': _("Weekly Study Subjects - %s") % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student.subject',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id)],
+            'context': {
+                'default_student_id': self.id,
+                'default_class_id': self.class_id.id if self.class_id else False,
+            },
+        }
+
     @api.model_create_multi
     def create(self, vals_list):
         students = super().create(vals_list)
         students._sync_year_payment_with_class()
+        students.action_sync_subjects_from_class()
         return students
 
     def write(self, vals):
         res = super().write(vals)
         if 'class_id' in vals:
             self._sync_year_payment_with_class()
+            self.action_sync_subjects_from_class()
         return res
 
     def action_sync_year_payment_from_class(self):
         """Action button on student form to ensure payment follows the assigned class."""
         self.ensure_one()
         if not self.class_id:
-            raise UserError(_('This student is not assigned to any class.'))\
+            raise UserError(_('This student is not assigned to any class.'))
 
         self._sync_year_payment_with_class()
         return {
@@ -282,7 +463,7 @@ class SchoolStudent(models.Model):
             raise UserError(_('No year payment record found for this student. Please configure class payment first.'))
         return payment.action_open_deadline_wizard()
 
-    # ==================== STOP / CONTINUE STUDY ACTIONS ====================
+    # ==================== STOP / CONTINUE STUDY ACTIONS ====================\
     def action_stop_study(self):
         """Direct action to stop / kick student(s) from studying."""
         for rec in self:
@@ -467,6 +648,21 @@ class SchoolStudent(models.Model):
         }
         return action
 
+    def action_view_class_timetable(self):
+        self.ensure_one()
+        if not self.class_id:
+            raise UserError(_("This student is not assigned to any class."))
+        return {
+            'name': _('Class Timetable - %s') % self.class_id.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': [('class_id', '=', self.class_id.id)],
+            'context': {
+                'default_class_id': self.class_id.id,
+            },
+        }
+
     def action_generate_certificate(self):
         self.ensure_one()
         is_student = (
@@ -511,6 +707,7 @@ class SchoolStudent(models.Model):
         if len(certs) == 1:
             return certs.action_print_certificate()
         return self.env.ref('school_management.action_report_school_certificate_student').report_action(self)
+
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
@@ -613,8 +810,6 @@ class SchoolStudent(models.Model):
             },
         }
 
-
-
     def action_print_payment_receipt(self):
         self.ensure_one()
         payment = self.year_payment_ids.filtered(lambda p: p.overall_status in ('paid', 'partial'))[:1]
@@ -629,7 +824,6 @@ class SchoolStudent(models.Model):
             return self.fee_ids[0].action_print_receipt()
         raise UserError(_("No payment or fee records found for student %s.") % self.name)
 
-
     def action_export_xlsx(self):
         ids = self.ids or self.env.context.get('active_ids') or []
         ids_str = ','.join(str(x) for x in ids) if ids else ''
@@ -637,6 +831,100 @@ class SchoolStudent(models.Model):
             'type': 'ir.actions.act_url',
             'url': f'/school_management/export_report_xlsx?report_type=student&ids={ids_str}',
             'target': 'self',
+        }
+
+    @api.depends(
+        'study_subject_ids',
+        'study_subject_ids.weekly_hours',
+        'study_subject_ids.weekly_sessions',
+        'study_subject_ids.scheduled_hours',
+        'study_subject_ids.teacher_id',
+        'study_subject_ids.subject_id',
+        'study_subject_ids.study_status',
+        'study_subject_ids.active',
+    )
+    def _compute_study_stats(self):
+        for rec in self:
+            active_studies = rec.study_subject_ids.filtered(lambda s: s.active and s.study_status == 'active')
+            rec.study_subject_count = len(active_studies)
+            rec.total_weekly_study_hours = sum(active_studies.mapped('weekly_hours'))
+            rec.total_weekly_study_sessions = sum(active_studies.mapped('weekly_sessions'))
+            rec.total_scheduled_study_hours = sum(active_studies.mapped('scheduled_hours'))
+            teachers = active_studies.mapped('teacher_id')
+            rec.study_teacher_ids = [(6, 0, teachers.ids)]
+            rec.study_teacher_count = len(teachers)
+            subjects = active_studies.mapped('subject_id')
+            rec.study_subject_all_ids = [(6, 0, subjects.ids)]
+
+    def action_view_study_subjects(self):
+        self.ensure_one()
+        return {
+            'name': _('Weekly Study Subjects - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student.subject',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id)],
+            'context': {
+                'default_student_id': self.id,
+                'default_class_id': self.class_id.id if self.class_id else False,
+            },
+        }
+
+    def action_view_study_teachers(self):
+        self.ensure_one()
+        teachers = self.study_teacher_ids
+        return {
+            'name': _('Instructing Teachers - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.teacher',
+            'view_mode': 'kanban,list,form',
+            'domain': [('id', 'in', teachers.ids)],
+        }
+
+    def action_view_student_timetable(self):
+        self.ensure_one()
+        domain = [('active', '=', True)]
+        if self.class_id:
+            domain.extend([
+                '|',
+                '|',
+                ('student_id', '=', self.id),
+                ('student_ids', 'in', self.id),
+                '&',
+                ('student_id', '=', False),
+                ('class_id', '=', self.class_id.id),
+            ])
+        else:
+            domain.extend([
+                '|',
+                ('student_id', '=', self.id),
+                ('student_ids', 'in', self.id),
+            ])
+        return {
+            'name': _('Study Timetable - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': domain,
+            'context': {
+                'default_student_id': self.id,
+                'default_class_id': self.class_id.id if self.class_id else False,
+            },
+        }
+
+    def action_open_assign_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Enroll %s in Weekly Subjects') % self.name,
+            'res_model': 'school.assign.subject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_mode': 'student_enroll',
+                'default_student_ids': [(6, 0, [self.id])],
+                'default_class_id': self.class_id.id if self.class_id else False,
+            }
         }
 
 class SchoolStudentStopWizard(models.TransientModel):
@@ -675,4 +963,3 @@ class SchoolStudentStopWizard(models.TransientModel):
                 'sticky': False,
             }
         }
-

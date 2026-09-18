@@ -25,6 +25,19 @@ class SchoolTeacher(models.Model):
     user_id = fields.Many2one('res.users', string='Related User')
     notes = fields.Text(string='Notes')
 
+    # Timetable & Teaching Schedule Integration
+    timetable_ids = fields.One2many('school.timetable', 'teacher_id', string='Teaching Schedule')
+    timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_count')
+
+    # Weekly Teaching Assignments & Load
+    teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'teacher_id', string='Teaching Assignments')
+    teaching_assignment_count = fields.Integer(string='Assignment Count', compute='_compute_teaching_stats')
+    total_weekly_teaching_hours = fields.Float(string='Weekly Teaching Hours', compute='_compute_teaching_stats')
+    total_weekly_teaching_sessions = fields.Integer(string='Weekly Teaching Sessions', compute='_compute_teaching_stats')
+    total_scheduled_teaching_hours = fields.Float(string='Scheduled Teaching Hours', compute='_compute_teaching_stats')
+    students_taught_ids = fields.Many2many('school.student', string='Students Taught', compute='_compute_teaching_stats')
+    students_taught_count = fields.Integer(string='Students Taught Count', compute='_compute_teaching_stats')
+
     class_count = fields.Integer(string='Class Count', compute='_compute_teacher_stats')
     student_count = fields.Integer(string='Student Count', compute='_compute_teacher_stats')
     subject_count = fields.Integer(string='Subject Count', compute='_compute_teacher_stats')
@@ -36,6 +49,65 @@ class SchoolTeacher(models.Model):
             students = rec.class_ids.mapped('student_ids')
             rec.student_count = len(students)
             rec.subject_count = len(rec.subject_ids)
+
+    @api.depends(
+        'teaching_assignment_ids',
+        'teaching_assignment_ids.weekly_hours',
+        'teaching_assignment_ids.weekly_sessions',
+        'teaching_assignment_ids.scheduled_hours',
+        'teaching_assignment_ids.student_ids',
+        'teaching_assignment_ids.active',
+    )
+    def _compute_teaching_stats(self):
+        for rec in self:
+            active_asgs = rec.teaching_assignment_ids.filtered(lambda a: a.active)
+            rec.teaching_assignment_count = len(active_asgs)
+            rec.total_weekly_teaching_hours = sum(active_asgs.mapped('weekly_hours'))
+            rec.total_weekly_teaching_sessions = sum(active_asgs.mapped('weekly_sessions'))
+            rec.total_scheduled_teaching_hours = sum(active_asgs.mapped('scheduled_hours'))
+            students = active_asgs.mapped('student_ids')
+            rec.students_taught_ids = [(6, 0, students.ids)]
+            rec.students_taught_count = len(students)
+
+    def _compute_timetable_count(self):
+        for rec in self:
+            rec.timetable_count = len(rec.timetable_ids)
+
+    def action_view_timetable(self):
+        self.ensure_one()
+        return {
+            'name': _('Teaching Schedule - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': [('teacher_id', '=', self.id)],
+            'context': {
+                'default_teacher_id': self.id,
+            },
+        }
+
+    def action_view_teaching_assignments(self):
+        self.ensure_one()
+        return {
+            'name': _('Teaching Assignments - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.teaching.assignment',
+            'view_mode': 'list,form',
+            'domain': [('teacher_id', '=', self.id)],
+            'context': {'default_teacher_id': self.id},
+        }
+
+    def action_view_students_taught(self):
+        self.ensure_one()
+        students = self.students_taught_ids.ids or self.class_ids.mapped('student_ids').ids
+        return {
+            'name': _('Students Taught - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student',
+            'view_mode': 'list,kanban,form',
+            'domain': [('id', 'in', students)],
+            'context': {'default_teacher_id': self.id},
+        }
 
     def action_view_classes(self):
         self.ensure_one()
@@ -115,5 +187,20 @@ class SchoolTeacher(models.Model):
                 'message': _("A password reset email has been sent to %s.") % self.user_id.email,
                 'type': 'info',
                 'sticky': False,
+            }
+        }
+
+    def action_open_assign_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assign Subject & Students to %s') % self.name,
+            'res_model': 'school.assign.subject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_mode': 'teacher_assign',
+                'default_teacher_id': self.id,
+                'default_subject_id': self.subject_ids[0].id if self.subject_ids else False,
             }
         }

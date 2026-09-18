@@ -6,7 +6,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
 
-    <!-- ================= Dashboard ================= -->
+    <!-- ================= 1. Dashboard ================= -->
     <menuitem id="menu_school_dashboard"
               name="Dashboard"
               parent="menu_school_root"
@@ -14,47 +14,132 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="5"/>
 
-    <!-- ================= Students ================= -->
+    <!-- ================= 2. Students ================= -->
     <menuitem id="menu_school_student_parent"
               name="Students"
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
     <menuitem id="menu_school_student"
-              name="Students"
+              name="Student Profiles"
               parent="menu_school_student_parent"
               action="action_student"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
+    <menuitem id="menu_school_student_subject"
+              name="Weekly Study Subjects"
+              parent="menu_school_student_parent"
+              action="action_school_student_subject"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="15"/>
+    <menuitem id="menu_school_student_enroll_wizard"
+              name="⚡ Enroll in Weekly Subjects"
+              parent="menu_school_student_parent"
+              action="action_school_assign_subject_wizard"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="18"/>
+    <menuitem id="menu_school_student_study_schedule"
+              name="Student Study Schedules"
+              parent="menu_school_student_parent"
+              action="action_timetable_student"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="20"/>
     <menuitem id="menu_school_enrollment"
               name="Enrollments"
               parent="menu_school_student_parent"
               action="action_enrollment"
               groups="school_management.group_school_admin"
-              sequence="20"/>
+              sequence="30"/>
     <menuitem id="menu_school_student_export_xlsx"
               name="Export Students (XLSX)"
               parent="menu_school_student_parent"
               action="action_school_report_student_xlsx"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="30"/>
+              sequence="40"/>
 
-    <!-- ================= Teachers ================= -->
+    <!-- ================= 3. Teachers ================= -->
     <menuitem id="menu_school_teacher_parent"
               name="Teachers"
               parent="menu_school_root"
-              action="action_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
     <menuitem id="menu_school_teacher"
-              name="All Teachers"
+              name="Teacher Profiles"
               parent="menu_school_teacher_parent"
               action="action_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              active="False"
               sequence="10"/>
+    <menuitem id="menu_school_teacher_assign_wizard"
+              name="⚡ Assign Subjects &amp; Students"
+              parent="menu_school_teacher_parent"
+              action="action_school_assign_subject_wizard"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="15"/>
+    <menuitem id="menu_school_teacher_teaching_assignments"
+              name="Teaching Assignments &amp; Load"
+              parent="menu_school_teacher_parent"
+              action="action_school_teaching_assignment"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="20"/>
+    <menuitem id="menu_school_teacher_schedules"
+              name="Teaching Schedules &amp; Timetable"
+              parent="menu_school_teacher_parent"
+              action="action_timetable_teacher"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="30"/>
 
-    <!-- ================= Academics ================= -->
+    <!-- ================= 4. Schedules & Timetable (Navbar with Teacher & Student Dropdowns) ================= -->
+    <menuitem id="menu_school_schedule_root"
+              name="Schedules &amp; Timetable"
+              parent="menu_school_root"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="25"/>
+
+    <!-- 4. Quick Assign Hub -->
+    <menuitem id="menu_school_assign_subject_wizard"
+              name="⚡ Quick Assign &amp; Schedule Hub"
+              parent="menu_school_schedule_root"
+              action="action_school_assign_subject_wizard"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="5"/>
+
+    <!-- 4A. Teacher Section in Dropdown -->
+    <menuitem id="menu_school_sched_teacher_header"
+              name="Teacher Teaching Schedules"
+              parent="menu_school_schedule_root"
+              action="action_timetable_teacher"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="10"/>
+    <menuitem id="menu_school_sched_teacher_assignments"
+              name="Teacher Teaching Assignments"
+              parent="menu_school_schedule_root"
+              action="action_school_teaching_assignment"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="15"/>
+
+    <!-- 4B. Student Section in Dropdown -->
+    <menuitem id="menu_school_sched_student_header"
+              name="Student Study Schedules"
+              parent="menu_school_schedule_root"
+              action="action_timetable_student"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="20"/>
+    <menuitem id="menu_school_sched_student_subjects"
+              name="Student Weekly Study Plans"
+              parent="menu_school_schedule_root"
+              action="action_school_student_subject"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="25"/>
+
+    <!-- 4C. Master Calendar Section in Dropdown -->
+    <menuitem id="menu_school_sched_master"
+              name="Master Timetable &amp; Calendar"
+              parent="menu_school_schedule_root"
+              action="action_timetable"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="30"/>
+
+    <!-- ================= 5. Academics ================= -->
     <menuitem id="menu_school_academic_parent"
               name="Academics"
               parent="menu_school_root"
@@ -91,7 +176,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="50"/>
 
-    <!-- ================= Examinations ================= -->
+    <!-- ================= 6. Examinations ================= -->
     <menuitem id="menu_school_exam_parent"
               name="Examinations"
               parent="menu_school_root"
@@ -116,7 +201,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="30"/>
 
-    <!-- ================= Attendance ================= -->
+    <!-- ================= 7. Attendance ================= -->
     <menuitem id="menu_school_attendance_parent"
               name="Attendance"
               parent="menu_school_root"
@@ -135,7 +220,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
 
-    <!-- ================= Academic Transcripts & Report Cards ================= -->
+    <!-- ================= 8. Academic Transcripts & Certificates ================= -->
     <menuitem id="menu_school_certificate"
               name="Transcripts &amp; Certificates"
               parent="menu_school_root"
@@ -143,7 +228,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="55"/>
 
-    <!-- ================= Finance ================= -->
+    <!-- ================= 9. Finance ================= -->
     <menuitem id="menu_school_finance_parent"
               name="Finance"
               parent="menu_school_root"

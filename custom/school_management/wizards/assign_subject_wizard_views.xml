@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================= FORM VIEW ======================= -->
+    <record id="view_school_assign_subject_wizard_form" model="ir.ui.view">
+        <field name="name">school.assign.subject.wizard.form</field>
+        <field name="model">school.assign.subject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Quick Subject &amp; Schedule Assignment Hub">
+                <sheet>
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="status">
+                        <i class="fa fa-magic fa-2x me-3" title="Wizard Guide"/>
+                        <div>
+                            <strong>Unified Subject &amp; Schedule Hub</strong>:
+                            Assign teachers to classes, enroll students into subjects, and generate weekly timetable slots in seconds.
+                        </div>
+                    </div>
+
+                    <group>
+                        <field name="mode" widget="radio" options="{'horizontal': true}"/>
+                    </group>
+
+                    <separator string="1. Assignment Configuration"/>
+                    <group>
+                        <!-- TEACHER ASSIGN MODE -->
+                        <group string="Teacher &amp; Subject Details" invisible="mode != 'teacher_assign'">
+                            <field name="teacher_id" options="{'no_create': True}" required="mode == 'teacher_assign'"/>
+                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select one or multiple subjects to assign..." required="mode == 'teacher_assign' and not subject_id"/>
+                            <field name="subject_id" options="{'no_create': True}" invisible="subject_ids" required="mode in ('teacher_assign', 'schedule_quick') and not subject_ids"/>
+                            <field name="class_id" options="{'no_create': True}" required="mode == 'teacher_assign'"/>
+                            <field name="subject_type"/>
+                        </group>
+                        <group string="Weekly Workload" invisible="mode != 'teacher_assign'">
+                            <field name="weekly_hours" widget="float_time"/>
+                            <field name="weekly_sessions"/>
+                            <field name="study_status" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+
+                        <!-- STUDENT ENROLL MODE -->
+                        <group string="Select Students" invisible="mode != 'student_enroll'">
+                            <field name="class_id" options="{'no_create': True}" string="Filter by Class (Optional)"/>
+                            <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select one or multiple students..."/>
+                            <field name="teacher_id" options="{'no_create': True}" placeholder="Optional: Designated Teacher"/>
+                        </group>
+                        <group string="Select Subjects &amp; Workload" invisible="mode != 'student_enroll'">
+                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select subjects to enroll into..."/>
+                            <field name="subject_type"/>
+                            <field name="weekly_hours" widget="float_time"/>
+                            <field name="weekly_sessions"/>
+                            <field name="study_status" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+
+                        <!-- QUICK SCHEDULE MODE -->
+                        <group string="Participants" invisible="mode != 'schedule_quick'">
+                            <field name="teacher_id" options="{'no_create': True}" required="mode == 'schedule_quick'"/>
+                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select one or multiple subjects..." required="mode == 'schedule_quick' and not subject_id"/>
+                            <field name="subject_id" options="{'no_create': True}" invisible="subject_ids" required="mode in ('teacher_assign', 'schedule_quick') and not subject_ids"/>
+                            <field name="class_id" options="{'no_create': True}" placeholder="Class (for class session)"/>
+                            <field name="student_id" options="{'no_create': True}" placeholder="Specific Student (for 1-on-1 tutoring)"/>
+                            <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Target Students (for small groups or electives)" invisible="class_id"/>
+                        </group>
+                        <group string="Session Time &amp; Location" invisible="mode != 'schedule_quick'">
+                            <field name="day_of_week"/>
+                            <field name="period"/>
+                            <label for="start_time" string="Time Range"/>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="start_time" widget="float_time" class="oe_inline"/>
+                                <span>to</span>
+                                <field name="end_time" widget="float_time" class="oe_inline"/>
+                            </div>
+                            <field name="room" placeholder="e.g. Room 204 / Hall A"/>
+                        </group>
+                    </group>
+
+                    <!-- TIMETABLE OPTION FOR TEACHER ASSIGN -->
+                    <div invisible="mode != 'teacher_assign'">
+                        <separator string="2. Optional Timetable Schedule Generation"/>
+                        <group>
+                            <group>
+                                <field name="create_timetable_slots" widget="boolean_toggle"/>
+                                <field name="day_of_week" invisible="not create_timetable_slots"/>
+                                <field name="period" invisible="not create_timetable_slots"/>
+                            </group>
+                            <group invisible="not create_timetable_slots">
+                                <label for="start_time" string="Time Range"/>
+                                <div class="d-flex align-items-center gap-2">
+                                    <field name="start_time" widget="float_time" class="oe_inline"/>
+                                    <span>to</span>
+                                    <field name="end_time" widget="float_time" class="oe_inline"/>
+                                </div>
+                                <field name="room" placeholder="e.g. Room 101"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <separator string="Notes &amp; Objectives"/>
+                    <group>
+                        <field name="notes" placeholder="Curriculum goals, tutoring instructions, or preparation remarks..." nolabel="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Confirm &amp; Assign" class="btn-primary" icon="fa-check-circle"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= ACTION ======================= -->
+    <record id="action_school_assign_subject_wizard" model="ir.actions.act_window">
+        <field name="name">Quick Subject &amp; Schedule Assignment Hub</field>
+        <field name="res_model">school.assign.subject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_school_assign_subject_wizard_form"/>
+    </record>
+</odoo>

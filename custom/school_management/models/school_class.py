@@ -22,6 +22,16 @@ class SchoolClass(models.Model):
     active = fields.Boolean(default=True)
     capacity_progress = fields.Float(string='Capacity %', compute='_compute_capacity_progress')
 
+    # Timetable Integration
+    timetable_ids = fields.One2many('school.timetable', 'class_id', string='Timetable')
+    timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_count')
+
+    # Weekly Teaching Assignments & Subject Allocation
+    teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'class_id', string='Subject Teaching Staff')
+    teaching_assignment_count = fields.Integer(string='Assigned Subjects Count', compute='_compute_teaching_assignment_stats')
+    total_weekly_class_hours = fields.Float(string='Total Weekly Class Hours', compute='_compute_teaching_assignment_stats')
+    total_weekly_class_sessions = fields.Integer(string='Total Weekly Sessions', compute='_compute_teaching_assignment_stats')
+
     # Currency and Payment Configuration for the Class
     currency_id = fields.Many2one(
         'res.currency',
@@ -74,6 +84,23 @@ class SchoolClass(models.Model):
                 ('class_id', '=', rec.id),
                 ('study_status', '=', 'studying'),
             ])
+
+    def _compute_timetable_count(self):
+        for rec in self:
+            rec.timetable_count = len(rec.timetable_ids)
+
+    @api.depends(
+        'teaching_assignment_ids',
+        'teaching_assignment_ids.weekly_hours',
+        'teaching_assignment_ids.weekly_sessions',
+        'teaching_assignment_ids.active',
+    )
+    def _compute_teaching_assignment_stats(self):
+        for rec in self:
+            active_asgs = rec.teaching_assignment_ids.filtered(lambda a: a.active)
+            rec.teaching_assignment_count = len(active_asgs)
+            rec.total_weekly_class_hours = sum(active_asgs.mapped('weekly_hours'))
+            rec.total_weekly_class_sessions = sum(active_asgs.mapped('weekly_sessions'))
 
     @api.depends('year_payment_ids.total_amount', 'year_payment_ids.total_paid', 'year_payment_ids.total_balance')
     def _compute_payment_statistics(self):
@@ -182,7 +209,7 @@ class SchoolClass(models.Model):
 
         self._sync_students_class_payment()
 
-        msg = _("Payment synchronization complete: All %d students in class '%s' now follow this class's payment configuration (Total: %s).") % (\
+        msg = _("Payment synchronization complete: All %d students in class '%s' now follow this class's payment configuration (Total: %s).") % (
             len(self.student_ids), self.name, self.total_payment
         )
         return {
@@ -209,6 +236,52 @@ class SchoolClass(models.Model):
             },
         }
 
+    def action_view_timetable(self):
+        self.ensure_one()
+        return {
+            'name': _('Class Timetable - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': [('class_id', '=', self.id)],
+            'context': {
+                'default_class_id': self.id,
+                'default_room': self.room,
+                'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+            },
+        }
+
+    def action_view_teaching_assignments(self):
+        self.ensure_one()
+        return {
+            'name': _('Teaching Assignments - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.teaching.assignment',
+            'view_mode': 'list,form',
+            'domain': [('class_id', '=', self.id)],
+            'context': {'default_class_id': self.id},
+        }
+
+    def action_sync_subjects_to_students(self):
+        """Propagate class curriculum / teaching assignments to all enrolled studying students."""
+        for cls in self:
+            students = cls.student_ids.filtered(lambda s: s.active and s.study_status == 'studying')
+            if not students:
+                raise UserError(_("Class '%s' has no active enrolled students to synchronize.") % cls.name)
+            students.action_sync_subjects_from_class()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Curriculum Propagated"),
+                'message': _("Weekly subjects synchronized to %d students in class '%s'.") % (
+                    len(students), self.name
+                ),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
     def action_take_attendance(self):
         self.ensure_one()
         wizard = self.env['school.daily.attendance.wizard'].create({
@@ -232,4 +305,19 @@ class SchoolClass(models.Model):
             'type': 'ir.actions.act_url',
             'url': f'/school_management/export_report_xlsx?report_type=class&ids={ids_str}',
             'target': 'self',
+        }
+
+    def action_open_assign_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assign Curriculum & Teachers to %s') % self.name,
+            'res_model': 'school.assign.subject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_mode': 'teacher_assign',
+                'default_class_id': self.id,
+                'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+            }
         }
