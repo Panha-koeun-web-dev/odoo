@@ -139,6 +139,8 @@ class SchoolStudent(models.Model):
     study_teacher_ids = fields.Many2many('school.teacher', string='Instructing Teachers', compute='_compute_study_stats')
     study_teacher_count = fields.Integer(string='Teachers Count', compute='_compute_study_stats')
     study_subject_all_ids = fields.Many2many('school.subject', string='Enrolled Subjects', compute='_compute_study_stats')
+    permission_ids = fields.One2many('school.permission', 'student_id', string='Permission Requests')
+    permission_count = fields.Integer(string='Permissions', compute='_compute_permission_count')
 
     @api.depends_context('company')
     def _compute_currency_id(self):
@@ -925,6 +927,24 @@ class SchoolStudent(models.Model):
                 'default_student_ids': [(6, 0, [self.id])],
                 'default_class_id': self.class_id.id if self.class_id else False,
             }
+        }
+
+    def _compute_permission_count(self):
+        for rec in self:
+            rec.permission_count = len(rec.permission_ids)
+
+    def action_view_permissions(self):
+        self.ensure_one()
+        return {
+            'name': _('Permission Requests - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'list,kanban,calendar,form',
+            'domain': [('student_id', '=', self.id)],
+            'context': {
+                'default_student_id': self.id,
+                'search_default_student_id': self.id,
+            },
         }
 
 class SchoolStudentStopWizard(models.TransientModel):

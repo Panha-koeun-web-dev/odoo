@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_school_permission_reject_wizard_form" model="ir.ui.view">
+        <field name="name">school.permission.reject.wizard.form</field>
+        <field name="model">school.permission.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Decline / Not Approve Permission Request">
+                <div class="alert alert-warning mb-3" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    You are declining this student permission request. Please provide a clear explanation below so the student understands why it was not approved.
+                </div>
+                <group>
+                    <group string="Request Overview">
+                        <field name="permission_id" invisible="1"/>
+                        <field name="student_id" readonly="1"/>
+                        <field name="permission_type" readonly="1"/>
+                    </group>
+                    <group string="Duration &amp; Dates">
+                        <field name="start_date" readonly="1"/>
+                        <field name="end_date" readonly="1"/>
+                        <field name="duration_days" readonly="1"/>
+                    </group>
+                </group>
+                <group string="Non-Approval Reason">
+                    <field name="rejection_reason"
+                           placeholder="Specify reason for refusal (e.g., Conflicts with mandatory mid-term examinations, insufficient notice, prior attendance thresholds reached)..."
+                           nolabel="1"
+                           required="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" string="Confirm Not Approved" type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

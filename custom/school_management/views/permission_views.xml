@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ======================= SEARCH VIEW ======================= -->
+    <record id="view_school_permission_search" model="ir.ui.view">
+        <field name="name">school.permission.search</field>
+        <field name="model">school.permission</field>
+        <field name="arch" type="xml">
+            <search string="Search Permission Requests">
+                <field name="name" string="Reference"/>
+                <field name="student_id" string="Student"/>
+                <field name="student_code" string="Student ID"/>
+                <field name="class_id" string="Class"/>
+                <field name="permission_type" string="Permission Type"/>
+                <field name="approved_by" string="Reviewed By"/>
+                <field name="reason" string="Reason"/>
+
+                <separator/>
+                <filter string="My Requests" name="my_permissions" domain="[('student_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Pending Approval" name="pending" domain="[('state', '=', 'draft')]"/>
+                <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Not Approved" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancel')]"/>
+
+                <separator/>
+                <filter string="Leave of Absence" name="type_leave" domain="[('permission_type', '=', 'leave')]"/>
+                <filter string="Sick Leave" name="type_sick" domain="[('permission_type', '=', 'sick')]"/>
+                <filter string="Emergency / Family" name="type_emergency" domain="[('permission_type', '=', 'emergency')]"/>
+
+                <separator/>
+                <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                <filter string="Student" name="group_student" context="{'group_by': 'student_id'}"/>
+                <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Permission Type" name="group_type" context="{'group_by': 'permission_type'}"/>
+                <filter string="Reviewed By" name="group_reviewer" context="{'group_by': 'approved_by'}"/>
+                <filter string="Start Date (Month)" name="group_start_date_month" context="{'group_by': 'start_date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================= LIST VIEW ======================= -->
+    <record id="view_school_permission_list" model="ir.ui.view">
+        <field name="name">school.permission.list</field>
+        <field name="model">school.permission</field>
+        <field name="arch" type="xml">
+            <list string="Student Permission Requests"
+                  decoration-success="state == 'approved'"
+                  decoration-warning="state == 'draft'"
+                  decoration-danger="state == 'rejected'"
+                  decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="student_code" optional="show"/>
+                <field name="class_id"/>
+                <field name="permission_type" widget="badge"/>
+                <field name="session_type" optional="hide"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="duration_days"/>
+                <field name="reason" optional="show"/>
+                <field name="approved_by" optional="show"/>
+                <field name="approval_date" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-warning="state == 'draft'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-muted="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
+    <record id="view_school_permission_form" model="ir.ui.view">
+        <field name="name">school.permission.form</field>
+        <field name="model">school.permission</field>
+        <field name="arch" type="xml">
+            <form string="Student Permission Request">
+                <header>
+                    <button name="action_approve" type="object"
+                            string="Approve" class="btn-primary" icon="fa-check"
+                            invisible="state != 'draft'"
+                            groups="school_management.group_school_teacher,school_management.group_school_admin"/>
+                    <button name="action_open_reject_wizard" type="object"
+                            string="Not Approve" class="btn-outline-danger" icon="fa-times"
+                            invisible="state != 'draft'"
+                            groups="school_management.group_school_teacher,school_management.group_school_admin"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancel Request" class="btn-secondary" icon="fa-ban"
+                            invisible="state not in ('draft', 'approved')"/>
+                    <button name="action_reset_draft" type="object"
+                            string="Reset to Pending" class="btn-outline-secondary" icon="fa-undo"
+                            invisible="state not in ('rejected', 'cancel')"
+                            groups="school_management.group_school_teacher,school_management.group_school_admin"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,rejected"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Approved" bg_color="text-bg-success" invisible="state != 'approved'"/>
+                    <widget name="web_ribbon" title="Not Approved" bg_color="text-bg-danger" invisible="state != 'rejected'"/>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-secondary" invisible="state != 'cancel'"/>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o" invisible="attendance_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="attendance_count"/></span>
+                                <span class="o_stat_text">Excused Days</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <label for="display_name" string="Permission Request"/>
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Student Details">
+                            <field name="student_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="student_code"/>
+                            <field name="class_id"/>
+                            <field name="teacher_id"/>
+                            <field name="student_phone"/>
+                            <field name="contact_phone"/>
+                        </group>
+                        <group string="Permission Duration &amp; Schedule">
+                            <field name="permission_type" readonly="state != 'draft'"/>
+                            <field name="session_type" readonly="state != 'draft'"/>
+                            <field name="start_date" readonly="state != 'draft'"/>
+                            <field name="end_date" readonly="state != 'draft'"/>
+                            <field name="duration_days"/>
+                            <field name="start_time" widget="float_time" invisible="session_type != 'custom'" readonly="state != 'draft'"/>
+                            <field name="end_time" widget="float_time" invisible="session_type != 'custom'" readonly="state != 'draft'"/>
+                            <field name="parent_informed" readonly="state != 'draft'"/>
+                            <field name="auto_update_attendance" groups="school_management.group_school_teacher,school_management.group_school_admin"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Reason &amp; Explanation" name="reason">
+                            <field name="reason" placeholder="Explain the reason for the requested permission in detail..." readonly="state != 'draft'"/>
+                        </page>
+                        <page string="Supporting Documents" name="documents">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Review &amp; Approval History" name="review" invisible="state == 'draft' and not approved_by">
+                            <group>
+                                <group string="Decision Info">
+                                    <field name="approved_by"/>
+                                    <field name="approval_date"/>
+                                    <field name="approver_role" widget="badge"/>
+                                </group>
+                                <group string="Refusal / Non-Approval Note" invisible="state != 'rejected'">
+                                    <field name="rejection_reason" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter reload_on_attachment="True"/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= CALENDAR VIEW ======================= -->
+    <record id="view_school_permission_calendar" model="ir.ui.view">
+        <field name="name">school.permission.calendar</field>
+        <field name="model">school.permission</field>
+        <field name="arch" type="xml">
+            <calendar string="Permissions Calendar"
+                      date_start="start_date"
+                      date_stop="end_date"
+                      color="state"
+                      mode="month"
+                      quick_create="0">
+                <field name="student_id"/>
+                <field name="permission_type"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_school_permission_kanban" model="ir.ui.view">
+        <field name="name">school.permission.kanban</field>
+        <field name="model">school.permission</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_group_by="state">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="permission_type"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="duration_days"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="o_kanban_record_title fs-6">
+                                <field name="student_id"/>
+                            </strong>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'approved'"
+                                   decoration-warning="state == 'draft'"
+                                   decoration-danger="state == 'rejected'"
+                                   decoration-muted="state == 'cancel'"/>
+                        </div>
+                        <div class="text-muted small mb-1">
+                            <i class="fa fa-users me-1" title="Class"/> <field name="class_id"/>
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="fa fa-tag me-1" title="Type"/> <field name="permission_type" widget="badge"/>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small border-top pt-1">
+                            <span><i class="fa fa-calendar me-1" title="Dates"/> <field name="start_date"/> - <field name="end_date"/></span>
+                            <span><i class="fa fa-clock-o me-1" title="Duration"/> <field name="duration_days"/>d</span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= ACTIONS ======================= -->
+    <!-- Action 1: All Permissions -->
+    <record id="action_school_permission" model="ir.actions.act_window">
+        <field name="name">Permission</field>
+        <field name="res_model">school.permission</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
+        <field name="search_view_id" ref="view_school_permission_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Submit and review student permission requests!
+            </p>
+            <p>
+                Students can request permission for leaves of absence, illness, or family affairs.
+                Teachers and administrators can review requests and approve or decline them.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action 2: Pending Approval -->
+    <record id="action_school_permission_pending" model="ir.actions.act_window">
+        <field name="name">Pending Permission Requests</field>
+        <field name="res_model">school.permission</field>
+        <field name="view_mode">list,kanban,form,calendar</field>
+        <field name="search_view_id" ref="view_school_permission_search"/>
+        <field name="domain">[('state', '=', 'draft')]</field>
+        <field name="context">{'default_state': 'draft'}</field>
+    </record>
+
+    <!-- Action 3: Approved Permissions -->
+    <record id="action_school_permission_approved" model="ir.actions.act_window">
+        <field name="name">Approved Permissions</field>
+        <field name="res_model">school.permission</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
+        <field name="search_view_id" ref="view_school_permission_search"/>
+        <field name="domain">[('state', '=', 'approved')]</field>
+    </record>
+</odoo>

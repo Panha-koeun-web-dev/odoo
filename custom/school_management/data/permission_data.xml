@@ -1,0 +1,9 @@
+<odoo>
+    <record id="seq_school_permission" model="ir.sequence">
+        <field name="name">Student Permission Request Number</field>
+        <field name="code">school.permission</field>
+        <field name="prefix">PERM/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

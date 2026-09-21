@@ -16,6 +16,7 @@
                 <field name="display_name"/>
                 <field name="teacher_id"/>
                 <field name="student_id"/>
+                <field name="student_ids"/>
                 <field name="class_id"/>
                 <field name="subject_ids"/>
                 <field name="subject_id"/>
@@ -44,6 +45,7 @@
                 <field name="subject_id" optional="hide"/>
                 <field name="class_id"/>
                 <field name="student_id" optional="show"/>
+                <field name="student_ids" widget="many2many_tags" optional="hide"/>
                 <field name="room" optional="show"/>
                 <field name="start_datetime" optional="hide"/>
                 <field name="end_datetime" optional="hide"/>
@@ -61,6 +63,7 @@
                 <field name="display_name"/>
                 <field name="class_id"/>
                 <field name="student_id"/>
+                <field name="student_ids"/>
                 <field name="subject_id"/>
                 <field name="subject_ids"/>
                 <field name="subjects_display"/>
@@ -138,7 +141,7 @@
                             <field name="subjects_display" invisible="1"/>
                             <field name="class_id" options="{'no_create': True}"/>
                             <field name="student_id" placeholder="Optional: Specific Student (1-on-1 tutoring / elective)" options="{'no_create': True}"/>
-                            <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select multiple students (for group study / electives)..." invisible="class_id"/>
+                            <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select multiple students (for group study / electives)..."/>
                             <field name="room" placeholder="e.g. Room 101 / Science Lab"/>
                         </group>
                         <group string="Schedule &amp; Timing">
@@ -186,9 +189,14 @@
                 <field name="name"/>
                 <field name="teacher_id"/>
                 <field name="student_id"/>
+                <field name="student_ids"/>
                 <field name="class_id"/>
                 <field name="subject_id"/>
+                <field name="subject_ids"/>
                 <field name="room"/>
+                <separator/>
+                <filter name="filter_my_timetable" string="My Schedule"
+                        domain="['|', '|', ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
                 <separator/>
                 <filter name="filter_monday" string="Monday" domain="[('day_of_week', '=', '0')]"/>
                 <filter name="filter_tuesday" string="Tuesday" domain="[('day_of_week', '=', '1')]"/>
@@ -226,11 +234,10 @@
         <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Plan and manage your school timetable!
+                Create the First Timetable Session!
             </p>
             <p>
-                Organize weekly class and student sessions by Teacher, Student, Subject, Day of Week, and Period/Room.
-                Enjoy conflict prevention and a complete interactive calendar schedule.
+                Organize weekly class timetables, teacher schedules, and individual or group study sessions.
             </p>
         </field>
     </record>

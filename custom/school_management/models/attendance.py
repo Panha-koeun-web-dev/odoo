@@ -20,6 +20,7 @@ class SchoolAttendance(models.Model):
     notes = fields.Text(string='Notes')
 
     student_code = fields.Char(related='student_id.student_id', string='Student ID', readonly=True)
+    permission_id = fields.Many2one('school.permission', string='Permission Request', ondelete='set null')
 
     _unique_attendance = models.Constraint(
         'unique(student_id, date)',

@@ -33,7 +33,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="15"/>
     <menuitem id="menu_school_student_enroll_wizard"
-              name="⚡ Enroll in Weekly Subjects"
+              name="Enroll in Weekly Subjects"
               parent="menu_school_student_parent"
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
@@ -44,6 +44,12 @@
               action="action_timetable_student"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
+    <menuitem id="menu_school_student_permission"
+              name="Permission Requests"
+              parent="menu_school_student_parent"
+              action="action_school_permission"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="25"/>
     <menuitem id="menu_school_enrollment"
               name="Enrollments"
               parent="menu_school_student_parent"
@@ -70,7 +76,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="10"/>
     <menuitem id="menu_school_teacher_assign_wizard"
-              name="⚡ Assign Subjects &amp; Students"
+              name="Assign Subjects &amp; Students"
               parent="menu_school_teacher_parent"
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
@@ -97,7 +103,7 @@
 
     <!-- 4. Quick Assign Hub -->
     <menuitem id="menu_school_assign_subject_wizard"
-              name="⚡ Quick Assign &amp; Schedule Hub"
+              name="Quick Assign &amp; Schedule Hub"
               parent="menu_school_schedule_root"
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
@@ -201,7 +207,33 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="30"/>
 
-    <!-- ================= 7. Attendance ================= -->
+    <!-- ================= 7. Permission (Primary Function Page) ================= -->
+    <menuitem id="menu_school_permission_root"
+              name="Permission"
+              parent="menu_school_root"
+              action="action_school_permission"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="45"/>
+    <menuitem id="menu_school_permission_all"
+              name="All Requests"
+              parent="menu_school_permission_root"
+              action="action_school_permission"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="10"/>
+    <menuitem id="menu_school_permission_pending"
+              name="Pending Approval"
+              parent="menu_school_permission_root"
+              action="action_school_permission_pending"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="20"/>
+    <menuitem id="menu_school_permission_approved"
+              name="Approved Permissions"
+              parent="menu_school_permission_root"
+              action="action_school_permission_approved"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="30"/>
+
+    <!-- ================= 8. Attendance ================= -->
     <menuitem id="menu_school_attendance_parent"
               name="Attendance"
               parent="menu_school_root"
@@ -213,6 +245,12 @@
               action="action_attendance"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
+    <menuitem id="menu_school_attendance_permission"
+              name="Student Permissions"
+              parent="menu_school_attendance_parent"
+              action="action_school_permission"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="15"/>
     <menuitem id="menu_school_attendance_export_xlsx"
               name="Export Attendance (XLSX)"
               parent="menu_school_attendance_parent"
@@ -220,7 +258,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
 
-    <!-- ================= 8. Academic Transcripts & Certificates ================= -->
+    <!-- ================= 9. Academic Transcripts & Certificates ================= -->
     <menuitem id="menu_school_certificate"
               name="Transcripts &amp; Certificates"
               parent="menu_school_root"
@@ -228,7 +266,7 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="55"/>
 
-    <!-- ================= 9. Finance ================= -->
+    <!-- ================= 10. Finance ================= -->
     <menuitem id="menu_school_finance_parent"
               name="Finance"
               parent="menu_school_root"

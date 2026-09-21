@@ -141,7 +141,7 @@ class SchoolTeacher(models.Model):
 
         if existing_user:
             existing_user.sudo().write({
-                'groups_id': [(4, group_teacher.id), (4, group_internal.id)]
+                'group_ids': [(4, group_teacher.id), (4, group_internal.id)]
             })
             self.user_id = existing_user.id
             return {
@@ -159,7 +159,7 @@ class SchoolTeacher(models.Model):
             'name': self.name,
             'login': login,
             'email': login,
-            'groups_id': [(6, 0, [group_internal.id, group_teacher.id])],
+            'group_ids': [(6, 0, [group_internal.id, group_teacher.id])],
         }
         new_user = self.env['res.users'].sudo().create(user_vals)
         self.user_id = new_user.id

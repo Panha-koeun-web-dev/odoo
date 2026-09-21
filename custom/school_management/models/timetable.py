@@ -291,11 +291,13 @@ class SchoolTimetable(models.Model):
     @api.depends('student_id', 'class_id.student_ids')
     def _compute_student_ids(self):
         for rec in self:
-            if rec.class_id:
-                rec.student_ids = [(6, 0, rec.class_id.student_ids.ids)]
-            elif rec.student_id:
+            if rec.student_id:
                 rec.student_ids = [(6, 0, [rec.student_id.id])]
-            elif not rec.student_ids:
+            elif rec.student_ids:
+                pass
+            elif rec.class_id:
+                rec.student_ids = [(6, 0, rec.class_id.student_ids.ids)]
+            else:
                 rec.student_ids = False
 
     @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name')
@@ -427,6 +429,23 @@ class SchoolTimetable(models.Model):
         elif vals.get('class_id'):
             target_name = self.env['school.class'].browse(vals['class_id']).name or ''
 
+        # Sync student_id and student_ids
+        if vals.get('student_id') and not vals.get('student_ids'):
+            vals['student_ids'] = [(6, 0, [vals['student_id']])]
+        elif vals.get('student_ids') and not vals.get('student_id'):
+            stu_ids = []
+            for cmd in vals['student_ids']:
+                if isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 6:
+                    stu_ids.extend(cmd[2])
+                elif isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 4:
+                    stu_ids.append(cmd[1])
+                elif isinstance(cmd, int):
+                    stu_ids.append(cmd)
+            if len(stu_ids) == 1:
+                vals['student_id'] = stu_ids[0]
+            if not target_name and stu_ids:
+                target_name = ', '.join(self.env['school.student'].browse(stu_ids).mapped('name'))
+
         extracted_sub_ids = []
         if vals.get('subject_ids'):
             for cmd in vals['subject_ids']:
@@ -475,6 +494,20 @@ class SchoolTimetable(models.Model):
                 student = self.env['school.student'].browse(vals['student_id'])
                 if student.class_id:
                     vals['class_id'] = student.class_id.id
+            elif vals.get('student_ids') and not vals.get('class_id'):
+                stu_ids = []
+                for cmd in vals.get('student_ids', []):
+                    if isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 6:
+                        stu_ids.extend(cmd[2])
+                    elif isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 4:
+                        stu_ids.append(cmd[1])
+                    elif isinstance(cmd, int):
+                        stu_ids.append(cmd)
+                if stu_ids:
+                    students = self.env['school.student'].browse(stu_ids)
+                    classes = students.mapped('class_id')
+                    if len(classes) == 1:
+                        vals['class_id'] = classes[0].id
             self._sync_timetable_vals(vals)
         records = super().create(vals_list)
         for rec in records:
@@ -492,6 +525,26 @@ class SchoolTimetable(models.Model):
             has_dt = 'start_datetime' in merged or 'end_datetime' in merged
             has_timing = 'day_of_week' in merged or 'start_time' in merged or 'end_time' in merged or 'period' in merged
 
+            # Sync student_id and student_ids if one updated
+            if 'student_id' in merged and 'student_ids' not in merged:
+                if merged['student_id']:
+                    merged['student_ids'] = [(6, 0, [merged['student_id']])]
+                else:
+                    merged['student_ids'] = [(5, 0, 0)]
+            elif 'student_ids' in merged and 'student_id' not in merged:
+                stu_ids = []
+                for cmd in merged['student_ids']:
+                    if isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 6:
+                        stu_ids.extend(cmd[2])
+                    elif isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 4:
+                        stu_ids.append(cmd[1])
+                    elif isinstance(cmd, int):
+                        stu_ids.append(cmd)
+                if len(stu_ids) == 1:
+                    merged['student_id'] = stu_ids[0]
+                elif len(stu_ids) > 1:
+                    merged['student_id'] = False
+
             if has_dt and not has_timing:
                 s_dt = merged.get('start_datetime', rec.start_datetime)
                 e_dt = merged.get('end_datetime', rec.end_datetime)
@@ -501,8 +554,6 @@ class SchoolTimetable(models.Model):
                     merged['day_of_week'] = str(local_start.weekday())
                     s_time = round(local_start.hour + local_start.minute / 60.0, 2)
                     e_time = round(local_end.hour + local_end.minute / 60.0, 2)
-                    merged['start_time'] = s_time
-                    merged['end_time'] = e_time
                     merged['period'] = rec._match_period(s_time, e_time)
             elif has_timing and not has_dt:
                 if merged.get('period') in PERIOD_PRESETS and 'start_time' not in merged:
@@ -595,7 +646,13 @@ class SchoolTimetable(models.Model):
         # 2. Auto-ensure student study subjects for all attending students
         StudentSubject = self.env['school.student.subject']
         for sess in self:
-            target_students = sess.student_ids | sess.student_id | (sess.class_id.student_ids if sess.class_id else self.env['school.student'])
+            if sess.student_ids or sess.student_id:
+                target_students = sess.student_ids | sess.student_id
+            elif sess.class_id:
+                target_students = sess.class_id.student_ids
+            else:
+                target_students = self.env['school.student']
+
             session_subs = sess.subject_ids | sess.subject_id
             duration = max(0.0, (sess.end_time or 0.0) - (sess.start_time or 0.0))
             for stud in target_students:

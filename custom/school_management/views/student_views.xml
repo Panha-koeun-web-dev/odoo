@@ -296,6 +296,12 @@
                                 <span class="o_stat_text">Weekly Subjects</span>
                             </div>
                         </button>
+                        <button name="action_view_permissions" type="object" class="oe_stat_button" icon="fa-id-card-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="permission_count"/></span>
+                                <span class="o_stat_text">Permissions</span>
+                            </div>
+                        </button>
                     </div>
 
                     <!-- Hero Header Profile (Modern Clean Layout) -->
@@ -881,6 +887,42 @@
                                                    decoration-success="result == 'pass'"
                                                    decoration-danger="result == 'fail'"/>
                                             <field name="remarks" optional="show" string="Remarks"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="permissions" string="Permissions &amp; Leaves">
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-id-card-o text-primary me-2" title="Permissions"/>Student Permission &amp; Leave Requests
+                                        </h6>
+                                        <small class="text-muted">Overview of absence, sick leave, and official excuse requests submitted by this student.</small>
+                                    </div>
+                                    <button name="action_view_permissions" type="object"
+                                            string="View All Requests" class="btn btn-sm btn-outline-primary" icon="fa-external-link"/>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="permission_ids" nolabel="1" readonly="1">
+                                        <list decoration-success="state == 'approved'"
+                                              decoration-warning="state == 'draft'"
+                                              decoration-danger="state == 'rejected'"
+                                              decoration-muted="state == 'cancel'">
+                                            <field name="name" string="Reference"/>
+                                            <field name="permission_type" widget="badge"/>
+                                            <field name="start_date"/>
+                                            <field name="end_date"/>
+                                            <field name="duration_days" string="Days"/>
+                                            <field name="reason"/>
+                                            <field name="approved_by" string="Reviewed By"/>
+                                            <field name="state" widget="badge"
+                                                   decoration-success="state == 'approved'"
+                                                   decoration-warning="state == 'draft'"
+                                                   decoration-danger="state == 'rejected'"
+                                                   decoration-muted="state == 'cancel'"/>
                                         </list>
                                     </field>
                                 </div>

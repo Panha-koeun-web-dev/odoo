@@ -433,3 +433,104 @@ class TestWeeklySubjects(TransactionCase):
         session.unlink()
         self.student._compute_timetable_ids()
         self.assertNotIn(session, self.student.timetable_ids)
+
+    def test_11_student_account_timetable_visibility(self):
+        """Test that when admin assigns schedules to a student (1-on-1, group, or whole-class),
+        the student can view and access the schedule in their own account without error,
+        while remaining isolated from other students' private sessions."""
+        # 1. Create a portal/internal user for the student with group_school_student
+        group_student = self.env.ref('school_management.group_school_student')
+        student_user = self.env['res.users'].create({
+            'name': 'Bobby Fischer User',
+            'login': 'bobby.fischer@testschool.edu',
+            'email': 'bobby.fischer@testschool.edu',
+            'group_ids': [(6, 0, [group_student.id, self.env.ref('base.group_user').id])],
+        })
+        self.student.write({'user_id': student_user.id})
+
+        # 2. Create another student and their class
+        other_class = self.env['school.class'].create({
+            'name': 'Grade 12 - Arts B',
+            'code': 'G12-ART-B',
+        })
+        other_student = self.env['school.student'].create({
+            'name': 'Garry Kasparov',
+            'student_id': 'STU-GARRY-01',
+            'gender': 'male',
+            'date_of_birth': '2007-01-01',
+            'class_id': other_class.id,
+            'study_status': 'studying',
+        })
+
+        # Admin assigns Session A: 1-on-1 directly to Bobby (student_id)
+        sess_individual = self.env['school.timetable'].create({
+            'name': 'Bobby 1-on-1 Math Mentoring',
+            'student_id': self.student.id,
+            'teacher_id': self.teacher_math.id,
+            'subject_ids': [(6, 0, [self.sub_math.id])],
+            'day_of_week': '0',  # Monday
+            'start_time': 14.0,
+            'end_time': 15.0,
+            'room': 'Office 1',
+        })
+
+        # Admin assigns Session B: Group session with Bobby (student_ids)
+        sess_group = self.env['school.timetable'].create({
+            'name': 'Advanced Math Olympiad Group',
+            'student_ids': [(6, 0, [self.student.id, other_student.id])],
+            'teacher_id': self.teacher_math.id,
+            'subject_ids': [(6, 0, [self.sub_math.id])],
+            'day_of_week': '1',  # Tuesday
+            'start_time': 15.0,
+            'end_time': 16.0,
+            'room': 'Lab 101',
+        })
+
+        # Admin assigns Session C: Class-wide session for Grade 11 - Science A
+        sess_class = self.env['school.timetable'].create({
+            'name': 'Grade 11 Physics Lecture',
+            'class_id': self.school_class.id,
+            'teacher_id': self.teacher_phys.id,
+            'subject_ids': [(6, 0, [self.sub_phys.id])],
+            'day_of_week': '2',  # Wednesday
+            'start_time': 10.0,
+            'end_time': 11.0,
+            'room': 'Physics Lab',
+        })
+
+        # Admin assigns Session D: 1-on-1 private tutoring for Garry Kasparov ONLY
+        sess_other = self.env['school.timetable'].create({
+            'name': 'Garry Private Tutoring',
+            'student_id': other_student.id,
+            'teacher_id': self.teacher_phys.id,
+            'subject_ids': [(6, 0, [self.sub_phys.id])],
+            'day_of_week': '3',  # Thursday
+            'start_time': 14.0,
+            'end_time': 15.0,
+            'room': 'Office 2',
+        })
+
+        # 3. Read timetable sessions as Bobby Fischer (student user)
+        student_tt_env = self.env['school.timetable'].with_user(student_user)
+        visible_sessions = student_tt_env.search([])
+
+        # Bobby MUST see: individual session, group session, and class session
+        self.assertIn(sess_individual.id, visible_sessions.ids, "Student must see individual session assigned by admin")
+        self.assertIn(sess_group.id, visible_sessions.ids, "Student must see group session assigned by admin")
+        self.assertIn(sess_class.id, visible_sessions.ids, "Student must see whole-class session assigned by admin")
+
+        # Bobby MUST NOT see Garry's private session
+        self.assertNotIn(sess_other.id, visible_sessions.ids, "Student must not see another student's private session")
+
+        # 4. Student can read session details without AccessError
+        my_session = student_tt_env.browse(sess_individual.id)
+        read_data = my_session.read(['name', 'teacher_id', 'subject_ids', 'start_time', 'end_time', 'room'])
+        self.assertTrue(read_data)
+        self.assertEqual(read_data[0]['name'], 'Bobby 1-on-1 Math Mentoring')
+
+        # 5. Check student profile timetable_ids as student user
+        student_profile = self.student.with_user(student_user)
+        self.assertIn(sess_individual, student_profile.timetable_ids)
+        self.assertIn(sess_group, student_profile.timetable_ids)
+        self.assertIn(sess_class, student_profile.timetable_ids)
+        self.assertNotIn(sess_other, student_profile.timetable_ids)

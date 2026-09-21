@@ -98,7 +98,7 @@
             <form string="Weekly Teaching Assignment">
                 <header>
                     <button name="action_open_schedule_wizard" type="object"
-                            string="⚡ Quick Schedule Session" class="btn-primary" icon="fa-calendar-plus-o"/>
+                            string="Quick Schedule Session" class="btn-primary" icon="fa-calendar-plus-o"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">

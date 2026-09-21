@@ -7,14 +7,6 @@
         <field name="arch" type="xml">
             <form string="Quick Subject &amp; Schedule Assignment Hub">
                 <sheet>
-                    <div class="alert alert-info d-flex align-items-center mb-3" role="status">
-                        <i class="fa fa-magic fa-2x me-3" title="Wizard Guide"/>
-                        <div>
-                            <strong>Unified Subject &amp; Schedule Hub</strong>:
-                            Assign teachers to classes, enroll students into subjects, and generate weekly timetable slots in seconds.
-                        </div>
-                    </div>
-
                     <group>
                         <field name="mode" widget="radio" options="{'horizontal': true}"/>
                     </group>
