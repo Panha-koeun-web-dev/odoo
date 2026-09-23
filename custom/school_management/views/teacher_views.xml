@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ======================= LIST VIEW ======================= -->
     <record id="view_teacher_tree" model="ir.ui.view">
@@ -146,6 +147,12 @@
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="students_taught_count"/></span>
                                 <span class="o_stat_text">Students Taught</span>
+                            </div>
+                        </button>
+                        <button name="action_view_permissions" type="object" class="oe_stat_button" icon="fa-id-card-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="permission_count"/></span>
+                                <span class="o_stat_text">Permissions</span>
                             </div>
                         </button>
                     </div>
@@ -415,6 +422,124 @@
                                             <field name="email" widget="email"/>
                                         </group>
                                     </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="permissions" string="Permissions &amp; Leaves">
+                            <!-- Permission & Leave Summary KPI Metric Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Total Requests</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                <i class="fa fa-folder-open-o" title="Total Requests"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-dark mb-0">
+                                            <field name="permission_count"/>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Submissions to date
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-success-subtle bg-opacity-25 border-start border-success border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-success fw-bold small">Approved</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="fa fa-check-circle" title="Approved Leaves"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-success mb-0">
+                                            <field name="permission_approved_count"/>
+                                        </div>
+                                        <div class="small text-success mt-1">
+                                            Officially approved
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-warning-subtle bg-opacity-25 border-start border-warning border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-warning fw-bold small">Pending</span>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                                <i class="fa fa-hourglass-half" title="Pending Review"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-warning mb-0">
+                                            <field name="permission_pending_count"/>
+                                        </div>
+                                        <div class="small text-warning mt-1">
+                                            Awaiting administration
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle border-start border-info border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Total Leave Days</span>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                <i class="fa fa-calendar-check-o" title="Total Days"/>
+                                            </span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-dark mb-0">
+                                            <field name="permission_total_days"/> <span class="fs-6 fw-normal text-muted">Days</span>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Total leave duration
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Permissions List Card -->
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                            <i class="fa fa-id-card-o fa-lg" title="Permissions"/>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark">Teacher Permission &amp; Leave Requests</h6>
+                                            <small class="text-muted">Absence records, medical leave notes, and official excuse requests</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button name="action_request_permission" type="object"
+                                                string="New Request" class="btn btn-sm btn-primary shadow-sm text-nowrap" icon="fa-plus-circle"/>
+                                        <button name="action_view_permissions" type="object"
+                                                string="Manage Permissions" class="btn btn-sm btn-outline-secondary text-nowrap" icon="fa-external-link"/>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="permission_ids" nolabel="1" readonly="1">
+                                        <list decoration-success="state == 'approved'"
+                                              decoration-warning="state == 'draft'"
+                                              decoration-danger="state == 'rejected'"
+                                              decoration-muted="state == 'cancel'"
+                                              sample="1">
+                                            <field name="name" string="Reference" decoration-bf="1"/>
+                                            <field name="permission_type" string="Type" widget="badge"
+                                                   decoration-info="permission_type == 'leave'"
+                                                   decoration-warning="permission_type == 'sick'"
+                                                   decoration-danger="permission_type == 'emergency'"
+                                                   decoration-muted="permission_type == 'official'"/>
+                                            <field name="start_date" string="From"/>
+                                            <field name="end_date" string="To"/>
+                                            <field name="duration_days" string="Days" decoration-bf="1"/>
+                                            <field name="session_type" widget="badge" optional="hide"/>
+                                            <field name="reason" optional="show"/>
+                                            <field name="approved_by" string="Reviewer" widget="many2one_avatar_user" optional="show"/>
+                                            <field name="state" string="Status" widget="badge"
+                                                   decoration-success="state == 'approved'"
+                                                   decoration-warning="state == 'draft'"
+                                                   decoration-danger="state == 'rejected'"
+                                                   decoration-muted="state == 'cancel'"/>
+                                        </list>
+                                    </field>
                                 </div>
                             </div>
                         </page>

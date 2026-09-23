@@ -62,13 +62,15 @@ class TestSchoolTimetable(TransactionCase):
             'subject_id': self.subject_math.id,
             'teacher_id': self.teacher_1.id,
             'day_of_week': '0',  # Monday
-            'period': 'p1',      # 08:00 - 09:30
+            'period': 'p1',      # 08:00 - 09:00
             'room': 'Lab 101',
         })
 
         self.assertTrue(slot.id)
         self.assertEqual(slot.start_time, 8.0)
         self.assertEqual(slot.end_time, 9.0)
+        self.assertEqual(slot.period_short, 'Period 1')
+        self.assertEqual(slot.time_display, '08:00 - 09:00')
         self.assertTrue(slot.start_datetime)
         self.assertTrue(slot.end_datetime)
         self.assertTrue(slot.start_datetime < slot.end_datetime)
@@ -122,7 +124,7 @@ class TestSchoolTimetable(TransactionCase):
             })
 
     def test_04_class_conflict_prevention(self):
-        """Test class collision constraint prevents assigning two concurrent subjects to the same class."""
+        """Test class collision constraint prevents assigning two teachers/subjects to the same class at the same time."""
         self.Timetable.create({
             'class_id': self.class_a.id,
             'subject_id': self.subject_math.id,
@@ -132,7 +134,7 @@ class TestSchoolTimetable(TransactionCase):
             'room': 'Room 101',
         })
 
-        # Class A cannot attend Physics at the same time even with a different teacher
+        # Class A cannot have Teacher 2 / Physics at the same time
         with self.assertRaises(ValidationError):
             self.Timetable.create({
                 'class_id': self.class_a.id,

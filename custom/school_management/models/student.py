@@ -141,6 +141,9 @@ class SchoolStudent(models.Model):
     study_subject_all_ids = fields.Many2many('school.subject', string='Enrolled Subjects', compute='_compute_study_stats')
     permission_ids = fields.One2many('school.permission', 'student_id', string='Permission Requests')
     permission_count = fields.Integer(string='Permissions', compute='_compute_permission_count')
+    permission_approved_count = fields.Integer(string='Approved Leaves', compute='_compute_permission_count')
+    permission_pending_count = fields.Integer(string='Pending Permissions', compute='_compute_permission_count')
+    permission_total_days = fields.Float(string='Total Excused Days', compute='_compute_permission_count')
 
     @api.depends_context('company')
     def _compute_currency_id(self):
@@ -929,9 +932,30 @@ class SchoolStudent(models.Model):
             }
         }
 
+    @api.depends('permission_ids.state', 'permission_ids.duration_days')
     def _compute_permission_count(self):
         for rec in self:
-            rec.permission_count = len(rec.permission_ids)
+            perms = rec.permission_ids
+            rec.permission_count = len(perms)
+            approved = perms.filtered(lambda p: p.state == 'approved')
+            rec.permission_approved_count = len(approved)
+            rec.permission_pending_count = len(perms.filtered(lambda p: p.state == 'draft'))
+            rec.permission_total_days = sum(approved.mapped('duration_days'))
+
+    def action_request_permission(self):
+        self.ensure_one()
+        return {
+            'name': _('New Permission / Leave Request'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_applicant_type': 'student',
+                'default_student_id': self.id,
+                'default_class_id': self.class_id.id if self.class_id else False,
+            },
+        }
 
     def action_view_permissions(self):
         self.ensure_one()
@@ -942,6 +966,7 @@ class SchoolStudent(models.Model):
             'view_mode': 'list,kanban,calendar,form',
             'domain': [('student_id', '=', self.id)],
             'context': {
+                'default_applicant_type': 'student',
                 'default_student_id': self.id,
                 'search_default_student_id': self.id,
             },

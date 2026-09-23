@@ -11,10 +11,26 @@ class SchoolPermissionRejectWizard(models.TransientModel):
         string='Permission Request',
         required=True,
     )
+    applicant_type = fields.Selection(
+        related='permission_id.applicant_type',
+        string='Applicant Type',
+        readonly=True,
+    )
+    applicant_name = fields.Char(
+        related='permission_id.applicant_name',
+        string='Applicant',
+        readonly=True,
+    )
     student_id = fields.Many2one(
         'school.student',
         related='permission_id.student_id',
         string='Student',
+        readonly=True,
+    )
+    teacher_id = fields.Many2one(
+        'school.teacher',
+        related='permission_id.teacher_id',
+        string='Teacher',
         readonly=True,
     )
     permission_type = fields.Selection(
@@ -40,7 +56,7 @@ class SchoolPermissionRejectWizard(models.TransientModel):
     rejection_reason = fields.Text(
         string='Reason for Non-Approval',
         required=True,
-        help='State clearly why the permission request cannot be approved so the student is properly informed.',
+        help='State clearly why the permission request cannot be approved so the applicant is properly informed.',
     )
 
     def action_confirm_reject(self):
@@ -48,4 +64,3 @@ class SchoolPermissionRejectWizard(models.TransientModel):
         if not self.permission_id:
             raise UserError(_("No permission request selected."))
         self.permission_id.action_reject(reason=self.rejection_reason)
-        return {'type': 'ir.actions.act_window_close'}

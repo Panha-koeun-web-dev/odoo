@@ -45,9 +45,9 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
     <menuitem id="menu_school_student_permission"
-              name="Permission Requests"
+              name="Student Permissions"
               parent="menu_school_student_parent"
-              action="action_school_permission"
+              action="action_school_permission_student"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="25"/>
     <menuitem id="menu_school_enrollment"
@@ -93,6 +93,12 @@
               action="action_timetable_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="30"/>
+    <menuitem id="menu_school_teacher_permissions"
+              name="Teacher Permissions &amp; Leaves"
+              parent="menu_school_teacher_parent"
+              action="action_school_permission_teacher"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="35"/>
 
     <!-- ================= 4. Schedules & Timetable (Navbar with Teacher & Student Dropdowns) ================= -->
     <menuitem id="menu_school_schedule_root"
@@ -116,7 +122,7 @@
               action="action_timetable_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="10"/>
-    <menuitem id="menu_school_sched_teacher_assignments"
+    <menuitem id="menu_school_sched_teacher_asg"
               name="Teacher Teaching Assignments"
               parent="menu_school_schedule_root"
               action="action_school_teaching_assignment"
@@ -220,12 +226,24 @@
               action="action_school_permission"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
+    <menuitem id="menu_school_permission_student"
+              name="Student Requests"
+              parent="menu_school_permission_root"
+              action="action_school_permission_student"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="15"/>
+    <menuitem id="menu_school_permission_teacher"
+              name="Teacher Requests"
+              parent="menu_school_permission_root"
+              action="action_school_permission_teacher"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="20"/>
     <menuitem id="menu_school_permission_pending"
               name="Pending Approval"
               parent="menu_school_permission_root"
               action="action_school_permission_pending"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="20"/>
+              sequence="25"/>
     <menuitem id="menu_school_permission_approved"
               name="Approved Permissions"
               parent="menu_school_permission_root"
@@ -248,7 +266,7 @@
     <menuitem id="menu_school_attendance_permission"
               name="Student Permissions"
               parent="menu_school_attendance_parent"
-              action="action_school_permission"
+              action="action_school_permission_student"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="15"/>
     <menuitem id="menu_school_attendance_export_xlsx"

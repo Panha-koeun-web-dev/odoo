@@ -122,6 +122,11 @@ class SchoolTimetable(models.Model):
         default='p1',
         tracking=True
     )
+    period_short = fields.Char(
+        string='Period Label',
+        compute='_compute_period_short',
+        store=True,
+    )
     start_time = fields.Float(
         string='Start Time',
         default=8.0,
@@ -133,6 +138,11 @@ class SchoolTimetable(models.Model):
         default=9.0,
         required=True,
         tracking=True
+    )
+    time_display = fields.Char(
+        string='Time Range',
+        compute='_compute_time_display',
+        store=True,
     )
     room = fields.Char(
         string='Classroom / Room',
@@ -240,15 +250,12 @@ class SchoolTimetable(models.Model):
                 day_str = str(local_start.weekday())
                 s_time = round(local_start.hour + local_start.minute / 60.0, 2)
                 e_time = round(local_end.hour + local_end.minute / 60.0, 2)
-                res.update({
-                    'day_of_week': day_str,
-                    'start_time': s_time,
-                    'end_time': e_time,
-                    'period': self._match_period(s_time, e_time),
-                    'start_datetime': ctx_start,
-                    'end_datetime': ctx_end,
-                })
-        else:
+                res['day_of_week'] = day_str
+                res['start_time'] = s_time
+                res['end_time'] = e_time
+                res['period'] = self._match_period(s_time, e_time)
+
+        if 'day_of_week' in res and ('start_time' in res or 'period' in res):
             day_str = res.get('day_of_week', '0')
             period_val = res.get('period', 'p1')
             if period_val in PERIOD_PRESETS:
@@ -264,6 +271,26 @@ class SchoolTimetable(models.Model):
                 res.setdefault('end_datetime', e_dt)
 
         return res
+
+    @api.depends('period')
+    def _compute_period_short(self):
+        period_map = {
+            'p1': 'Period 1',
+            'p2': 'Period 2',
+            'p3': 'Period 3',
+            'p4': 'Period 4',
+            'p5': 'Period 5',
+            'p6': 'Period 6',
+            'p7': 'Period 7',
+            'custom': 'Custom',
+        }
+        for rec in self:
+            rec.period_short = period_map.get(rec.period, _('Period'))
+
+    @api.depends('start_time', 'end_time')
+    def _compute_time_display(self):
+        for rec in self:
+            rec.time_display = f"{rec._format_time(rec.start_time)} - {rec._format_time(rec.end_time)}"
 
     @api.depends('subject_ids')
     def _compute_subject_id(self):
@@ -348,33 +375,6 @@ class SchoolTimetable(models.Model):
             if active_studies and not self.subject_ids and not self.subject_id:
                 self.subject_ids = [(6, 0, [active_studies[0].subject_id.id])]
                 self.subject_id = active_studies[0].subject_id
-                if active_studies[0].teacher_id and not self.teacher_id:
-                    self.teacher_id = active_studies[0].teacher_id
-
-    @api.onchange('teacher_id')
-    def _onchange_teacher_id(self):
-        if self.teacher_id:
-            assignments = self.teacher_id.teaching_assignment_ids.filtered(lambda a: a.active)
-            teacher_subjects = self.teacher_id.subject_ids | assignments.mapped('subject_id')
-            if teacher_subjects and not self.subject_ids and not self.subject_id:
-                self.subject_ids = [(6, 0, [teacher_subjects[0].id])]
-                self.subject_id = teacher_subjects[0]
-            if assignments and not self.class_id and assignments[0].class_id:
-                self.class_id = assignments[0].class_id
-
-    @api.onchange('class_id')
-    def _onchange_class_id(self):
-        if self.class_id:
-            if not self.room and self.class_id.room:
-                self.room = self.class_id.room
-            if not self.teacher_id and self.class_id.teacher_id:
-                self.teacher_id = self.class_id.teacher_id
-            assignments = self.class_id.teaching_assignment_ids.filtered(lambda a: a.active)
-            if assignments and not self.subject_ids and not self.subject_id:
-                self.subject_ids = [(6, 0, [assignments[0].subject_id.id])]
-                self.subject_id = assignments[0].subject_id
-                if assignments[0].teacher_id and not self.teacher_id:
-                    self.teacher_id = assignments[0].teacher_id
 
     @api.onchange('class_id', 'subject_ids', 'subject_id')
     def _onchange_class_subject(self):

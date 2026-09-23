@@ -7,12 +7,13 @@
             <form string="Decline / Not Approve Permission Request">
                 <div class="alert alert-warning mb-3" role="alert">
                     <i class="fa fa-exclamation-triangle me-2"/>
-                    You are declining this student permission request. Please provide a clear explanation below so the student understands why it was not approved.
+                    You are declining this permission request. Please provide a clear explanation below so the applicant is informed why their request was not approved.
                 </div>
                 <group>
                     <group string="Request Overview">
                         <field name="permission_id" invisible="1"/>
-                        <field name="student_id" readonly="1"/>
+                        <field name="applicant_type" readonly="1" widget="badge"/>
+                        <field name="applicant_name" readonly="1"/>
                         <field name="permission_type" readonly="1"/>
                     </group>
                     <group string="Duration &amp; Dates">
@@ -23,7 +24,7 @@
                 </group>
                 <group string="Non-Approval Reason">
                     <field name="rejection_reason"
-                           placeholder="Specify reason for refusal (e.g., Conflicts with mandatory mid-term examinations, insufficient notice, prior attendance thresholds reached)..."
+                           placeholder="Specify reason for refusal (e.g., Mandatory school event / examination conflict, insufficient notice, workload coverage unavailable)..."
                            nolabel="1"
                            required="1"/>
                 </group>

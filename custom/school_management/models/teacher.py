@@ -42,6 +42,68 @@ class SchoolTeacher(models.Model):
     student_count = fields.Integer(string='Student Count', compute='_compute_teacher_stats')
     subject_count = fields.Integer(string='Subject Count', compute='_compute_teacher_stats')
 
+    # Permission & Leave Integration
+    permission_ids = fields.One2many(
+        'school.permission',
+        'teacher_id',
+        string='Permission Requests',
+        domain=[('applicant_type', '=', 'teacher')],
+    )
+    permission_count = fields.Integer(
+        string='Permissions Count',
+        compute='_compute_permission_count',
+    )
+    permission_approved_count = fields.Integer(
+        string='Approved Leaves',
+        compute='_compute_permission_count',
+    )
+    permission_pending_count = fields.Integer(
+        string='Pending Permissions',
+        compute='_compute_permission_count',
+    )
+    permission_total_days = fields.Float(
+        string='Total Leave Days',
+        compute='_compute_permission_count',
+    )
+
+    @api.depends('permission_ids.state', 'permission_ids.duration_days')
+    def _compute_permission_count(self):
+        for rec in self:
+            perms = rec.permission_ids
+            rec.permission_count = len(perms)
+            approved = perms.filtered(lambda p: p.state == 'approved')
+            rec.permission_approved_count = len(approved)
+            rec.permission_pending_count = len(perms.filtered(lambda p: p.state == 'draft'))
+            rec.permission_total_days = sum(approved.mapped('duration_days'))
+
+    def action_request_permission(self):
+        self.ensure_one()
+        return {
+            'name': _('New Teacher Leave Request'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_applicant_type': 'teacher',
+                'default_teacher_id': self.id,
+            },
+        }
+
+    def action_view_permissions(self):
+        self.ensure_one()
+        return {
+            'name': _('Permissions & Leaves - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'list,kanban,calendar,form',
+            'domain': [('teacher_id', '=', self.id), ('applicant_type', '=', 'teacher')],
+            'context': {
+                'default_applicant_type': 'teacher',
+                'default_teacher_id': self.id,
+            },
+        }
+
     @api.depends('class_ids', 'class_ids.student_ids', 'subject_ids')
     def _compute_teacher_stats(self):
         for rec in self:
@@ -177,14 +239,14 @@ class SchoolTeacher(models.Model):
     def action_reset_user_password(self):
         self.ensure_one()
         if not self.user_id:
-            raise UserError(_("No login account is associated with this teacher."))
+            raise UserError(_("No user account is linked to this teacher."))
         self.user_id.action_reset_password()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("Password Reset Sent"),
-                'message': _("A password reset email has been sent to %s.") % self.user_id.email,
+                'title': _("Password Reset"),
+                'message': _("Password reset instructions have been sent to %s.") % self.user_id.email,
                 'type': 'info',
                 'sticky': False,
             }
@@ -193,14 +255,13 @@ class SchoolTeacher(models.Model):
     def action_open_assign_wizard(self):
         self.ensure_one()
         return {
+            'name': _('Assign Subject & Students - %s') % (self.name or ''),
             'type': 'ir.actions.act_window',
-            'name': _('Assign Subject & Students to %s') % self.name,
             'res_model': 'school.assign.subject.wizard',
             'view_mode': 'form',
             'target': 'new',
             'context': {
-                'default_mode': 'teacher_assign',
+                'default_assign_target': 'teacher',
                 'default_teacher_id': self.id,
-                'default_subject_id': self.subject_ids[0].id if self.subject_ids else False,
-            }
+            },
         }

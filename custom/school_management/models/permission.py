@@ -6,7 +6,7 @@ from odoo.exceptions import ValidationError, UserError
 class SchoolPermission(models.Model):
     _name = 'school.permission'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _description = 'Student Permission Request'
+    _description = 'Permission & Leave Request'
     _order = 'create_date desc, id desc'
     _rec_name = 'display_name'
 
@@ -23,20 +23,41 @@ class SchoolPermission(models.Model):
         compute='_compute_display_name',
         store=True,
     )
+    applicant_name = fields.Char(
+        string='Applicant',
+        compute='_compute_display_name',
+        store=True,
+    )
+
+    @api.model
+    def _default_applicant_type(self):
+        if self.env.context.get('default_applicant_type'):
+            return self.env.context.get('default_applicant_type')
+        user = self.env.user
+        if user.has_group('school_management.group_school_teacher') and not user.has_group('school_management.group_school_admin'):
+            return 'teacher'
+        return 'student'
+
+    applicant_type = fields.Selection([
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+    ], string='Applicant Type', required=True, default=_default_applicant_type, tracking=True)
 
     @api.model
     def _default_student_id(self):
+        if self.env.context.get('default_student_id'):
+            return self.env.context.get('default_student_id')
         student = self.env['school.student'].search([('user_id', '=', self.env.uid)], limit=1)
         if student:
             return student.id
-        return self.env.context.get('default_student_id', False)
+        return False
 
     student_id = fields.Many2one(
         'school.student',
         string='Student',
-        required=True,
         tracking=True,
         default=_default_student_id,
+        ondelete='cascade',
     )
     student_code = fields.Char(
         related='student_id.student_id',
@@ -60,11 +81,53 @@ class SchoolPermission(models.Model):
         store=True,
         readonly=True,
     )
-    teacher_id = fields.Many2one(
+    class_teacher_id = fields.Many2one(
         'school.teacher',
         related='class_id.teacher_id',
         string='Class Teacher',
         store=True,
+        readonly=True,
+    )
+
+    @api.model
+    def _default_teacher_id(self):
+        if self.env.context.get('default_teacher_id'):
+            return self.env.context.get('default_teacher_id')
+        teacher = self.env['school.teacher'].search([('user_id', '=', self.env.uid)], limit=1)
+        if teacher:
+            return teacher.id
+        return False
+
+    teacher_id = fields.Many2one(
+        'school.teacher',
+        string='Teacher',
+        tracking=True,
+        default=_default_teacher_id,
+        ondelete='cascade',
+    )
+    teacher_employee_id = fields.Char(
+        related='teacher_id.employee_id',
+        string='Employee ID',
+        readonly=True,
+    )
+    teacher_code = fields.Char(
+        related='teacher_id.employee_id',
+        string='Teacher Code / ID',
+        readonly=True,
+    )
+    teacher_phone = fields.Char(
+        related='teacher_id.phone',
+        string='Teacher Phone',
+        readonly=True,
+    )
+    teacher_email = fields.Char(
+        related='teacher_id.email',
+        string='Teacher Email',
+        readonly=True,
+    )
+    teacher_subject_ids = fields.Many2many(
+        related='teacher_id.subject_ids',
+        string='Teaching Subjects',
         readonly=True,
     )
 
@@ -84,6 +147,9 @@ class SchoolPermission(models.Model):
         ('custom', 'Specific Hours'),
     ], string='Time Period', required=True, default='full_day', tracking=True)
 
+    def _default_end_date(self):
+        return fields.Date.context_today(self) + timedelta(days=1)
+
     start_date = fields.Date(
         string='Start Date',
         required=True,
@@ -93,18 +159,25 @@ class SchoolPermission(models.Model):
     end_date = fields.Date(
         string='End Date',
         required=True,
-        default=fields.Date.context_today,
+        default=_default_end_date,
         tracking=True,
     )
     start_time = fields.Float(string='Start Time', default=8.0)
     end_time = fields.Float(string='End Time', default=12.0)
+    custom_start_time = fields.Float(related='start_time', readonly=False)
+    custom_end_time = fields.Float(related='end_time', readonly=False)
 
     duration_days = fields.Float(
         string='Duration (Days)',
         compute='_compute_duration_days',
         store=True,
-        help='Duration of the requested permission in days.',
+        help='Duration of the requested permission in days (calculated as difference between End Date and Start Date).',
     )
+
+    @api.onchange('start_date')
+    def _onchange_start_date(self):
+        if self.start_date and (not self.end_date or self.end_date <= self.start_date):
+            self.end_date = self.start_date + timedelta(days=1)
 
     reason = fields.Text(
         string='Reason / Description',
@@ -154,7 +227,7 @@ class SchoolPermission(models.Model):
     auto_update_attendance = fields.Boolean(
         string='Auto-mark Excused in Attendance',
         default=True,
-        help='Automatically record or update attendance as Excused for the approved dates.',
+        help='Automatically record or update attendance as Excused for the approved dates (Students only).',
     )
     attendance_ids = fields.One2many(
         'school.attendance',
@@ -174,23 +247,73 @@ class SchoolPermission(models.Model):
         string='Supporting Documents',
     )
 
-    is_current_user_approver = fields.Boolean(
-        string='Is Current User Approver',
-        compute='_compute_user_roles',
+    # Timetable integration for teachers on leave
+    affected_timetable_ids = fields.Many2many(
+        'school.timetable',
+        string='Affected Teaching Sessions',
+        compute='_compute_affected_timetables',
+        help='Teaching sessions scheduled during this permission period.',
     )
-    is_current_user_student = fields.Boolean(
-        string='Is Current User Student',
-        compute='_compute_user_roles',
+    affected_timetable_count = fields.Integer(
+        string='Affected Sessions Count',
+        compute='_compute_affected_timetables',
     )
 
-    @api.depends('student_id', 'permission_type', 'name')
+    can_approve = fields.Boolean(
+        string='Can Current User Approve',
+        compute='_compute_can_approve',
+    )
+
+    @api.depends_context('uid')
+    @api.depends('applicant_type', 'teacher_id.user_id', 'student_id.user_id', 'state')
+    def _compute_can_approve(self):
+        is_admin = self.env.user.has_group('school_management.group_school_admin')
+        is_teacher = self.env.user.has_group('school_management.group_school_teacher')
+        for rec in self:
+            if rec.state != 'draft':
+                rec.can_approve = False
+                continue
+            if rec.applicant_type == 'teacher':
+                # Only administrators can approve teacher requests, and cannot approve their own
+                rec.can_approve = is_admin and (rec.teacher_id.user_id.id != self.env.uid)
+            else:
+                # Student requests: administrators or teachers can approve, and cannot approve their own
+                rec.can_approve = (is_admin or is_teacher) and (rec.student_id.user_id.id != self.env.uid)
+
+    @api.depends('applicant_type', 'student_id.name', 'teacher_id.name', 'permission_type', 'name')
     def _compute_display_name(self):
         type_dict = dict(self._fields['permission_type'].selection)
         for rec in self:
-            student_name = rec.student_id.name if rec.student_id else _('New')
             type_label = type_dict.get(rec.permission_type, _('Permission'))
             ref_part = f"[{rec.name}] " if rec.name and rec.name != 'New' else ""
-            rec.display_name = f"{ref_part}{student_name} - {type_label}"
+            if rec.applicant_type == 'teacher':
+                pname = rec.teacher_id.name if rec.teacher_id else _('Teacher')
+                rec.applicant_name = pname
+                rec.display_name = f"{ref_part}{pname} (Teacher) - {type_label}"
+            else:
+                pname = rec.student_id.name if rec.student_id else _('Student')
+                rec.applicant_name = pname
+                rec.display_name = f"{ref_part}{pname} - {type_label}"
+
+    @api.depends('applicant_type', 'teacher_id', 'start_date', 'end_date')
+    def _compute_affected_timetables(self):
+        for rec in self:
+            if rec.applicant_type == 'teacher' and rec.teacher_id and rec.start_date and rec.end_date:
+                cur = rec.start_date
+                stop_date = (rec.end_date - timedelta(days=1)) if rec.end_date > rec.start_date else rec.end_date
+                days_in_range = set()
+                while cur <= stop_date:
+                    days_in_range.add(str(cur.weekday()))
+                    cur += timedelta(days=1)
+                timetables = self.env['school.timetable'].search([
+                    ('teacher_id', '=', rec.teacher_id.id),
+                    ('day_of_week', 'in', list(days_in_range)),
+                ])
+                rec.affected_timetable_ids = [(6, 0, timetables.ids)]
+                rec.affected_timetable_count = len(timetables)
+            else:
+                rec.affected_timetable_ids = [(6, 0, [])]
+                rec.affected_timetable_count = 0
 
     @api.depends('start_date', 'end_date', 'session_type', 'start_time', 'end_time')
     def _compute_duration_days(self):
@@ -202,8 +325,8 @@ class SchoolPermission(models.Model):
                 rec.duration_days = 0.0
                 continue
 
-            day_span = (rec.end_date - rec.start_date).days + 1
-            if day_span == 1:
+            day_diff = (rec.end_date - rec.start_date).days
+            if day_diff == 0:
                 if rec.session_type in ('morning', 'afternoon'):
                     rec.duration_days = 0.5
                 elif rec.session_type == 'custom':
@@ -212,7 +335,13 @@ class SchoolPermission(models.Model):
                 else:
                     rec.duration_days = 1.0
             else:
-                rec.duration_days = float(day_span)
+                if rec.session_type in ('morning', 'afternoon'):
+                    rec.duration_days = round(day_diff * 0.5, 2)
+                elif rec.session_type == 'custom':
+                    hours = max(0.0, rec.end_time - rec.start_time)
+                    rec.duration_days = max(0.1, round(day_diff * (hours / 8.0), 2))
+                else:
+                    rec.duration_days = float(day_diff)
 
     @api.depends('approved_by')
     def _compute_approver_role(self):
@@ -226,18 +355,18 @@ class SchoolPermission(models.Model):
             else:
                 rec.approver_role = False
 
-    @api.depends_context('uid')
-    def _compute_user_roles(self):
-        is_teacher = self.env.user.has_group('school_management.group_school_teacher')
-        is_admin = self.env.user.has_group('school_management.group_school_admin')
-        for rec in self:
-            rec.is_current_user_approver = is_teacher or is_admin
-            rec.is_current_user_student = not (is_teacher or is_admin)
-
     @api.depends('attendance_ids')
     def _compute_attendance_count(self):
         for rec in self:
             rec.attendance_count = len(rec.attendance_ids)
+
+    @api.constrains('applicant_type', 'student_id', 'teacher_id')
+    def _check_applicants(self):
+        for rec in self:
+            if rec.applicant_type == 'student' and not rec.student_id:
+                raise ValidationError(_("Please specify a student for the permission request."))
+            if rec.applicant_type == 'teacher' and not rec.teacher_id:
+                raise ValidationError(_("Please specify a teacher for the permission request."))
 
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
@@ -254,19 +383,20 @@ class SchoolPermission(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        is_student_only = self.env.user.has_group('school_management.group_school_student') and not (
-            self.env.user.has_group('school_management.group_school_teacher') or self.env.user.has_group('school_management.group_school_admin')
-        )
-        my_student = False
-        if is_student_only:
-            my_student = self.env['school.student'].search([('user_id', '=', self.env.uid)], limit=1)
+        is_admin = self.env.user.has_group('school_management.group_school_admin')
+        is_teacher = self.env.user.has_group('school_management.group_school_teacher')
+        is_student = self.env.user.has_group('school_management.group_school_student')
+
+        my_student = self.env['school.student'].search([('user_id', '=', self.env.uid)], limit=1)
+        my_teacher = self.env['school.teacher'].search([('user_id', '=', self.env.uid)], limit=1)
 
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code('school.permission') or 'PERM-0001'
+                vals['name'] = self.env['ir.sequence'].next_by_code('school.permission') or 'New'
 
-            # If user is a student, ensure they only create for themselves and cannot set approved state
-            if is_student_only:
+            # If user is a student only, enforce own student_id and draft state
+            if is_student and not (is_teacher or is_admin):
+                vals['applicant_type'] = 'student'
                 if my_student:
                     vals['student_id'] = my_student.id
                 vals['state'] = 'draft'
@@ -274,21 +404,35 @@ class SchoolPermission(models.Model):
                 vals['approval_date'] = False
                 vals['rejection_reason'] = False
 
+            # If user is a teacher only creating a teacher request, enforce own teacher_id and draft state
+            if is_teacher and not is_admin:
+                if vals.get('applicant_type') == 'teacher':
+                    if my_teacher:
+                        vals['teacher_id'] = my_teacher.id
+                    vals['state'] = 'draft'
+                    vals['approved_by'] = False
+                    vals['approval_date'] = False
+                    vals['rejection_reason'] = False
+
         records = super().create(vals_list)
         for rec in records:
+            name_label = rec.applicant_name or rec.name
+            role_label = _("Teacher") if rec.applicant_type == 'teacher' else _("Student")
             rec.message_post(
-                body=_("Permission request submitted for %s (%s to %s).") % (
-                    rec.student_id.name, rec.start_date, rec.end_date
+                body=_("Permission request submitted for %s (%s) from %s to %s.") % (
+                    name_label, role_label, rec.start_date, rec.end_date
                 )
             )
         return records
 
     def write(self, vals):
-        is_student_only = self.env.user.has_group('school_management.group_school_student') and not (
-            self.env.user.has_group('school_management.group_school_teacher') or self.env.user.has_group('school_management.group_school_admin')
-        )
-        if is_student_only:
-            for rec in self:
+        is_admin = self.env.user.has_group('school_management.group_school_admin')
+        is_teacher = self.env.user.has_group('school_management.group_school_teacher')
+        is_student_only = self.env.user.has_group('school_management.group_school_student') and not (is_teacher or is_admin)
+        is_teacher_only = is_teacher and not is_admin
+
+        for rec in self:
+            if is_student_only:
                 if rec.state != 'draft' and 'state' in vals and vals['state'] not in ('draft', 'cancel'):
                     raise UserError(_("Students can only modify or cancel pending requests."))
                 if 'state' in vals and vals['state'] in ('approved', 'rejected'):
@@ -297,13 +441,28 @@ class SchoolPermission(models.Model):
                     vals.pop('approved_by', None)
                     vals.pop('approval_date', None)
 
+            if is_teacher_only and rec.applicant_type == 'teacher':
+                if 'state' in vals and vals['state'] in ('approved', 'rejected'):
+                    raise UserError(_("Teacher permission requests must be approved or rejected by an Administrator."))
+                if rec.state != 'draft' and 'state' in vals and vals['state'] not in ('draft', 'cancel'):
+                    raise UserError(_("You can only modify or cancel pending permission requests."))
+
         return super().write(vals)
 
     def _check_approver_rights(self):
         is_teacher = self.env.user.has_group('school_management.group_school_teacher')
         is_admin = self.env.user.has_group('school_management.group_school_admin')
-        if not (is_teacher or is_admin):
-            raise UserError(_("Only administrators and teachers have permission to approve or reject requests."))
+        for rec in self:
+            if rec.applicant_type == 'teacher':
+                if not is_admin:
+                    raise UserError(_("Teacher permission requests must be reviewed and approved by an Administrator."))
+                if rec.teacher_id.user_id.id == self.env.uid:
+                    raise UserError(_("You cannot approve or reject your own permission request."))
+            else:
+                if not (is_teacher or is_admin):
+                    raise UserError(_("Only administrators and teachers have permission to approve or reject requests."))
+                if rec.student_id.user_id.id == self.env.uid:
+                    raise UserError(_("You cannot approve or reject your own permission request."))
 
     def action_approve(self):
         self._check_approver_rights()
@@ -319,12 +478,16 @@ class SchoolPermission(models.Model):
                 'rejection_reason': False,
             })
 
-            if rec.auto_update_attendance and rec.student_id:
+            if rec.applicant_type == 'student' and rec.auto_update_attendance and rec.student_id:
                 rec._sync_excused_attendance()
 
             role_label = _("Administrator") if role == 'admin' else _("Teacher")
+            extra_info = ""
+            if rec.applicant_type == 'teacher' and rec.affected_timetable_count > 0:
+                extra_info = _(" Note: %d scheduled teaching session(s) during this leave period.") % rec.affected_timetable_count
+
             rec.message_post(
-                body=_("<b>Approved</b> by %s (%s).") % (self.env.user.name, role_label)
+                body=_("Approved by %s (%s).%s") % (self.env.user.name, role_label, extra_info)
             )
 
     def action_reject(self, reason=None):
@@ -345,9 +508,9 @@ class SchoolPermission(models.Model):
             rec.write(vals)
 
             role_label = _("Administrator") if role == 'admin' else _("Teacher")
-            body_msg = _("<b>Not Approved (Rejected)</b> by %s (%s).") % (self.env.user.name, role_label)
+            body_msg = _("Not Approved (Rejected) by %s (%s).") % (self.env.user.name, role_label)
             if rec.rejection_reason:
-                body_msg += f"<br/><b>Reason:</b> {rec.rejection_reason}"
+                body_msg += _(" Reason: %s") % rec.rejection_reason
             rec.message_post(body=body_msg)
 
     def action_open_reject_wizard(self):
@@ -372,8 +535,12 @@ class SchoolPermission(models.Model):
             is_student_only = self.env.user.has_group('school_management.group_school_student') and not (
                 self.env.user.has_group('school_management.group_school_teacher') or self.env.user.has_group('school_management.group_school_admin')
             )
+            is_teacher_only = self.env.user.has_group('school_management.group_school_teacher') and not self.env.user.has_group('school_management.group_school_admin')
+
             if is_student_only and rec.state != 'draft':
                 raise UserError(_("Students can only cancel pending requests."))
+            if is_teacher_only and rec.applicant_type == 'teacher' and rec.state != 'draft':
+                raise UserError(_("Teachers can only cancel pending requests."))
 
             rec.write({'state': 'cancel'})
             rec.message_post(body=_("Permission request cancelled by %s.") % self.env.user.name)
@@ -393,11 +560,12 @@ class SchoolPermission(models.Model):
         self.ensure_one()
         Attendance = self.env['school.attendance'].sudo()
         cur_date = self.start_date
+        stop_date = (self.end_date - timedelta(days=1)) if self.end_date > self.start_date else self.end_date
         delta = timedelta(days=1)
         type_dict = dict(self._fields['permission_type'].selection)
         type_name = type_dict.get(self.permission_type, self.permission_type)
 
-        while cur_date <= self.end_date:
+        while cur_date <= stop_date:
             existing = Attendance.search([
                 ('student_id', '=', self.student_id.id),
                 ('date', '=', cur_date),
@@ -431,5 +599,18 @@ class SchoolPermission(models.Model):
             'res_model': 'school.attendance',
             'view_mode': 'list,form',
             'domain': [('permission_id', '=', self.id)],
-            'context': {'default_student_id': self.student_id.id},
+            'context': {'default_permission_id': self.id, 'default_status': 'excused'},
+        }
+
+    def action_view_excused_attendance(self):
+        return self.action_view_attendance()
+
+    def action_view_affected_timetables(self):
+        self.ensure_one()
+        return {
+            'name': _("Affected Teaching Sessions - %s") % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'list,form,calendar',
+            'domain': [('id', 'in', self.affected_timetable_ids.ids)],
         }
