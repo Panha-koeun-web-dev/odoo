@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 class SchoolTeacher(models.Model):
     _name = 'school.teacher'
@@ -8,7 +8,7 @@ class SchoolTeacher(models.Model):
     _order = 'name'
 
     name = fields.Char(string='Full Name', required=True, tracking=True)
-    employee_id = fields.Char(string='Employee ID', required=True, tracking=True)
+    employee_id = fields.Char(string='Teacher ID', required=True, tracking=True, copy=False)
     email = fields.Char(string='Email', tracking=True)
     phone = fields.Char(string='Phone', tracking=True)
     gender = fields.Selection([
@@ -37,6 +37,20 @@ class SchoolTeacher(models.Model):
     total_scheduled_teaching_hours = fields.Float(string='Scheduled Teaching Hours', compute='_compute_teaching_stats')
     students_taught_ids = fields.Many2many('school.student', string='Students Taught', compute='_compute_teaching_stats')
     students_taught_count = fields.Integer(string='Students Taught Count', compute='_compute_teaching_stats')
+    student_feedback_ids = fields.One2many(
+        'school.feedback',
+        'teacher_id',
+        string='Student Feedback Given',
+        domain=[('report_type', '=', 'teacher_to_student')],
+    )
+    teaching_evaluation_ids = fields.One2many(
+        'school.feedback',
+        'teacher_id',
+        string='Teaching Evaluations Received',
+        domain=[('report_type', '=', 'student_to_teacher')],
+    )
+    student_feedback_count = fields.Integer(string='Student Feedback', compute='_compute_teacher_feedback_counts')
+    teaching_evaluation_count = fields.Integer(string='Teaching Reports', compute='_compute_teacher_feedback_counts')
 
     class_count = fields.Integer(string='Class Count', compute='_compute_teacher_stats')
     student_count = fields.Integer(string='Student Count', compute='_compute_teacher_stats')
@@ -88,6 +102,39 @@ class SchoolTeacher(models.Model):
                 'default_applicant_type': 'teacher',
                 'default_teacher_id': self.id,
             },
+        }
+
+    def _compute_teacher_feedback_counts(self):
+        for rec in self:
+            rec.student_feedback_count = self.env['school.feedback'].search_count([
+                ('teacher_id', '=', rec.id),
+                ('report_type', '=', 'teacher_to_student'),
+            ])
+            rec.teaching_evaluation_count = self.env['school.feedback'].search_count([
+                ('teacher_id', '=', rec.id),
+                ('report_type', '=', 'student_to_teacher'),
+            ])
+
+    def action_view_student_feedback(self):
+        self.ensure_one()
+        return {
+            'name': _("Student Feedback by %s") % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.feedback',
+            'view_mode': 'list,form',
+            'domain': [('teacher_id', '=', self.id), ('report_type', '=', 'teacher_to_student')],
+            'context': {'default_teacher_id': self.id, 'default_report_type': 'teacher_to_student'},
+        }
+
+    def action_view_teaching_evaluations(self):
+        self.ensure_one()
+        return {
+            'name': _("Teaching Quality Reports: %s") % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.feedback',
+            'view_mode': 'list,form',
+            'domain': [('teacher_id', '=', self.id), ('report_type', '=', 'student_to_teacher')],
+            'context': {'default_teacher_id': self.id, 'default_report_type': 'student_to_teacher'},
         }
 
     def action_view_permissions(self):
@@ -265,3 +312,41 @@ class SchoolTeacher(models.Model):
                 'default_teacher_id': self.id,
             },
         }
+
+    @api.constrains('employee_id')
+    def _check_unique_employee_id(self):
+        for rec in self:
+            if rec.employee_id:
+                dup = self.search([
+                    ('employee_id', '=', rec.employee_id.strip()),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if dup:
+                    raise ValidationError(_("Teacher ID '%s' is already in use by %s. Teacher IDs must be unique.") % (rec.employee_id, dup.name))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('employee_id'):
+                last_teacher = self.search([('employee_id', '=like', 'TCH-%')], order='id desc', limit=1)
+                next_num = 1
+                if last_teacher and last_teacher.employee_id:
+                    try:
+                        num_part = int(last_teacher.employee_id.replace('TCH-', ''))
+                        next_num = num_part + 1
+                    except (ValueError, TypeError):
+                        next_num = self.search_count([]) + 1
+                else:
+                    next_num = self.search_count([]) + 1
+                vals['employee_id'] = f"TCH-{next_num:03d}"
+            elif isinstance(vals.get('employee_id'), str):
+                vals['employee_id'] = vals['employee_id'].strip()
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if 'employee_id' in vals:
+            if not self.env.user.has_group('school_management.group_school_admin') and not self.env.is_superuser():
+                raise UserError(_("Only a School Administrator can change the Teacher ID."))
+            if isinstance(vals['employee_id'], str):
+                vals['employee_id'] = vals['employee_id'].strip()
+        return super().write(vals)

@@ -774,23 +774,24 @@ class SchoolStudentIdCardReport(models.AbstractModel):
     _name = 'report.school_management.report_student_id_card'
     _description = 'Student ID Card with QR Report Parser'
 
-    def _company_card_logo_uri(self, company, max_width=180, max_height=60):
-        if not company.logo or company.uses_default_logo:
-            return False
-        try:
-            from PIL import Image
-            import io
-            raw_bytes = base64.b64decode(company.logo)
-            im = Image.open(io.BytesIO(raw_bytes))
-            im.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            buf = io.BytesIO()
-            fmt = 'PNG' if im.mode in ('RGBA', 'LA') else 'JPEG'
-            im.save(buf, format=fmt, quality=95)
-            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-            mime = 'image/png' if fmt == 'PNG' else 'image/jpeg'
-            return f'data:{mime};base64,{b64}'
-        except Exception:
-            return self.env['school.report.common']._company_logo_uri(company)
+    def _company_card_logo_uri(self, company, max_width=240, max_height=80):
+        common = self.env['school.report.common']
+        if company.logo and not company.uses_default_logo:
+            try:
+                from PIL import Image
+                import io
+                raw_bytes = base64.b64decode(company.logo)
+                im = Image.open(io.BytesIO(raw_bytes))
+                im.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+                buf = io.BytesIO()
+                fmt = 'PNG' if im.mode in ('RGBA', 'LA') else 'JPEG'
+                im.save(buf, format=fmt, quality=95)
+                b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+                mime = 'image/png' if fmt == 'PNG' else 'image/jpeg'
+                return f'data:{mime};base64,{b64}'
+            except Exception:
+                pass
+        return common._static_image_uri('static/src/img/image.png') or common._static_image_uri('static/description/icon.png')
 
     def _get_qr_code_uri(self, student):
         try:
@@ -856,11 +857,13 @@ class SchoolStudentIdCardReport(models.AbstractModel):
         company = self.env.company.sudo()
         company_logo = self._company_card_logo_uri(company)
 
-        inst_name = company.name or 'Grand Royal Academy'
-        inst_addr = ', '.join(filter(None, [company.street, company.city, company.country_id.name])) or '123 Campus Boulevard'
-        inst_phone = company.phone or '+1 (555) 019-2834'
-        inst_email = company.email or 'admin@school.edu'
-        inst_web = company.website or 'www.school.edu'
+        inst_name = company.name if (company.name and company.name != 'My Company') else 'Passerelles Numériques Cambodia'
+        inst_addr = (f"{company.street or ''}, {company.city or ''}").strip(', ')
+        if not inst_addr or inst_addr in ('United States', ''):
+            inst_addr = 'BP 511, Phum Tropeang Chhouk, Sangkat Teuk Thla, Khan Sen Sok, Phnom Penh'
+        inst_phone = company.phone or '+855 (0) 23 99 55 00'
+        inst_email = company.email or 'cambodia@passerellesnumeriques.org'
+        inst_web = company.website or 'https://www.passerellesnumeriques.org'
 
         blood_dict = dict(self.env['school.student']._fields['blood_group'].selection)
         gender_dict = dict(self.env['school.student']._fields['gender'].selection)

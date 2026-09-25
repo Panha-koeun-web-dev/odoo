@@ -15,12 +15,21 @@
     margin: 0 auto;
   }
 
-  /* Colors */
+  /* Colors & Utilities */
   .text-teal {
     color: #0f766e !important;
   }
   .bg-teal {
     background-color: #0f766e !important;
+  }
+  .text-purple {
+    color: #7c3aed !important;
+  }
+  .bg-purple {
+    background-color: #7c3aed !important;
+  }
+  .fs-7 {
+    font-size: 11px !important;
   }
 
   /* Header */
@@ -270,13 +279,27 @@
     .chart_canvas_wrapper {
       position: relative;
       width: 100%;
+      overflow: hidden;
 
       &.doughnut_wrapper {
-        height: 200px;
+        height: 210px;
+        min-height: 210px;
       }
 
       &.bar_wrapper {
-        height: 220px;
+        height: 230px;
+        min-height: 230px;
+      }
+
+      .empty_chart_state {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
       }
     }
 
@@ -357,6 +380,14 @@
       gap: 12px;
 
       .class_row {
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+          background-color: #f1f5f9;
+        }
+
         .class_info {
           display: flex;
           justify-content: space-between;
@@ -394,13 +425,14 @@
       font-size: 15px;
       font-weight: 700;
       color: #0f172a;
-      margin: 0 0 16px;
+      margin: 0;
     }
 
     .ops_grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 12px;
+      margin-top: 16px;
 
       .ops_box {
         background-color: #f8fafc;
@@ -410,11 +442,13 @@
         cursor: pointer;
         transition:
           background-color 0.15s ease,
-          border-color 0.15s ease;
+          border-color 0.15s ease,
+          transform 0.15s ease;
 
         &:hover {
           background-color: #f1f5f9;
           border-color: #cbd5e1;
+          transform: translateY(-1px);
         }
 
         span {
@@ -425,7 +459,7 @@
 
         b {
           display: block;
-          font-size: 22px;
+          font-size: 20px;
           font-weight: 800;
           color: #0f172a;
           margin-top: 4px;
@@ -444,9 +478,6 @@
     .charts_row_2 {
       grid-template-columns: 1fr;
     }
-    .ops_panel .ops_grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 
   @media (max-width: 768px) {
@@ -458,8 +489,7 @@
       align-items: flex-start;
     }
     .metric_cards_grid,
-    .health_grid,
-    .ops_panel .ops_grid {
+    .health_grid {
       grid-template-columns: 1fr;
     }
   }

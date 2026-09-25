@@ -71,3 +71,6 @@ access_teacher_permission,teacher.permission,model_school_permission,school_mana
 access_student_permission,student.permission,model_school_permission,school_management.group_school_student,1,1,1,0
 access_admin_permission_reject_wizard,admin.permission.reject.wizard,model_school_permission_reject_wizard,school_management.group_school_admin,1,1,1,1
 access_teacher_permission_reject_wizard,teacher.permission.reject.wizard,model_school_permission_reject_wizard,school_management.group_school_teacher,1,1,1,1
+access_admin_feedback,admin.feedback,model_school_feedback,school_management.group_school_admin,1,1,1,1
+access_teacher_feedback,teacher.feedback,model_school_feedback,school_management.group_school_teacher,1,1,1,0
+access_student_feedback,student.feedback,model_school_feedback,school_management.group_school_student,1,1,1,0

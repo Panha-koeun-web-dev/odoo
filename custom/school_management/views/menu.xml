@@ -276,6 +276,31 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
 
+    <!-- ================= 8B. Reports & Feedback ================= -->
+    <menuitem id="menu_school_feedback_root"
+              name="Reports &amp; Feedback"
+              parent="menu_school_root"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="52"/>
+    <menuitem id="menu_school_teaching_report"
+              name="Teacher Teaching Reports"
+              parent="menu_school_feedback_root"
+              action="action_school_teaching_report"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="10"/>
+    <menuitem id="menu_school_student_feedback"
+              name="Student Feedback &amp; Progress"
+              parent="menu_school_feedback_root"
+              action="action_school_student_feedback"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="20"/>
+    <menuitem id="menu_school_feedback_all"
+              name="All Reports &amp; Evaluations"
+              parent="menu_school_feedback_root"
+              action="action_school_feedback_all"
+              groups="school_management.group_school_admin"
+              sequence="30"/>
+
     <!-- ================= 9. Academic Transcripts & Certificates ================= -->
     <menuitem id="menu_school_certificate"
               name="Transcripts &amp; Certificates"

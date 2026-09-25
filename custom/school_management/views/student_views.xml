@@ -312,6 +312,18 @@
                                 <span class="o_stat_text">Permissions</span>
                             </div>
                         </button>
+                        <button name="action_view_teacher_feedback" type="object" class="oe_stat_button" icon="fa-commenting-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="teacher_feedback_count"/></span>
+                                <span class="o_stat_text">Teacher Feedback</span>
+                            </div>
+                        </button>
+                        <button name="action_view_teaching_reports" type="object" class="oe_stat_button" icon="fa-pencil-square-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="teaching_report_count"/></span>
+                                <span class="o_stat_text">Teaching Reports</span>
+                            </div>
+                        </button>
                     </div>
 
                     <!-- Hero Header Profile (Modern Clean Layout) -->
@@ -1047,12 +1059,54 @@
                                         <field name="study_period" readonly="1" string="Card Validity / Academic Period"/>
                                         <field name="parent_phone" string="Emergency Helpline Phone"/>
                                     </group>
-                                    <div class="alert alert-info mt-2" role="status">
-                                        <i class="fa fa-info-circle me-1" title="Information"/>
-                                        <strong>Smart Verification Ready:</strong> This QR code encodes essential student credentials (Student ID, Full Name, Class, Date of Birth, Emergency Contact, and Study Status). Campus security, gate checkpoints, exam proctors, and library systems can scan this code with standard 2D scanners or mobile cameras.
-                                    </div>
                                 </div>
                             </div>
+                        </page>
+
+                        <page name="teacher_feedback" string="Teacher Feedback &amp; Progress">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-commenting-o me-2" title="Feedback"/>Academic Guidance &amp; Feedback Received from Teachers</h6>
+                            </div>
+                            <field name="teacher_feedback_ids" readonly="1">
+                                <list string="Teacher Feedback" sample="1">
+                                    <field name="date"/>
+                                    <field name="name" decoration-bf="1"/>
+                                    <field name="title"/>
+                                    <field name="teacher_id"/>
+                                    <field name="subject_id"/>
+                                    <field name="academic_performance" widget="badge"/>
+                                    <field name="behavior_conduct" widget="badge"/>
+                                    <field name="rating_overall" widget="badge"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'submitted'"
+                                           decoration-warning="state == 'under_review'"
+                                           decoration-success="state == 'reviewed'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page name="teaching_reports" string="Teaching Evaluations Filed">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-pencil-square-o me-2" title="Evaluations"/>Teaching Quality Reports Submitted to Administration</h6>
+                                <button name="action_view_teaching_reports" type="object" string="Submit New Evaluation" class="btn btn-sm btn-outline-primary" icon="fa-plus"/>
+                            </div>
+                            <field name="teaching_report_ids" readonly="1">
+                                <list string="Teaching Reports" sample="1">
+                                    <field name="date"/>
+                                    <field name="name" decoration-bf="1"/>
+                                    <field name="title"/>
+                                    <field name="teacher_id"/>
+                                    <field name="subject_id"/>
+                                    <field name="rating_teaching" widget="badge"/>
+                                    <field name="rating_overall" widget="badge"/>
+                                    <field name="is_confidential" widget="boolean_toggle"/>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'draft'"
+                                           decoration-info="state == 'submitted'"
+                                           decoration-warning="state == 'under_review'"
+                                           decoration-success="state == 'reviewed'"/>
+                                </list>
+                            </field>
                         </page>
 
                         <page name="notes" string="Notes">

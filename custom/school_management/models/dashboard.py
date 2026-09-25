@@ -59,6 +59,10 @@ class SchoolDashboard(models.AbstractModel):
         attendance_model = self.env['school.attendance']
         grade_model = self.env['school.grade']
         fee_model = self.env['school.fee']
+        permission_model = self.env['school.permission']
+        feedback_model = self.env['school.feedback']
+        certificate_model = self.env['school.certificate']
+        year_payment_model = self.env['school.student.year.payment']
 
         # ---------------- 1. Top-Level Summary Counts ----------------
         student_count = student_model.search_count([])
@@ -72,6 +76,13 @@ class SchoolDashboard(models.AbstractModel):
         attendance_count = attendance_model.search_count([])
         grade_count = grade_model.search_count([])
         fee_count = fee_model.search_count([])
+
+        permission_count = permission_model.search_count([])
+        pending_permissions = permission_model.search_count([('state', '=', 'submitted')])
+        feedback_count = feedback_model.search_count([])
+        certificate_count = certificate_model.search_count([])
+        year_payment_count = year_payment_model.search_count([])
+        overdue_payments = year_payment_model.search_count([('deadline_status', '=', 'overdue')])
 
         avg_students_per_class = round(studying_students / class_count, 1) if class_count else 0.0
 
@@ -247,7 +258,22 @@ class SchoolDashboard(models.AbstractModel):
 
         top_class = top_classes[0] if top_classes else None
 
-        # ---------------- 7. Return Final Payload ----------------
+        # ---------------- 7. Permissions Analytics ----------------
+        approved_permissions = permission_model.search_count([('state', '=', 'approved')])
+        rejected_permissions = permission_model.search_count([('state', '=', 'rejected')])
+        student_permissions = permission_model.search_count([('applicant_type', '=', 'student')])
+        teacher_permissions = permission_model.search_count([('applicant_type', '=', 'teacher')])
+
+        # ---------------- 8. Feedback & Reports Analytics ----------------
+        student_reports = feedback_model.search_count([('report_type', '=', 'student_to_teacher')])
+        teacher_guidance = feedback_model.search_count([('report_type', '=', 'teacher_to_student')])
+        reviewed_feedback = feedback_model.search_count([('state', '=', 'reviewed')])
+
+        # ---------------- 9. Certificates Breakdown ----------------
+        transcripts_count = certificate_model.search_count([('certificate_type', '=', 'transcript')])
+        completion_count = certificate_model.search_count([('certificate_type', '=', 'completion')])
+
+        # ---------------- 10. Return Final Payload ----------------
         return {
             'summary': {
                 'student_count': student_count,
@@ -262,6 +288,12 @@ class SchoolDashboard(models.AbstractModel):
                 'grade_count': grade_count,
                 'fee_count': fee_count,
                 'avg_students_per_class': avg_students_per_class,
+                'permission_count': permission_count,
+                'pending_permissions': pending_permissions,
+                'feedback_count': feedback_count,
+                'certificate_count': certificate_count,
+                'year_payment_count': year_payment_count,
+                'overdue_payments': overdue_payments,
             },
             'demographics': {
                 'male': gender_counts['male'],
@@ -285,7 +317,7 @@ class SchoolDashboard(models.AbstractModel):
                 'total_paid': fee_totals['paid_amount'],
                 'total_balance': fee_totals['balance'],
                 'collection_rate': fee_collection_rate,
-                'outstanding_rate': round(100 - fee_collection_rate, 1),
+                'outstanding_rate': round(100 - fee_collection_rate, 1) if fee_totals['amount'] else 0.0,
                 'paid_count': fee_status_counts['paid'],
                 'pending_count': fee_status_counts['pending'],
                 'overdue_count': fee_status_counts['overdue'],
@@ -305,5 +337,24 @@ class SchoolDashboard(models.AbstractModel):
                 'top_class_name': top_class['name'] if top_class else _('No class recorded'),
                 'top_class_students': top_class['students'] if top_class else 0,
                 'top_classes': top_classes,
+            },
+            'permissions': {
+                'total': permission_count,
+                'pending': pending_permissions,
+                'approved': approved_permissions,
+                'rejected': rejected_permissions,
+                'student_permissions': student_permissions,
+                'teacher_permissions': teacher_permissions,
+            },
+            'feedback': {
+                'total': feedback_count,
+                'student_reports': student_reports,
+                'teacher_guidance': teacher_guidance,
+                'reviewed': reviewed_feedback,
+            },
+            'certificates': {
+                'total': certificate_count,
+                'transcripts': transcripts_count,
+                'completion': completion_count,
             },
         }

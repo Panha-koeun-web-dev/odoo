@@ -16,3 +16,4 @@ from . import timetable
 from . import teaching_assignment
 from . import student_subject
 from . import permission
+from . import feedback

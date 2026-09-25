@@ -1,0 +1,9 @@
+<odoo>
+    <record id="seq_school_feedback" model="ir.sequence">
+        <field name="name">School Feedback &amp; Report Reference</field>
+        <field name="code">school.feedback</field>
+        <field name="prefix">FDB/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

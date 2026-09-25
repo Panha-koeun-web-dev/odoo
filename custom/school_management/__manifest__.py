@@ -11,6 +11,7 @@
         'security/ir.model.access.csv',
         'data/certificate_data.xml',
         'data/permission_data.xml',
+        'data/feedback_data.xml',
         'data/email_templates.xml',
         'wizards/enroll_students_views.xml',
         'wizards/daily_attendance_views.xml',
@@ -27,6 +28,7 @@
         'views/student_subject_views.xml',
         'views/subject_views.xml',
         'views/permission_views.xml',
+        'views/feedback_views.xml',
         'views/attendance_views.xml',
         'views/exam_views.xml',
         'views/grade_views.xml',
@@ -47,6 +49,7 @@
     ],
     'assets': {
         'web.assets_backend': [
+            ('include', 'web.chartjs_lib'),
             'school_management/static/src/dashboard/school_dashboard.js',
             'school_management/static/src/dashboard/school_dashboard.scss',
             'school_management/static/src/dashboard/school_dashboard.xml',

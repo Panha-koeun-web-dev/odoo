@@ -161,6 +161,20 @@ class SchoolStudent(models.Model):
     permission_approved_count = fields.Integer(string='Approved Leaves', compute='_compute_permission_count')
     permission_pending_count = fields.Integer(string='Pending Permissions', compute='_compute_permission_count')
     permission_total_days = fields.Float(string='Total Excused Days', compute='_compute_permission_count')
+    teacher_feedback_ids = fields.One2many(
+        'school.feedback',
+        'student_id',
+        string='Teacher Feedback Records',
+        domain=[('report_type', '=', 'teacher_to_student'), ('state', '!=', 'draft')],
+    )
+    teaching_report_ids = fields.One2many(
+        'school.feedback',
+        'student_id',
+        string='Teaching Reports Filed',
+        domain=[('report_type', '=', 'student_to_teacher')],
+    )
+    teacher_feedback_count = fields.Integer(string='Teacher Feedback', compute='_compute_feedback_counts')
+    teaching_report_count = fields.Integer(string='Teaching Reports', compute='_compute_feedback_counts')
 
     @api.depends_context('company')
     def _compute_currency_id(self):
@@ -849,7 +863,7 @@ class SchoolStudent(models.Model):
     def _get_id_card_qr_payload(self):
         self.ensure_one()
         blood = dict(self._fields['blood_group'].selection).get(self.blood_group, 'N/A') if self.blood_group and self.blood_group != 'unknown' else 'N/A'
-        school_name = self.env.company.name or 'Grand Royal Academy'
+        school_name = self.env.company.name if (self.env.company.name and self.env.company.name != 'My Company') else 'Passerelles Numériques Cambodia'
         status_label = 'Active (Studying)' if self.study_status == 'studying' else 'Stopped'
         class_name = self.class_id.name if self.class_id else 'Unassigned'
         dob_str = str(self.date_of_birth) if self.date_of_birth else 'N/A'
@@ -887,6 +901,40 @@ class SchoolStudent(models.Model):
                 rec.id_card_qr_code = base64.b64encode(buf.getvalue())
             except Exception:
                 rec.id_card_qr_code = False
+
+    def _compute_feedback_counts(self):
+        for rec in self:
+            rec.teacher_feedback_count = self.env['school.feedback'].search_count([
+                ('student_id', '=', rec.id),
+                ('report_type', '=', 'teacher_to_student'),
+                ('state', '!=', 'draft'),
+            ])
+            rec.teaching_report_count = self.env['school.feedback'].search_count([
+                ('student_id', '=', rec.id),
+                ('report_type', '=', 'student_to_teacher'),
+            ])
+
+    def action_view_teacher_feedback(self):
+        self.ensure_one()
+        return {
+            'name': _("Teacher Feedback for %s") % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.feedback',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id), ('report_type', '=', 'teacher_to_student'), ('state', '!=', 'draft')],
+            'context': {'default_student_id': self.id, 'default_report_type': 'teacher_to_student'},
+        }
+
+    def action_view_teaching_reports(self):
+        self.ensure_one()
+        return {
+            'name': _("Teaching Quality Reports by %s") % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.feedback',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id), ('report_type', '=', 'student_to_teacher')],
+            'context': {'default_student_id': self.id, 'default_report_type': 'student_to_teacher'},
+        }
 
     def action_print_id_card(self):
         """Generate and print the official Student ID Card (with QR Code) PDF."""

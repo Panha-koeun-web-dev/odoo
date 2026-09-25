@@ -149,7 +149,7 @@
                                    invisible="applicant_type != 'teacher'"
                                    required="applicant_type == 'teacher'"
                                    readonly="state != 'draft'"/>
-                            <field name="teacher_employee_id" string="Employee ID" invisible="applicant_type != 'teacher'"/>
+                            <field name="teacher_employee_id" string="Teacher ID" invisible="applicant_type != 'teacher'"/>
                             <field name="class_id" options="{'no_create': True}" readonly="1"
                                    invisible="applicant_type != 'student'"/>
                         </group>

@@ -504,5 +504,81 @@
             <field name="perm_create" eval="1"/>
             <field name="perm_unlink" eval="1"/>
         </record>
+        <!-- 15. Feedback & Report Record Rules -->
+        <!-- Student: Read own teaching reports & received feedback -->
+        <record id="rule_school_feedback_student_read" model="ir.rule">
+            <field name="name">Student: Read Own Reports &amp; Received Feedback</field>
+            <field name="model_id" ref="model_school_feedback"/>
+            <field name="domain_force">[
+                '|',
+                '&amp;', ('report_type', '=', 'student_to_teacher'), ('student_id.user_id', '=', user.id),
+                '&amp;', ('report_type', '=', 'teacher_to_student'), '&amp;', ('student_id.user_id', '=', user.id), ('state', '!=', 'draft')
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Student: Create & Edit only own teaching reports in draft -->
+        <record id="rule_school_feedback_student_write" model="ir.rule">
+            <field name="name">Student: Create/Edit Own Draft Teaching Reports Only</field>
+            <field name="model_id" ref="model_school_feedback"/>
+            <field name="domain_force">[
+                ('report_type', '=', 'student_to_teacher'),
+                ('student_id.user_id', '=', user.id),
+                ('state', '=', 'draft')
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_school_student'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Teacher: Read feedback given and non-confidential teaching reports -->
+        <record id="rule_school_feedback_teacher_read" model="ir.rule">
+            <field name="name">Teacher: Read Feedback Given &amp; Shared Reports</field>
+            <field name="model_id" ref="model_school_feedback"/>
+            <field name="domain_force">[
+                '|',
+                '&amp;', ('report_type', '=', 'teacher_to_student'), ('teacher_id.user_id', '=', user.id),
+                '&amp;', ('report_type', '=', 'student_to_teacher'), '&amp;', ('teacher_id.user_id', '=', user.id), ('is_confidential', '=', False)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Teacher: Create & Edit only own student feedback reports in draft -->
+        <record id="rule_school_feedback_teacher_write" model="ir.rule">
+            <field name="name">Teacher: Create/Edit Own Draft Student Feedback Only</field>
+            <field name="model_id" ref="model_school_feedback"/>
+            <field name="domain_force">[
+                ('report_type', '=', 'teacher_to_student'),
+                ('teacher_id.user_id', '=', user.id),
+                ('state', '=', 'draft')
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Admin: Full CRUD on all reports and feedback -->
+        <record id="rule_school_feedback_admin" model="ir.rule">
+            <field name="name">Admin: Full Access All Feedback &amp; Reports</field>
+            <field name="model_id" ref="model_school_feedback"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_school_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
     </data>
 </odoo>

@@ -5,7 +5,7 @@
         <field name="name">school.teacher.tree</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
-            <list class="o_school_list" decoration-muted="not active" sample="1">
+            <list class="o_school_list" decoration-muted="not active" sample="1" multi_edit="1">
                 <field name="photo" widget="image" nolabel="1" width="44"
                        options="{'size': [36, 36], 'img_class': 'rounded-circle object-fit-cover shadow-sm'}"/>
                 <field name="employee_id" string="Teacher ID" decoration-bf="1"/>
@@ -155,6 +155,18 @@
                                 <span class="o_stat_text">Permissions</span>
                             </div>
                         </button>
+                        <button name="action_view_student_feedback" type="object" class="oe_stat_button" icon="fa-commenting-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="student_feedback_count"/></span>
+                                <span class="o_stat_text">Student Feedback</span>
+                            </div>
+                        </button>
+                        <button name="action_view_teaching_evaluations" type="object" class="oe_stat_button" icon="fa-star-half-o" groups="school_management.group_school_admin">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="teaching_evaluation_count"/></span>
+                                <span class="o_stat_text">Evaluations</span>
+                            </div>
+                        </button>
                     </div>
 
                     <!-- Hero Header Profile (Modern Clean Layout) -->
@@ -164,13 +176,16 @@
                         </div>
                         <div class="flex-grow-1 o_school_hero_title">
                             <div class="oe_title mw-100 ps-0 pe-sm-2">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1 fs-6">
+                                        <i class="fa fa-id-badge me-1 text-primary" title="Teacher ID"/>TEACHER ID:
+                                    </span>
+                                    <field name="employee_id" placeholder="e.g. TCH-001" class="fw-bold text-primary fs-5" style="max-width: 220px;"/>
+                                </div>
                                 <h1 class="d-flex flex-row align-items-center mb-1">
                                     <field name="name" placeholder="Teacher's Full Name" required="True" style="font-size: min(4vw, 2.2rem); font-weight: 700;"/>
                                 </h1>
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
-                                        <i class="fa fa-id-badge me-1" title="Employee ID"/>ID: <field name="employee_id" class="d-inline fw-semibold"/>
-                                    </span>
                                     <field name="gender" widget="badge"
                                            decoration-info="gender == 'male'"
                                            decoration-danger="gender == 'female'"/>
@@ -274,7 +289,7 @@
                                             <h6 class="mb-0 fw-bold">Employment &amp; System Account</h6>
                                         </div>
                                         <group>
-                                            <field name="employee_id" readonly="1"/>
+                                            <field name="employee_id" string="Teacher ID" placeholder="e.g. TCH-001"/>
                                             <field name="hire_date"/>
                                             <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
                                             <field name="active"/>
@@ -542,6 +557,52 @@
                                     </field>
                                 </div>
                             </div>
+                        </page>
+
+                        <page name="student_feedback" string="Student Feedback Given">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-commenting-o me-2" title="Feedback"/>Academic Feedback &amp; Guidance Provided to Students</h6>
+                                <button name="action_view_student_feedback" type="object" string="New Feedback Report" class="btn btn-sm btn-outline-primary" icon="fa-plus"/>
+                            </div>
+                            <field name="student_feedback_ids" readonly="1">
+                                <list string="Student Feedback" sample="1">
+                                    <field name="date"/>
+                                    <field name="name" decoration-bf="1"/>
+                                    <field name="title"/>
+                                    <field name="student_id"/>
+                                    <field name="subject_id"/>
+                                    <field name="academic_performance" widget="badge"/>
+                                    <field name="rating_overall" widget="badge"/>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'draft'"
+                                           decoration-info="state == 'submitted'"
+                                           decoration-warning="state == 'under_review'"
+                                           decoration-success="state == 'reviewed'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page name="teaching_evaluations" string="Teaching Quality Evaluations" groups="school_management.group_school_admin">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-star-half-o me-2" title="Evaluations"/>Student Teaching Quality Reports (Admin Oversight)</h6>
+                            </div>
+                            <field name="teaching_evaluation_ids" readonly="1">
+                                <list string="Teaching Evaluations" sample="1">
+                                    <field name="date"/>
+                                    <field name="name" decoration-bf="1"/>
+                                    <field name="title"/>
+                                    <field name="student_id"/>
+                                    <field name="rating_teaching" widget="badge"/>
+                                    <field name="rating_punctuality" widget="badge"/>
+                                    <field name="rating_support" widget="badge"/>
+                                    <field name="rating_overall" widget="badge"/>
+                                    <field name="is_confidential" widget="boolean_toggle"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'submitted'"
+                                           decoration-warning="state == 'under_review'"
+                                           decoration-success="state == 'reviewed'"/>
+                                </list>
+                            </field>
                         </page>
 
                         <page name="notes" string="Notes">

@@ -1,0 +1,284 @@
+<odoo>
+    <!-- ======================= SEARCH VIEW ======================= -->
+    <record id="view_school_feedback_search" model="ir.ui.view">
+        <field name="name">school.feedback.search</field>
+        <field name="model">school.feedback</field>
+        <field name="arch" type="xml">
+            <search string="Search Reports &amp; Feedback">
+                <field name="name" string="Reference"/>
+                <field name="title"/>
+                <field name="student_id"/>
+                <field name="teacher_id"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <separator/>
+                <filter string="Teaching Reports (Student → Admin)" name="filter_student_to_teacher" domain="[('report_type', '=', 'student_to_teacher')]"/>
+                <filter string="Student Feedback (Teacher → Student)" name="filter_teacher_to_student" domain="[('report_type', '=', 'teacher_to_student')]"/>
+                <separator/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Submitted" name="filter_submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Under Review" name="filter_under_review" domain="[('state', '=', 'under_review')]"/>
+                <filter string="Reviewed" name="filter_reviewed" domain="[('state', '=', 'reviewed')]"/>
+                <separator/>
+                <filter string="Report Type" name="group_report_type" context="{'group_by': 'report_type'}"/>
+                <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                <filter string="Student" name="group_student" context="{'group_by': 'student_id'}"/>
+                <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Subject" name="group_subject" context="{'group_by': 'subject_id'}"/>
+                <filter string="Date (Month)" name="group_date" context="{'group_by': 'date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================= LIST VIEW ======================= -->
+    <record id="view_school_feedback_list" model="ir.ui.view">
+        <field name="name">school.feedback.list</field>
+        <field name="model">school.feedback</field>
+        <field name="arch" type="xml">
+            <list string="Reports &amp; Feedback" decoration-info="state == 'submitted'" decoration-warning="state == 'under_review'" decoration-success="state == 'reviewed'" decoration-muted="state == 'cancelled'">
+                <field name="name" decoration-bf="1"/>
+                <field name="date"/>
+                <field name="report_type" widget="badge"
+                       decoration-primary="report_type == 'student_to_teacher'"
+                       decoration-info="report_type == 'teacher_to_student'"/>
+                <field name="title" decoration-bf="1"/>
+                <field name="student_id"/>
+                <field name="teacher_id"/>
+                <field name="class_id" optional="show"/>
+                <field name="subject_id" optional="show"/>
+                <field name="rating_overall" widget="badge" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'under_review'"
+                       decoration-success="state == 'reviewed'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================= KANBAN VIEW ======================= -->
+    <record id="view_school_feedback_kanban" model="ir.ui.view">
+        <field name="name">school.feedback.kanban</field>
+        <field name="model">school.feedback</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" sample="1">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="report_type"/>
+                <field name="student_id"/>
+                <field name="teacher_id"/>
+                <field name="rating_overall"/>
+                <field name="state"/>
+                <field name="date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-3 border rounded shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary-subtle text-secondary border px-2 py-1"><field name="name"/></span>
+                                <field name="state" widget="badge"
+                                       decoration-muted="state == 'draft'"
+                                       decoration-info="state == 'submitted'"
+                                       decoration-warning="state == 'under_review'"
+                                       decoration-success="state == 'reviewed'"
+                                       decoration-danger="state == 'cancelled'"/>
+                            </div>
+                            <h5 class="fw-bold mb-1 text-truncate"><field name="title"/></h5>
+                            <div class="small text-muted mb-2">
+                                <span t-if="record.report_type.raw_value == 'student_to_teacher'">
+                                    <i class="fa fa-graduation-cap me-1" title="Teacher"/> Teacher: <strong><field name="teacher_id"/></strong>
+                                </span>
+                                <span t-else="">
+                                    <i class="fa fa-user me-1" title="Student"/> Student: <strong><field name="student_id"/></strong>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top small">
+                                <field name="rating_overall" widget="badge"/>
+                                <span class="text-muted"><field name="date"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ======================= FORM VIEW ======================= -->
+    <record id="view_school_feedback_form" model="ir.ui.view">
+        <field name="name">school.feedback.form</field>
+        <field name="model">school.feedback</field>
+        <field name="arch" type="xml">
+            <form string="Report &amp; Feedback">
+                <header>
+                    <button name="action_submit" string="Submit Report to Administration" type="object" class="btn-primary" icon="fa-paper-plane" invisible="state != 'draft'"/>
+                    <button name="action_start_review" string="Start Review" type="object" class="btn-warning" icon="fa-hourglass-start" invisible="state != 'submitted'" groups="school_management.group_school_admin"/>
+                    <button name="action_mark_reviewed" string="Mark as Reviewed &amp; Actioned" type="object" class="btn-success" icon="fa-check-circle" invisible="state not in ['submitted', 'under_review']" groups="school_management.group_school_admin"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" class="btn-secondary" invisible="state not in ['submitted', 'cancelled']" groups="school_management.group_school_admin"/>
+                    <button name="action_cancel" string="Cancel Report" type="object" class="btn-outline-danger" invisible="state in ['reviewed', 'cancelled']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,under_review,reviewed"/>
+                </header>
+                <sheet>
+                    <field name="is_admin_user" invisible="1"/>
+                    <field name="is_teacher_user" invisible="1"/>
+                    <field name="is_student_user" invisible="1"/>
+
+                    <div class="oe_title mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-light text-secondary border px-2 py-1"><field name="name"/></span>
+                            <field name="report_type" widget="badge"
+                                   decoration-primary="report_type == 'student_to_teacher'"
+                                   decoration-info="report_type == 'teacher_to_student'"
+                                   readonly="state != 'draft'"/>
+                        </div>
+                        <h1 class="d-flex flex-row align-items-center">
+                            <field name="title" placeholder="Report Title / Focus Subject..." readonly="state not in ['draft']"/>
+                        </h1>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Left Card: Participants & Context -->
+                        <div class="col-lg-6">
+                            <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                    <i class="fa fa-users text-primary me-2 fa-lg" title="Participants"/>
+                                    <h6 class="mb-0 fw-bold">Participants &amp; Course Context</h6>
+                                </div>
+                                <group>
+                                    <field name="student_id" readonly="state != 'draft'"/>
+                                    <field name="teacher_id" readonly="state != 'draft'"/>
+                                    <field name="class_id" readonly="state != 'draft'"/>
+                                    <field name="subject_id" readonly="state != 'draft'"/>
+                                    <field name="date" readonly="state != 'draft'"/>
+                                    <field name="academic_year" readonly="state != 'draft'"/>
+                                </group>
+                            </div>
+                        </div>
+
+                        <!-- Right Card: Assessment & Metrics -->
+                        <div class="col-lg-6">
+                            <div class="card border rounded-3 shadow-sm p-3 h-100">
+                                <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                    <i class="fa fa-star text-warning me-2 fa-lg" title="Assessment"/>
+                                    <h6 class="mb-0 fw-bold">Performance Ratings &amp; Assessment</h6>
+                                </div>
+                                <!-- Student -> Teacher Evaluation Metrics -->
+                                <group invisible="report_type != 'student_to_teacher'">
+                                    <field name="rating_teaching" readonly="state != 'draft'"/>
+                                    <field name="rating_punctuality" readonly="state != 'draft'"/>
+                                    <field name="rating_support" readonly="state != 'draft'"/>
+                                    <field name="rating_overall" readonly="state != 'draft'"/>
+                                    <field name="is_confidential" readonly="state != 'draft'"/>
+                                </group>
+                                <!-- Teacher -> Student Feedback Metrics -->
+                                <group invisible="report_type != 'teacher_to_student'">
+                                    <field name="academic_performance" readonly="state != 'draft'"/>
+                                    <field name="behavior_conduct" readonly="state != 'draft'"/>
+                                    <field name="assignment_completion" readonly="state != 'draft'"/>
+                                    <field name="rating_overall" readonly="state != 'draft'"/>
+                                </group>
+                            </div>
+                        </div>
+                    </div>
+
+                    <notebook class="mt-4">
+                        <page name="narrative" string="Observations &amp; Feedback Details">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card border rounded-3 p-3 h-100">
+                                        <h6 class="fw-bold text-success mb-2"><i class="fa fa-thumbs-up me-1" title="Strengths"/> Strengths &amp; Commendations</h6>
+                                        <field name="strengths" placeholder="Write key strengths, positive classroom contributions, and commendations..." readonly="state not in ['draft']"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border rounded-3 p-3 h-100">
+                                        <h6 class="fw-bold text-danger mb-2"><i class="fa fa-lightbulb-o me-1" title="Improvements"/> Areas for Improvement &amp; Growth</h6>
+                                        <field name="areas_for_improvement" placeholder="Constructive areas needing focus, difficulties, or growth opportunities..." readonly="state not in ['draft']"/>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="card border rounded-3 p-3">
+                                        <h6 class="fw-bold text-primary mb-2"><i class="fa fa-align-left me-1" title="Details"/> Detailed Observations &amp; Remarks</h6>
+                                        <field name="content" placeholder="Write detailed remarks, specific classroom situations, or full report narrative..." readonly="state not in ['draft']"/>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="card border rounded-3 p-3">
+                                        <h6 class="fw-bold text-info mb-2"><i class="fa fa-tasks me-1" title="Action Plan"/> Recommended Action Plan / Next Steps</h6>
+                                        <field name="action_plan" placeholder="Targeted guidance, suggested exercises, or milestones..." readonly="state not in ['draft']"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="admin_oversight" string="Administration Oversight &amp; Response" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="card border rounded-3 p-3 mb-3">
+                                <h6 class="fw-bold text-primary mb-2"><i class="fa fa-reply me-1" title="Response"/> Official Administration Response</h6>
+                                <field name="admin_response" placeholder="Administration's official acknowledgment or message back to author/parties..." readonly="not is_admin_user or state in ['reviewed', 'cancelled']"/>
+                            </div>
+                            <div class="card border rounded-3 p-3 mb-3" groups="school_management.group_school_admin">
+                                <h6 class="fw-bold text-secondary mb-2"><i class="fa fa-lock me-1" title="Private Notes"/> Administration Internal Notes (Private to Admin)</h6>
+                                <field name="admin_notes" placeholder="Confidential admin remarks, follow-up actions, HR notes, or meeting decisions..."/>
+                            </div>
+                            <group groups="school_management.group_school_admin">
+                                <field name="reviewed_by"/>
+                                <field name="reviewed_date"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= WINDOW ACTIONS ======================= -->
+    <!-- 1. Teaching Quality Reports (Student -> Admin) -->
+    <record id="action_school_teaching_report" model="ir.actions.act_window">
+        <field name="name">Teacher Teaching Reports</field>
+        <field name="res_model">school.feedback</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('report_type', '=', 'student_to_teacher')]</field>
+        <field name="context">{'default_report_type': 'student_to_teacher', 'search_default_filter_student_to_teacher': 1}</field>
+        <field name="search_view_id" ref="view_school_feedback_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Submit a new Teaching Quality Report to Administration!
+            </p>
+            <p>
+                Students can report on course clarity, teaching readiness, and provide constructive feedback to school leadership.
+            </p>
+        </field>
+    </record>
+
+    <!-- 2. Student Feedback & Progress (Teacher -> Student & Admin) -->
+    <record id="action_school_student_feedback" model="ir.actions.act_window">
+        <field name="name">Student Feedback &amp; Progress</field>
+        <field name="res_model">school.feedback</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('report_type', '=', 'teacher_to_student')]</field>
+        <field name="context">{'default_report_type': 'teacher_to_student', 'search_default_filter_teacher_to_student': 1}</field>
+        <field name="search_view_id" ref="view_school_feedback_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a Student Feedback &amp; Academic Progress Report!
+            </p>
+            <p>
+                Teachers can document student academic achievements, conduct, and personalized guidance visible to students and school administrators.
+            </p>
+        </field>
+    </record>
+
+    <!-- 3. All Reports & Feedback (Admin Overview) -->
+    <record id="action_school_feedback_all" model="ir.actions.act_window">
+        <field name="name">All Reports &amp; Feedback</field>
+        <field name="res_model">school.feedback</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_feedback_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Overview of all school reports and feedback!
+            </p>
+        </field>
+    </record>
+</odoo>
