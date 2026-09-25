@@ -1,0 +1,708 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================= -->
+    <!-- PAPERFORMAT: A4 Portrait for Standard CR-80 Student Cards -->
+    <!-- Fits Front & Back paired cards with cut & fold guides     -->
+    <!-- ========================================================= -->
+    <record id="paperformat_student_id_card" model="report.paperformat">
+        <field name="name">Student ID Card Sheet (A4 Portrait)</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="page_width">0</field>
+        <field name="page_height">0</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+        <field name="disable_shrinking" eval="True"/>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- REPORT ACTION: Student ID Card (Print & Action menu)       -->
+    <!-- ========================================================= -->
+    <record id="action_report_student_id_card" model="ir.actions.report">
+        <field name="name">Student ID Card (with QR)</field>
+        <field name="model">school.student</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_student_id_card</field>
+        <field name="report_file">school_management.report_student_id_card</field>
+        <field name="print_report_name">'StudentIDCard_%s' % (object.student_id or object.name or 'Batch').replace(' ', '_')</field>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="school_management.paperformat_student_id_card"/>
+    </record>
+
+    <!-- ========================================================= -->
+    <!-- REPORT TEMPLATE: Student ID Card (CR-80 Front & Back)     -->
+    <!-- ========================================================= -->
+    <template id="report_student_id_card">
+        <t t-call="web.html_container">
+            <style><![CDATA[
+                @page {
+                    size: A4 portrait;
+                    margin: 8mm 10mm;
+                }
+                * {
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: #ffffff !important;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                    color: #0f172a !important;
+                }
+                .container, .container-fluid, #wrapwrap, main {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+                .id-cards-page {
+                    width: 190mm;
+                    margin: 0 auto;
+                }
+
+                /* Header print instruction banner */
+                .print-instructions {
+                    background: #f1f5f9;
+                    border: 1px dashed #94a3b8;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    margin-bottom: 8mm;
+                    font-size: 7pt;
+                    color: #475569;
+                    text-align: center;
+                }
+
+                /* Student Card Unit: Front & Back side-by-side */
+                .id-card-unit {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    margin-bottom: 7mm;
+                    display: block;
+                }
+
+                .id-card-pair-wrapper {
+                    display: table;
+                    width: 100%;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                }
+
+                .id-card-col {
+                    display: table-cell;
+                    vertical-align: top;
+                    width: 85.6mm;
+                }
+
+                .id-card-gutter {
+                    display: table-cell;
+                    vertical-align: middle;
+                    width: 8mm;
+                    text-align: center;
+                    position: relative;
+                }
+
+                .fold-line {
+                    height: 54mm;
+                    border-left: 1px dashed #cbd5e1;
+                    margin: 0 auto;
+                    position: relative;
+                }
+
+                .scissor-icon {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: #ffffff;
+                    padding: 2px;
+                    font-size: 8pt;
+                    color: #94a3b8;
+                }
+
+                /* =========================================================
+                   CR-80 CARD STANDARD DIMENSIONS: 85.60mm x 53.98mm
+                   ========================================================= */
+                .cr80-card {
+                    width: 85.6mm;
+                    height: 54mm;
+                    max-width: 85.6mm;
+                    max-height: 54mm;
+                    border-radius: 3.5mm;
+                    border: 1px solid #cbd5e1;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+                    position: relative;
+                    overflow: hidden;
+                    background: #ffffff;
+                }
+
+                /* Card Cut Guide Text */
+                .card-cut-note {
+                    font-size: 6pt;
+                    color: #94a3b8;
+                    text-align: center;
+                    margin-top: 1.5mm;
+                    letter-spacing: 0.2px;
+                }
+
+                /* =========================================================
+                   FRONT SIDE STYLING
+                   ========================================================= */
+                .front-header {
+                    background: linear-gradient(135deg, #1e3a8a 0%, #0369a1 100%);
+                    color: #ffffff;
+                    height: 11mm;
+                    padding: 1.5mm 2.5mm;
+                    display: table;
+                    width: 100%;
+                    table-layout: fixed;
+                }
+
+                .front-header-left {
+                    display: table-cell;
+                    vertical-align: middle;
+                    width: 10mm;
+                    text-align: left;
+                }
+
+                .front-header-logo {
+                    max-height: 8mm;
+                    max-width: 9mm;
+                    object-fit: contain;
+                    border-radius: 1px;
+                }
+
+                .front-header-title {
+                    display: table-cell;
+                    vertical-align: middle;
+                    padding-left: 1.5mm;
+                    text-align: left;
+                }
+
+                .front-school-name {
+                    font-size: 6.8pt;
+                    font-weight: 800;
+                    color: #ffffff;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                    line-height: 1.1;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .front-card-label {
+                    font-size: 4.8pt;
+                    font-weight: 700;
+                    color: #bae6fd;
+                    letter-spacing: 0.8px;
+                    text-transform: uppercase;
+                    line-height: 1;
+                    margin-top: 0.5mm;
+                }
+
+                .front-header-right {
+                    display: table-cell;
+                    vertical-align: middle;
+                    width: 18mm;
+                    text-align: right;
+                }
+
+                .year-pill {
+                    background: #ffffff;
+                    color: #1e3a8a;
+                    font-size: 5pt;
+                    font-weight: 800;
+                    padding: 0.8mm 2mm;
+                    border-radius: 2mm;
+                    display: inline-block;
+                    letter-spacing: 0.2px;
+                }
+
+                .gold-accent-stripe {
+                    height: 0.8mm;
+                    background: #f59e0b;
+                    width: 100%;
+                }
+
+                /* Front Body: Photo & Details */
+                .front-body {
+                    height: 34mm;
+                    padding: 2mm 2.5mm 1mm 2.5mm;
+                    display: table;
+                    width: 100%;
+                    table-layout: fixed;
+                }
+
+                .front-body-photo-col {
+                    display: table-cell;
+                    vertical-align: top;
+                    width: 22mm;
+                    text-align: center;
+                }
+
+                .student-photo-frame {
+                    width: 21mm;
+                    height: 25mm;
+                    border: 1.2px solid #0284c7;
+                    border-radius: 2mm;
+                    overflow: hidden;
+                    background: #f8fafc;
+                    margin: 0 auto;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+                }
+
+                .student-photo-img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+
+                .student-avatar-placeholder {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+                    color: #1e3a8a;
+                    font-size: 11pt;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                    line-height: 25mm;
+                    text-align: center;
+                }
+
+                .blood-badge {
+                    margin-top: 1mm;
+                    background: #fee2e2;
+                    color: #b91c1c;
+                    border: 0.5px solid #fca5a5;
+                    font-size: 4.8pt;
+                    font-weight: 800;
+                    border-radius: 1.5mm;
+                    padding: 0.4mm 1.5mm;
+                    display: inline-block;
+                }
+
+                .active-badge {
+                    margin-top: 1mm;
+                    background: #ecfdf5;
+                    color: #047857;
+                    border: 0.5px solid #a7f3d0;
+                    font-size: 4.5pt;
+                    font-weight: 800;
+                    border-radius: 1.5mm;
+                    padding: 0.4mm 1.2mm;
+                    display: inline-block;
+                }
+
+                .front-body-info-col {
+                    display: table-cell;
+                    vertical-align: top;
+                    padding-left: 2mm;
+                    padding-right: 1mm;
+                }
+
+                .stu-name {
+                    font-size: 8.5pt;
+                    font-weight: 800;
+                    color: #0f172a;
+                    line-height: 1.1;
+                    margin-bottom: 0.8mm;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .stu-id-tag {
+                    display: inline-block;
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                    border: 0.6px solid #bfdbfe;
+                    border-radius: 1.5mm;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-size: 5.8pt;
+                    font-weight: 800;
+                    padding: 0.4mm 1.6mm;
+                    margin-bottom: 1.2mm;
+                    letter-spacing: 0.4px;
+                }
+
+                .info-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 5.6pt;
+                    line-height: 1.2;
+                }
+
+                .info-table td {
+                    padding: 0.4mm 0;
+                    vertical-align: middle;
+                }
+
+                .info-label {
+                    color: #64748b;
+                    font-weight: 700;
+                    width: 15mm;
+                    text-transform: uppercase;
+                    font-size: 4.8pt;
+                }
+
+                .info-value {
+                    color: #1e293b;
+                    font-weight: 600;
+                }
+
+                /* QR Code in Front Card */
+                .front-body-qr-col {
+                    display: table-cell;
+                    vertical-align: top;
+                    width: 20mm;
+                    text-align: center;
+                }
+
+                .qr-box {
+                    width: 19mm;
+                    height: 19mm;
+                    border: 0.8px solid #cbd5e1;
+                    border-radius: 1.5mm;
+                    background: #ffffff;
+                    padding: 0.6mm;
+                    margin: 0 auto;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                }
+
+                .qr-img {
+                    width: 100%;
+                    height: 100%;
+                    display: block;
+                }
+
+                .qr-caption {
+                    font-size: 4.2pt;
+                    font-weight: 800;
+                    color: #0284c7;
+                    letter-spacing: 0.3px;
+                    margin-top: 0.8mm;
+                    text-transform: uppercase;
+                }
+
+                /* Front Footer: Barcode strip */
+                .front-footer {
+                    height: 8.2mm;
+                    background: #f8fafc;
+                    border-top: 0.8px solid #e2e8f0;
+                    padding: 0.8mm 2mm;
+                    text-align: center;
+                }
+
+                .barcode-img {
+                    height: 4.5mm;
+                    max-width: 60mm;
+                    display: inline-block;
+                }
+
+                .barcode-text {
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-size: 4.5pt;
+                    color: #475569;
+                    letter-spacing: 1px;
+                    margin-top: 0.2mm;
+                }
+
+                /* =========================================================
+                   BACK SIDE STYLING
+                   ========================================================= */
+                .back-stripe {
+                    height: 7.5mm;
+                    background: #1e293b;
+                    width: 100%;
+                }
+
+                .back-body {
+                    height: 36mm;
+                    padding: 2mm 3mm 1mm 3mm;
+                }
+
+                .back-title {
+                    font-size: 5.2pt;
+                    font-weight: 800;
+                    color: #1e3a8a;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 1.2mm;
+                    border-bottom: 0.6px solid #e2e8f0;
+                    padding-bottom: 0.6mm;
+                }
+
+                .terms-list {
+                    list-style: none;
+                    font-size: 4.8pt;
+                    color: #475569;
+                    line-height: 1.35;
+                    margin-bottom: 1.5mm;
+                }
+
+                .terms-list li {
+                    margin-bottom: 0.6mm;
+                    position: relative;
+                    padding-left: 2.5mm;
+                }
+
+                .terms-list li::before {
+                    content: "•";
+                    position: absolute;
+                    left: 0;
+                    color: #0284c7;
+                    font-weight: bold;
+                }
+
+                .emergency-box {
+                    background: #fef2f2;
+                    border: 0.6px solid #fecaca;
+                    border-radius: 1.5mm;
+                    padding: 1mm 2mm;
+                    margin-bottom: 1.5mm;
+                }
+
+                .emergency-label {
+                    font-size: 4.5pt;
+                    font-weight: 800;
+                    color: #b91c1c;
+                    text-transform: uppercase;
+                }
+
+                .emergency-val {
+                    font-size: 5.5pt;
+                    font-weight: 700;
+                    color: #991b1b;
+                }
+
+                /* Signature Block */
+                .sign-row {
+                    display: table;
+                    width: 100%;
+                    margin-top: 1mm;
+                }
+
+                .sign-left {
+                    display: table-cell;
+                    vertical-align: bottom;
+                    font-size: 4.6pt;
+                    color: #64748b;
+                    line-height: 1.3;
+                }
+
+                .sign-right {
+                    display: table-cell;
+                    vertical-align: bottom;
+                    text-align: right;
+                    width: 32mm;
+                }
+
+                .sign-line {
+                    border-bottom: 0.8px solid #94a3b8;
+                    width: 28mm;
+                    margin-left: auto;
+                    margin-bottom: 0.8mm;
+                }
+
+                .sign-label {
+                    font-size: 4.6pt;
+                    font-weight: 700;
+                    color: #1e3a8a;
+                    text-transform: uppercase;
+                    letter-spacing: 0.2px;
+                }
+
+                /* Back Footer: Institution Address */
+                .back-footer {
+                    height: 10.5mm;
+                    background: #f1f5f9;
+                    border-top: 0.8px solid #e2e8f0;
+                    padding: 1.2mm 2.5mm;
+                    text-align: center;
+                    font-size: 4.6pt;
+                    color: #475569;
+                    line-height: 1.25;
+                }
+
+                .back-footer-name {
+                    font-weight: 800;
+                    color: #1e3a8a;
+                    text-transform: uppercase;
+                    font-size: 5pt;
+                }
+            ]]></style>
+
+            <div class="id-cards-page">
+                <div class="print-instructions">
+                    <strong>OFFICIAL STUDENT IDENTIFICATION BADGES (CR-80 FORMAT: 85.6mm × 54mm)</strong><br/>
+                    Print at 100% scale without scaling. Cut along outer border, fold at the center dashed line, and laminate or insert into standard CR-80 card pouches.
+                </div>
+
+                <t t-foreach="cards" t-as="c">
+                    <div class="id-card-unit">
+                        <div class="id-card-pair-wrapper">
+                            <!-- ============================================== -->
+                            <!-- FRONT OF CARD (CR-80)                          -->
+                            <!-- ============================================== -->
+                            <div class="id-card-col">
+                                <div class="cr80-card">
+                                    <!-- Header -->
+                                    <div class="front-header">
+                                        <div class="front-header-left" t-if="has_company_logo">
+                                            <img t-att-src="company_logo" class="front-header-logo" alt="Logo"/>
+                                        </div>
+                                        <div class="front-header-title">
+                                            <div class="front-school-name"><t t-esc="inst_name"/></div>
+                                            <div class="front-card-label">STUDENT IDENTITY CARD</div>
+                                        </div>
+                                        <div class="front-header-right">
+                                            <span class="year-pill"><t t-esc="c['academic_year']"/></span>
+                                        </div>
+                                    </div>
+                                    <div class="gold-accent-stripe"/>
+
+                                    <!-- Body -->
+                                    <div class="front-body">
+                                        <!-- Photo Column -->
+                                        <div class="front-body-photo-col">
+                                            <div class="student-photo-frame">
+                                                <t t-if="c['has_photo']">
+                                                    <img t-att-src="c['photo_uri']" class="student-photo-img" alt="Student Photo"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <div class="student-avatar-placeholder">
+                                                        <t t-esc="c['initials']"/>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                            <t t-if="c['has_blood_group']">
+                                                <div class="blood-badge">🩸 <t t-esc="c['blood_group']"/></div>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="active-badge">✓ ACTIVE</div>
+                                            </t>
+                                        </div>
+
+                                        <!-- Student Info Column -->
+                                        <div class="front-body-info-col">
+                                            <div class="stu-name"><t t-esc="c['name']"/></div>
+                                            <div class="stu-id-tag">ID: <t t-esc="c['student_code']"/></div>
+
+                                            <table class="info-table">
+                                                <tr>
+                                                    <td class="info-label">Class:</td>
+                                                    <td class="info-value"><t t-esc="c['class_name']"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="info-label">DOB:</td>
+                                                    <td class="info-value"><t t-esc="c['dob']"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="info-label">Gender:</td>
+                                                    <td class="info-value"><t t-esc="c['gender']"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="info-label">Valid:</td>
+                                                    <td class="info-value"><t t-esc="c['academic_year']"/></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+
+                                        <!-- QR Code Column -->
+                                        <div class="front-body-qr-col">
+                                            <div class="qr-box">
+                                                <t t-if="c['qr_code_uri']">
+                                                    <img t-att-src="c['qr_code_uri']" class="qr-img" alt="Student QR"/>
+                                                </t>
+                                            </div>
+                                            <div class="qr-caption">Scan to Verify</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Barcode -->
+                                    <div class="front-footer">
+                                        <t t-if="c['barcode_uri']">
+                                            <img t-att-src="c['barcode_uri']" class="barcode-img" alt="Barcode"/>
+                                        </t>
+                                        <div class="barcode-text">* <t t-esc="c['barcode_code']"/> *</div>
+                                    </div>
+                                </div>
+                                <div class="card-cut-note">◄ FRONT SIDE (85.6 × 54 mm)</div>
+                            </div>
+
+                            <!-- ============================================== -->
+                            <!-- FOLD / CUT GUTTER                              -->
+                            <!-- ============================================== -->
+                            <div class="id-card-gutter">
+                                <div class="fold-line">
+                                    <span class="scissor-icon">✂</span>
+                                </div>
+                            </div>
+
+                            <!-- ============================================== -->
+                            <!-- BACK OF CARD (CR-80)                           -->
+                            <!-- ============================================== -->
+                            <div class="id-card-col">
+                                <div class="cr80-card">
+                                    <!-- Magnetic Stripe Graphic -->
+                                    <div class="back-stripe"/>
+
+                                    <!-- Body -->
+                                    <div class="back-body">
+                                        <div class="back-title">Terms of Use &amp; Identification</div>
+                                        <ul class="terms-list">
+                                            <li>This card is non-transferable and remains property of the school.</li>
+                                            <li>Must be carried at all times while on campus and for exams.</li>
+                                            <li>If found, please return to School Administration or call below.</li>
+                                        </ul>
+
+                                        <div class="emergency-box">
+                                            <div class="emergency-label">Emergency Contact</div>
+                                            <div class="emergency-val">
+                                                <t t-esc="c['parent_name']"/>: <t t-esc="c['emergency_phone']"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="sign-row">
+                                            <div class="sign-left">
+                                                <div>Issued: <strong><t t-esc="c['issue_date']"/></strong></div>
+                                                <div>Status: <strong><t t-esc="c['status_label']"/></strong></div>
+                                            </div>
+                                            <div class="sign-right">
+                                                <div class="sign-line"/>
+                                                <div class="sign-label">Authorized Signature</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Address -->
+                                    <div class="back-footer">
+                                        <div class="back-footer-name"><t t-esc="inst_name"/></div>
+                                        <div><t t-esc="inst_addr"/> • Tel: <t t-esc="inst_phone"/></div>
+                                        <div>Email: <t t-esc="inst_email"/> • Web: <t t-esc="inst_web"/></div>
+                                    </div>
+                                </div>
+                                <div class="card-cut-note">BACK SIDE (85.6 × 54 mm) ►</div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+</odoo>

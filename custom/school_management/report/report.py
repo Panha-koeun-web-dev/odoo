@@ -768,3 +768,171 @@ class SchoolAttendanceReport(models.AbstractModel):
             'generated_on': common._generated_on(),
             'user': self.env.user,
         }
+
+
+class SchoolStudentIdCardReport(models.AbstractModel):
+    _name = 'report.school_management.report_student_id_card'
+    _description = 'Student ID Card with QR Report Parser'
+
+    def _company_card_logo_uri(self, company, max_width=180, max_height=60):
+        if not company.logo or company.uses_default_logo:
+            return False
+        try:
+            from PIL import Image
+            import io
+            raw_bytes = base64.b64decode(company.logo)
+            im = Image.open(io.BytesIO(raw_bytes))
+            im.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            fmt = 'PNG' if im.mode in ('RGBA', 'LA') else 'JPEG'
+            im.save(buf, format=fmt, quality=95)
+            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+            mime = 'image/png' if fmt == 'PNG' else 'image/jpeg'
+            return f'data:{mime};base64,{b64}'
+        except Exception:
+            return self.env['school.report.common']._company_logo_uri(company)
+
+    def _get_qr_code_uri(self, student):
+        try:
+            import qrcode
+            import io
+            payload = student._get_id_card_qr_payload()
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_M,
+                box_size=4,
+                border=2,
+            )
+            qr.add_data(payload)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color='black', back_color='white')
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+            return f'data:image/png;base64,{b64}'
+        except Exception:
+            return False
+
+    def _get_barcode_uri(self, code):
+        if not code:
+            return False
+        try:
+            from reportlab.graphics.barcode import createBarcodeDrawing
+            from reportlab.graphics import renderSVG
+            drawing = createBarcodeDrawing('Code128', value=str(code), width=180, height=22, humanReadable=False)
+            svg = renderSVG.drawToString(drawing)
+            b64 = base64.b64encode(svg.encode('utf-8')).decode('ascii')
+            return f'data:image/svg+xml;base64,{b64}'
+        except Exception:
+            return False
+
+    def _get_student_docs(self, docids, data=None):
+        data = data or {}
+        candidate_ids = docids or data.get('docids') or data.get('ids') or data.get('active_ids')
+        active_model = data.get('active_model') or self.env.context.get('active_model')
+        context_ids = self.env.context.get('active_ids') or self.env.context.get('active_id')
+
+        if not candidate_ids and context_ids:
+            candidate_ids = context_ids
+
+        if isinstance(candidate_ids, int):
+            candidate_ids = [candidate_ids]
+        elif candidate_ids and not isinstance(candidate_ids, list):
+            candidate_ids = list(candidate_ids)
+
+        if candidate_ids:
+            return self.env['school.student'].sudo().browse(candidate_ids).exists()
+
+        if self.env.user.has_group('school_management.group_school_student'):
+            stu = self.env['school.student'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+            if stu:
+                return stu
+
+        return self.env['school.student'].sudo().search([], limit=10)
+
+    def _get_report_values(self, docids, data=None):
+        common = self.env['school.report.common']
+        students = self._get_student_docs(docids, data)
+        company = self.env.company.sudo()
+        company_logo = self._company_card_logo_uri(company)
+
+        inst_name = company.name or 'Grand Royal Academy'
+        inst_addr = ', '.join(filter(None, [company.street, company.city, company.country_id.name])) or '123 Campus Boulevard'
+        inst_phone = company.phone or '+1 (555) 019-2834'
+        inst_email = company.email or 'admin@school.edu'
+        inst_web = company.website or 'www.school.edu'
+
+        blood_dict = dict(self.env['school.student']._fields['blood_group'].selection)
+        gender_dict = dict(self.env['school.student']._fields['gender'].selection)
+
+        cards = []
+        for stu in students:
+            dob_str = common._format_date(stu.date_of_birth) if stu.date_of_birth else 'N/A'
+            issue_date = common._format_date(fields.Date.today())
+            expiry_date = common._format_date(stu.study_end_date) if stu.study_end_date else 'Academic Year End'
+
+            blood_label = blood_dict.get(stu.blood_group, 'N/A') if stu.blood_group and stu.blood_group != 'unknown' else 'N/A'
+            gender_label = gender_dict.get(stu.gender, stu.gender or 'N/A')
+
+            qr_uri = self._get_qr_code_uri(stu)
+            barcode_code = stu.student_id or f"STU-{stu.id:04d}"
+            barcode_uri = self._get_barcode_uri(barcode_code)
+
+            photo_uri = False
+            if stu.photo:
+                try:
+                    photo_uri = image_data_uri(stu.photo)
+                except Exception:
+                    photo_uri = False
+
+            name_parts = (stu.name or 'Student').strip().split()
+            initials = (name_parts[0][0] + (name_parts[-1][0] if len(name_parts) > 1 else '')).upper()
+
+            academic_year = stu.study_period or (stu.class_id.payment_year if stu.class_id and hasattr(stu.class_id, 'payment_year') else '2024-2025')
+            if not academic_year or academic_year == 'False':
+                academic_year = f"{fields.Date.today().year}-{fields.Date.today().year + 1}"
+
+            cards.append({
+                'student': stu,
+                'student_id': stu.id,
+                'name': stu.name or 'Student Name',
+                'student_code': barcode_code,
+                'class_name': stu.class_id.name if stu.class_id else 'General Studies',
+                'academic_year': academic_year,
+                'gender': gender_label,
+                'dob': dob_str,
+                'blood_group': blood_label,
+                'has_blood_group': blood_label != 'N/A',
+                'status': stu.study_status,
+                'status_label': 'STUDYING' if stu.study_status == 'studying' else 'STOPPED',
+                'phone': stu.phone or 'N/A',
+                'emergency_phone': stu.parent_phone or stu.phone or inst_phone,
+                'parent_name': stu.parent_name or 'Parent/Guardian',
+                'parent_email': stu.parent_email or '',
+                'address': stu.address or inst_addr,
+                'issue_date': issue_date,
+                'expiry_date': expiry_date,
+                'photo_uri': photo_uri,
+                'has_photo': bool(photo_uri),
+                'initials': initials,
+                'qr_code_uri': qr_uri,
+                'barcode_uri': barcode_uri,
+                'barcode_code': barcode_code,
+            })
+
+        return {
+            'doc_ids': students.ids,
+            'doc_model': 'school.student',
+            'docs': students,
+            'company': company,
+            'company_logo': company_logo,
+            'has_company_logo': bool(company_logo),
+            'inst_name': inst_name,
+            'inst_addr': inst_addr,
+            'inst_phone': inst_phone,
+            'inst_email': inst_email,
+            'inst_web': inst_web,
+            'cards': cards,
+            'generated_on': common._generated_on(),
+            'user_name': self.env.user.name,
+        }

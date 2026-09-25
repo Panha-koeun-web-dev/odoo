@@ -38,6 +38,23 @@ class SchoolStudent(models.Model):
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', string='Related User')
 
+    blood_group = fields.Selection([
+        ('a_pos', 'A+'),
+        ('a_neg', 'A-'),
+        ('b_pos', 'B+'),
+        ('b_neg', 'B-'),
+        ('ab_pos', 'AB+'),
+        ('ab_neg', 'AB-'),
+        ('o_pos', 'O+'),
+        ('o_neg', 'O-'),
+        ('unknown', 'Unknown'),
+    ], string='Blood Group', default='unknown')
+    id_card_qr_code = fields.Binary(
+        string='ID Card QR Code',
+        compute='_compute_id_card_qr_code',
+        help='Machine-scannable QR code containing student identity and verification details.',
+    )
+
     # Study Status Management (Stop / Kick / Continue Study)
     study_status = fields.Selection([
         ('studying', 'Studying'),
@@ -828,6 +845,52 @@ class SchoolStudent(models.Model):
         if self.fee_ids:
             return self.fee_ids[0].action_print_receipt()
         raise UserError(_("No payment or fee records found for student %s.") % self.name)
+
+    def _get_id_card_qr_payload(self):
+        self.ensure_one()
+        blood = dict(self._fields['blood_group'].selection).get(self.blood_group, 'N/A') if self.blood_group and self.blood_group != 'unknown' else 'N/A'
+        school_name = self.env.company.name or 'Grand Royal Academy'
+        status_label = 'Active (Studying)' if self.study_status == 'studying' else 'Stopped'
+        class_name = self.class_id.name if self.class_id else 'Unassigned'
+        dob_str = str(self.date_of_birth) if self.date_of_birth else 'N/A'
+        emergency = self.parent_phone or self.phone or 'N/A'
+        return (
+            f"STUDENT ID: {self.student_id or 'N/A'}\n"
+            f"NAME: {self.name or 'N/A'}\n"
+            f"CLASS: {class_name}\n"
+            f"DOB: {dob_str}\n"
+            f"BLOOD: {blood}\n"
+            f"EMERGENCY: {emergency}\n"
+            f"STATUS: {status_label}\n"
+            f"INSTITUTION: {school_name}"
+        )
+
+    @api.depends('student_id', 'name', 'class_id', 'date_of_birth', 'blood_group', 'parent_phone', 'phone', 'study_status')
+    def _compute_id_card_qr_code(self):
+        import base64
+        import io
+        for rec in self:
+            try:
+                import qrcode
+                payload = rec._get_id_card_qr_payload()
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_M,
+                    box_size=4,
+                    border=2,
+                )
+                qr.add_data(payload)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                buf = io.BytesIO()
+                img.save(buf, format='PNG')
+                rec.id_card_qr_code = base64.b64encode(buf.getvalue())
+            except Exception:
+                rec.id_card_qr_code = False
+
+    def action_print_id_card(self):
+        """Generate and print the official Student ID Card (with QR Code) PDF."""
+        return self.env.ref('school_management.action_report_student_id_card').report_action(self)
 
     def action_export_xlsx(self):
         ids = self.ids or self.env.context.get('active_ids') or []

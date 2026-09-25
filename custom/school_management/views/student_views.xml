@@ -35,6 +35,8 @@
                 <header>
                     <button name="action_export_xlsx" type="object"
                             string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                    <button name="action_print_id_card" type="object"
+                            string="Print ID Card" class="btn-outline-primary" icon="fa-id-card-o" display="always"/>
                 </header>
                 <field name="photo" widget="image" nolabel="1" width="44"
                        options="{'size': [36, 36], 'img_class': 'rounded-circle object-fit-cover shadow-sm'}"/>
@@ -73,6 +75,7 @@
                 <field name="stop_reason" optional="hide"/>
                 <field name="class_total_payment" widget="monetary" optional="hide"/>
                 <field name="currency_id" column_invisible="True"/>
+                <field name="blood_group" widget="badge" optional="hide"/>
                 <field name="active" optional="hide"/>
 
                 <!-- Action Buttons -->
@@ -82,6 +85,8 @@
                         title="Print Official Academic Transcript / Report Card" class="btn btn-sm btn-outline-primary"/>
                 <button name="action_print_student_certificates" type="object" string="Certificate" icon="fa-certificate"
                         title="Print Official Student Certificate" class="btn btn-sm btn-outline-secondary"/>
+                <button name="action_print_id_card" type="object" string="ID Card" icon="fa-id-card-o"
+                        title="Print Official Student ID Card (with QR)" class="btn btn-sm btn-outline-info"/>
                 <button name="action_open_stop_study_wizard" type="object" string="Stop Study" icon="fa-ban"
                         title="Stop / Kick Student" class="btn btn-sm btn-outline-danger" invisible="study_status == 'stopped'"
                         groups="school_management.group_school_admin"/>
@@ -208,6 +213,8 @@
                             string="Enroll in Weekly Subjects" class="btn-primary" icon="fa-book"/>
                     <button name="action_export_xlsx" type="object"
                             string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o"/>
+                    <button name="action_print_id_card" type="object"
+                            string="Print ID Card (QR)" class="btn-primary" icon="fa-id-card-o"/>
                     <button name="action_print_academic_transcript" type="object"
                             string="Print Transcript (PDF)" class="btn-primary" icon="fa-file-text-o"/>
                     <button name="action_print_student_certificates" type="object"
@@ -275,6 +282,9 @@
                         <button name="open_major_enrollments" type="object" class="oe_stat_button" icon="fa-certificate" groups="school_management.group_school_admin">
                             <div class="o_stat_info"><span class="o_stat_text">Majors</span></div>
                         </button>
+                        <button name="action_print_id_card" type="object" class="oe_stat_button" icon="fa-id-card-o" title="Print Student ID Card">
+                            <div class="o_stat_info"><span class="o_stat_text">ID Card (QR)</span></div>
+                        </button>
                         <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-graduation-cap">
                             <div class="o_stat_info"><span class="o_stat_text">Transcript &amp; Report</span></div>
                         </button>
@@ -311,13 +321,16 @@
                         </div>
                         <div class="flex-grow-1 o_school_hero_title">
                             <div class="oe_title mw-100 ps-0 pe-sm-2">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1 fs-6">
+                                        <i class="fa fa-id-card-o me-1 text-primary" title="Student ID"/>STUDENT ID:
+                                    </span>
+                                    <field name="student_id" placeholder="e.g. STU-001" class="fw-bold text-primary fs-5" style="max-width: 220px;"/>
+                                </div>
                                 <h1 class="d-flex flex-row align-items-center mb-1">
                                     <field name="name" placeholder="Student's Full Name" required="True" style="font-size: min(4vw, 2.2rem); font-weight: 700;"/>
                                 </h1>
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
-                                        <i class="fa fa-id-card-o me-1" title="Student ID"/>ID: <field name="student_id" class="d-inline fw-semibold"/>
-                                    </span>
                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" invisible="not class_id">
                                         <i class="fa fa-graduation-cap me-1" title="Class"/><field name="class_id" class="d-inline fw-semibold"/>
                                     </span>
@@ -366,6 +379,7 @@
                                             <h6 class="mb-0 fw-bold">Class &amp; Enrollment Details</h6>
                                         </div>
                                         <group>
+                                            <field name="student_id" string="Student ID / Code"/>
                                             <field name="class_id"/>
                                             <field name="enrollment_date"/>
                                             <field name="study_start_date"/>
@@ -524,9 +538,11 @@
                                             <h6 class="mb-0 fw-bold">Personal Details</h6>
                                         </div>
                                         <group>
+                                            <field name="student_id" string="Student ID"/>
                                             <field name="gender"/>
                                             <field name="date_of_birth"/>
                                             <field name="age" readonly="1"/>
+                                            <field name="blood_group"/>
                                             <field name="address"/>
                                             <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
                                             <field name="active"/>
@@ -1008,6 +1024,33 @@
                                                    decoration-muted="state == 'cancel'"/>
                                         </list>
                                     </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="id_card" string="Student ID Card &amp; QR">
+                            <div class="row align-items-center p-3">
+                                <div class="col-md-4 text-center border-end">
+                                    <div class="mb-2 fw-bold text-primary"><i class="fa fa-qrcode me-1"/> Digital ID &amp; QR Code</div>
+                                    <field name="id_card_qr_code" widget="image" class="img-thumbnail shadow-sm p-2 bg-white" style="max-width: 170px; max-height: 170px;"/>
+                                    <div class="text-muted small mt-2">
+                                        <i class="fa fa-shield me-1 text-success"/>Official Cryptographic/Scannable QR
+                                    </div>
+                                    <div class="mt-3">
+                                        <button name="action_print_id_card" type="object" string="Print ID Card (PDF)" class="btn btn-outline-primary btn-sm" icon="fa-print"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-8 ps-md-4">
+                                    <group string="Identity Card Specification">
+                                        <field name="student_id" string="Student ID / Matriculation Code"/>
+                                        <field name="blood_group"/>
+                                        <field name="study_period" readonly="1" string="Card Validity / Academic Period"/>
+                                        <field name="parent_phone" string="Emergency Helpline Phone"/>
+                                    </group>
+                                    <div class="alert alert-info mt-2" role="status">
+                                        <i class="fa fa-info-circle me-1" title="Information"/>
+                                        <strong>Smart Verification Ready:</strong> This QR code encodes essential student credentials (Student ID, Full Name, Class, Date of Birth, Emergency Contact, and Study Status). Campus security, gate checkpoints, exam proctors, and library systems can scan this code with standard 2D scanners or mobile cameras.
+                                    </div>
                                 </div>
                             </div>
                         </page>

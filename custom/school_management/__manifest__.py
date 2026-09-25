@@ -43,6 +43,7 @@
         'report/certificate_report.xml',
         'report/transcript_report.xml',
         'report/receipt_report.xml',
+        'report/student_id_card_report.xml',
     ],
     'assets': {
         'web.assets_backend': [
