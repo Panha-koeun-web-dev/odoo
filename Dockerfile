@@ -24,9 +24,10 @@ RUN pip install --no-cache-dir psycopg2-binary
 
 # 3. Copy project files into container
 COPY . .
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 # 4. Expose the port
 EXPOSE 8069
 
-# 5. Start Odoo connected to the Render database (-d is the database flag)
-CMD ["sh", "-c", "python3 odoo-bin -c odoo-render.conf --http-port=8069 --db_host=${DB_HOST} --db_port=${DB_PORT} --db_user=${DB_USER} --db_password=${DB_PASSWORD} -d ${DB_NAME}"]
+# 5. Start Odoo using smart initialization entrypoint
+CMD ["./entrypoint.sh"]
