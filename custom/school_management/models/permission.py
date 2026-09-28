@@ -2,7 +2,6 @@ from datetime import timedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 
-
 class SchoolPermission(models.Model):
     _name = 'school.permission'
     _inherit = ['mail.thread', 'mail.activity.mixin']
