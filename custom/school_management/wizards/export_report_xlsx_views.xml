@@ -9,16 +9,6 @@
 
                 <!-- ================= STATE: CHOOSE FILTERS ================= -->
                 <div invisible="state != 'choose'" class="o_report_export_dialog">
-                    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
-                        <i class="fa fa-file-excel-o fa-2x me-3 text-success" title="Excel Spreadsheet"/>
-                        <div>
-                            <h5 class="alert-heading mb-1">Generate Formatted Excel Spreadsheet</h5>
-                            <div class="text-muted small">
-                                Select report category and criteria below. Formatted sheets include executive KPI cards, summary charts, and totals.
-                            </div>
-                        </div>
-                    </div>
-
                     <group>
                         <group string="Report Configuration">
                             <field name="report_type" widget="radio"/>
