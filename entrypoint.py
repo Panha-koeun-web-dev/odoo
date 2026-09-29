@@ -23,9 +23,22 @@ try:
     cur.execute("SELECT 1 FROM information_schema.tables WHERE table_name='ir_module_module'")
     if cur.fetchone():
         is_initialized = True
-        print("Database initialized. Clearing stale asset bundles from ir_attachment...")
-        cur.execute("DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';")
-        # Ensure attachments are stored in Postgres so ephemeral disk wipes on Render don't break them
+        print("Optimizing database attachments and assets...")
+        
+        # 1. Stop FileNotFoundError tracebacks: clear ghost file pointers where no data exists
+        cur.execute("""
+            UPDATE ir_attachment 
+            SET store_fname = NULL 
+            WHERE store_fname IS NOT NULL AND (db_datas IS NULL OR db_datas = '');
+        """)
+        
+        # 2. Clear stale disk-based asset bundles (keep database-backed ones)
+        cur.execute("""
+            DELETE FROM ir_attachment 
+            WHERE url LIKE '/web/assets/%' AND (db_datas IS NULL OR db_datas = '');
+        """)
+        
+        # 3. Store all attachments in PostgreSQL so Render container restarts don't lose them
         cur.execute("""
             INSERT INTO ir_config_parameter (key, value)
             VALUES ('ir_attachment.location', 'db')
