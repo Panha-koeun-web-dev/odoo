@@ -23,6 +23,15 @@ try:
     cur.execute("SELECT 1 FROM information_schema.tables WHERE table_name='ir_module_module'")
     if cur.fetchone():
         is_initialized = True
+        print("Database initialized. Clearing stale asset bundles from ir_attachment...")
+        cur.execute("DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';")
+        # Ensure attachments are stored in Postgres so ephemeral disk wipes on Render don't break them
+        cur.execute("""
+            INSERT INTO ir_config_parameter (key, value)
+            VALUES ('ir_attachment.location', 'db')
+            ON CONFLICT (key) DO UPDATE SET value = 'db';
+        """)
+        conn.commit()
     conn.close()
 except Exception as e:
     print(f"Database check notice: {e}")
