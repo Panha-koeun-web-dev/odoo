@@ -756,6 +756,7 @@ class SchoolStudent(models.Model):
         group_portal = self.env.ref('base.group_portal', raise_if_not_found=False)
         action_student = self.env.ref('school_management.action_student', raise_if_not_found=False)
 
+        # Set Default password After reset by admin
         default_pwd = 'password123'
         groups_to_add = [(4, group_student.id), (4, group_internal.id)]
         if group_portal:

@@ -239,7 +239,11 @@ class SchoolTeacher(models.Model):
         return action
 
     def action_create_user(self):
+        """Create or link an Odoo user account for this teacher with default password 'password123'."""
+        # Step 1: Ensure this action is run on a single teacher record
         self.ensure_one()
+
+        # Step 2: Validate that email exists because it will be used as the login username
         if not self.email:
             raise UserError(_("Please provide an email address for the teacher first."))
 
@@ -247,55 +251,90 @@ class SchoolTeacher(models.Model):
         existing_user = self.env['res.users'].sudo().search([('login', '=', login)], limit=1)
         group_teacher = self.env.ref('school_management.group_school_teacher')
         group_internal = self.env.ref('base.group_user')
+        action_teacher = self.env.ref('school_management.action_teacher', raise_if_not_found=False)
+
+        # Step 3: Default password preset for teacher accounts
+        default_pwd = 'password123'
+        groups_to_add = [(4, group_teacher.id), (4, group_internal.id)]
 
         if existing_user:
+            # Step 4A: Account already exists -> Grant teacher groups and link to this record
             existing_user.sudo().write({
-                'group_ids': [(4, group_teacher.id), (4, group_internal.id)]
+                'name': self.name,
+                'email': self.email,
+                'password': default_pwd,  # Set password to default_pwd ('password123')
+                'group_ids': groups_to_add,
+                'action_id': action_teacher.id if action_teacher else False,
             })
-            self.user_id = existing_user.id
+            self.sudo().write({'user_id': existing_user.id})
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _("Account Linked"),
-                    'message': _("Existing user account (%s) linked as teacher.") % login,
+                    'title': _("User Account Linked"),
+                    'message': _("Existing user account linked for Teacher %s.\nEmail / Login: %s\nPassword: %s") % (self.name, login, default_pwd),
                     'type': 'success',
-                    'sticky': False,
+                    'sticky': True,
                 }
             }
+
+        # Step 4B: Account does not exist -> Create new partner and user with password 'password123'
+        partner_vals = {'name': self.name, 'email': self.email}
+        if 'autopost_bills' in self.env['res.partner']._fields:
+            partner_vals['autopost_bills'] = 'never'
+        partner = self.env['res.partner'].sudo().create(partner_vals)
 
         user_vals = {
             'name': self.name,
             'login': login,
-            'email': login,
+            'email': self.email,
+            'password': default_pwd,  # Direct password setup: 'password123'
+            'partner_id': partner.id,
             'group_ids': [(6, 0, [group_internal.id, group_teacher.id])],
+            'action_id': action_teacher.id if action_teacher else False,
         }
         new_user = self.env['res.users'].sudo().create(user_vals)
-        self.user_id = new_user.id
+        self.sudo().write({'user_id': new_user.id})
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("Account Created"),
-                'message': _("User account (%s) created successfully.") % login,
+                'title': _("Account Created Successfully"),
+                'message': _("Created login account for Teacher %s!\nEmail / Login: %s\nPassword: %s") % (self.name, login, default_pwd),
                 'type': 'success',
-                'sticky': False,
+                'sticky': True,
             }
         }
 
     def action_reset_user_password(self):
+        """
+        Reset teacher's portal/system user password to default 'password123'.
+        Allows school administrators to immediately restore access for teachers without email dependency.
+        """
+        # Step 1: Ensure this action is executed on a single teacher record
         self.ensure_one()
+
+        # Step 2: Check if there is an associated user account
         if not self.user_id:
             raise UserError(_("No user account is linked to this teacher."))
-        self.user_id.action_reset_password()
+
+        # Step 3: Define the default password for reset
+        default_pwd = 'password123'
+
+        # Step 4: Write the new password directly to res.users table with sudo privileges
+        self.user_id.sudo().write({'password': default_pwd})
+
+        # Step 5: Show an informative notification to the administrator displaying credentials
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("Password Reset"),
-                'message': _("Password reset instructions have been sent to %s.") % self.user_id.email,
+                'title': _("Password Reset Successfully"),
+                'message': _("Password for teacher '%s' (%s) has been reset to: %s") % (
+                    self.name, self.user_id.login, default_pwd
+                ),
                 'type': 'info',
-                'sticky': False,
+                'sticky': True,
             }
         }
 
