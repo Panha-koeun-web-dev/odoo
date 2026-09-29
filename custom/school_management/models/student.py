@@ -34,7 +34,7 @@ class SchoolStudent(models.Model):
     study_start_date = fields.Date(string='Study Start Date', default=fields.Date.today)
     study_end_date = fields.Date(string='Study End Date')
     study_period = fields.Char(string='Study Period', compute='_compute_study_period', store=True)
-    photo = fields.Image(string='Photo')
+    photo = fields.Image(string='Photo', max_width=512, max_height=512, verify_resolution=True)
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', string='Related User')
 

@@ -20,7 +20,7 @@ class SchoolTeacher(models.Model):
     hire_date = fields.Date(string='Hire Date', default=fields.Date.today, tracking=True)
     subject_ids = fields.Many2many('school.subject', string='Subjects')
     class_ids = fields.One2many('school.class', 'teacher_id', string='Assigned Classes')
-    photo = fields.Image(string='Photo')
+    photo = fields.Image(string='Photo', max_width=512, max_height=512, verify_resolution=True)
     active = fields.Boolean(default=True, tracking=True)
     user_id = fields.Many2one('res.users', string='Related User')
     notes = fields.Text(string='Notes')
