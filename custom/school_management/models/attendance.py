@@ -33,6 +33,32 @@ class SchoolAttendance(models.Model):
     def _get_state_change_recipients(self):
         return self.student_id.email or self.student_id.parent_email
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        students = records.mapped('student_id')
+        if students:
+            students.sudo()._compute_attendance_stats()
+            students.sudo()._compute_grade_stats()
+        return records
+
+    def write(self, vals):
+        students_before = self.mapped('student_id')
+        res = super().write(vals)
+        students = (students_before | self.mapped('student_id'))
+        if students:
+            students.sudo()._compute_attendance_stats()
+            students.sudo()._compute_grade_stats()
+        return res
+
+    def unlink(self):
+        students = self.mapped('student_id')
+        res = super().unlink()
+        if students:
+            students.sudo()._compute_attendance_stats()
+            students.sudo()._compute_grade_stats()
+        return res
+
     def action_set_present(self):
         self.write({'status': 'present'})
 

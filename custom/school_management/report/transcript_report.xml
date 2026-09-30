@@ -177,38 +177,47 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-set="row_idx" t-value="0"/>
-                            <t t-foreach="doc['courses']" t-as="crs">
-                                <t t-set="row_idx" t-value="row_idx + 1"/>
-                                <tr t-attf-style="border-bottom:1px solid #e2e8f0; background:#{ '#ffffff' if row_idx % 2 != 0 else '#f8fafc' };">
-                                    <td style="padding:4px 5px; text-align:center; color:#64748b; font-weight:600;"><t t-esc="crs['index']"/></td>
-                                    <td style="padding:4px 6px; font-weight:700; color:#334155; font-family:monospace; font-size:8px;"><t t-esc="crs['code']"/></td>
-                                    <td style="padding:4px 6px; font-weight:600; color:#0f172a;">
-                                        <t t-esc="crs['name']"/>
-                                        <span style="font-size:7.5px; color:#64748b; margin-left:4px;">(<t t-esc="crs['department']"/>)</span>
-                                    </td>
-                                    <td style="padding:4px 5px; text-align:center; font-weight:600; color:#334155;"><t t-esc="crs['credits']"/></td>
-                                    <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['marks_obtained']"/></td>
-                                    <td style="padding:4px 5px; text-align:right; color:#64748b;"><t t-esc="crs['total_marks']"/></td>
-                                    <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['percentage']"/>%</td>
-                                    <td style="padding:4px 5px; text-align:center;">
-                                        <span t-attf-style="display:inline-block; padding:1px 5px; font-weight:800; font-size:8px; border-radius:3px; background:#{ '#dcfce7' if crs['grade_letter'] in ('A+', 'A') else '#e0f2fe' if crs['grade_letter'] in ('B+', 'B') else '#fef3c7' if crs['grade_letter'] in ('C+', 'C') else '#fee2e2' }; color:#{ '#166534' if crs['grade_letter'] in ('A+', 'A') else '#0369a1' if crs['grade_letter'] in ('B+', 'B') else '#92400e' if crs['grade_letter'] in ('C+', 'C') else '#991b1b' };">
-                                            <t t-esc="crs['grade_letter']"/>
-                                        </span>
-                                    </td>
-                                    <td style="padding:4px 5px; text-align:center; font-weight:700; color:#334155;"><t t-esc="crs['grade_point']"/></td>
-                                    <td style="padding:4px 5px; text-align:center;">
-                                        <span t-if="crs['result'] == 'pass'" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:3px;">
-                                            PASS
-                                        </span>
-                                        <span t-else="" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; border-radius:3px;">
-                                            FAIL
-                                        </span>
-                                    </td>
-                                    <td style="padding:4px 6px; font-size:7.5px; color:#475569; font-style:italic;">
-                                        <t t-esc="crs['remarks']"/>
+                            <t t-if="not doc['courses']">
+                                <tr>
+                                    <td colspan="11" style="padding:14px 10px; text-align:center; color:#64748b; font-style:italic; background:#f8fafc;">
+                                        No graded examination coursework on record for this student.
                                     </td>
                                 </tr>
+                            </t>
+                            <t t-else="">
+                                <t t-set="row_idx" t-value="0"/>
+                                <t t-foreach="doc['courses']" t-as="crs">
+                                    <t t-set="row_idx" t-value="row_idx + 1"/>
+                                    <tr t-attf-style="border-bottom:1px solid #e2e8f0; background:#{ '#ffffff' if row_idx % 2 != 0 else '#f8fafc' };">
+                                        <td style="padding:4px 5px; text-align:center; color:#64748b; font-weight:600;"><t t-esc="crs['index']"/></td>
+                                        <td style="padding:4px 6px; font-weight:700; color:#334155; font-family:monospace; font-size:8px;"><t t-esc="crs['code']"/></td>
+                                        <td style="padding:4px 6px; font-weight:600; color:#0f172a;">
+                                            <t t-esc="crs['name']"/>
+                                            <span style="font-size:7.5px; color:#64748b; margin-left:4px;">(<t t-esc="crs['department']"/>)</span>
+                                        </td>
+                                        <td style="padding:4px 5px; text-align:center; font-weight:600; color:#334155;"><t t-esc="crs['credits']"/></td>
+                                        <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['marks_obtained']"/></td>
+                                        <td style="padding:4px 5px; text-align:right; color:#64748b;"><t t-esc="crs['total_marks']"/></td>
+                                        <td style="padding:4px 5px; text-align:right; font-weight:700; color:#0f172a;"><t t-esc="crs['percentage']"/>%</td>
+                                        <td style="padding:4px 5px; text-align:center;">
+                                            <span t-attf-style="display:inline-block; padding:1px 5px; font-weight:800; font-size:8px; border-radius:3px; background:#{ '#dcfce7' if crs['grade_letter'] in ('A+', 'A') else '#e0f2fe' if crs['grade_letter'] in ('B+', 'B') else '#fef3c7' if crs['grade_letter'] in ('C+', 'C') else '#fee2e2' }; color:#{ '#166534' if crs['grade_letter'] in ('A+', 'A') else '#0369a1' if crs['grade_letter'] in ('B+', 'B') else '#92400e' if crs['grade_letter'] in ('C+', 'C') else '#991b1b' };">
+                                                <t t-esc="crs['grade_letter']"/>
+                                            </span>
+                                        </td>
+                                        <td style="padding:4px 5px; text-align:center; font-weight:700; color:#334155;"><t t-esc="crs['grade_point']"/></td>
+                                        <td style="padding:4px 5px; text-align:center;">
+                                            <span t-if="crs['result'] == 'pass'" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:3px;">
+                                                PASS
+                                            </span>
+                                            <span t-else="" style="display:inline-block; padding:1px 4px; font-size:7.5px; font-weight:700; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; border-radius:3px;">
+                                                FAIL
+                                            </span>
+                                        </td>
+                                        <td style="padding:4px 6px; font-size:7.5px; color:#475569; font-style:italic;">
+                                            <t t-esc="crs['remarks']"/>
+                                        </td>
+                                    </tr>
+                                </t>
                             </t>
                         </tbody>
                         <tfoot>
@@ -257,8 +266,13 @@
                                         <t t-esc="doc['attendance_rate']"/>
                                     </div>
                                     <div style="font-size:7.5px; color:#475569; margin-top:1px;">
-                                        <span style="color:#166534;"><t t-esc="doc['present_days']"/> Present</span> • 
-                                        <span style="color:#b91c1c;"><t t-esc="doc['absent_days']"/> Absent</span>
+                                        <t t-if="doc['present_days'] + doc['absent_days'] &gt; 0">
+                                            <span style="color:#166534;"><t t-esc="doc['present_days']"/> Present</span> • 
+                                            <span style="color:#b91c1c;"><t t-esc="doc['absent_days']"/> Absent</span>
+                                        </t>
+                                        <t t-else="">
+                                            <span style="color:#64748b;">No Recorded Sessions</span>
+                                        </t>
                                     </div>
                                 </div>
                             </td>
@@ -270,7 +284,11 @@
                                     <div style="font-size:9.5px; font-weight:800; color:#15803d; margin-top:4px; line-height:1.2;">
                                         <t t-esc="doc['academic_standing']"/>
                                     </div>
-                                    <div style="font-size:7.5px; color:#166534; margin-top:3px;">Good Standing</div>
+                                    <div style="font-size:7.5px; color:#64748b; margin-top:3px;">
+                                        <t t-if="doc['gpa_num'] &gt;= 2.0">Good Academic Standing</t>
+                                        <t t-elif="doc['gpa_num'] &gt; 0.0">Academic Warning / Probation</t>
+                                        <t t-else="">Evaluation Pending</t>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -292,7 +310,7 @@
                             <strong>F</strong> (&lt;30% | 0.00 GP • Failing)
                         </div>
                         <div style="font-size:7px; color:#64748b; margin-top:2px;">
-                            * Minimum cumulative GPA for good academic standing and graduation is 2.00. Quality Points = Grade Points × Course Credit Hours.
+                            * Standard 4.0 Scale: Quality Points = Grade Points × Course Credit Hours. Final GPA = (Exam GPA × 90%) + (Attendance GPA × 10%). Minimum cumulative GPA for good academic standing and graduation is 2.00.
                         </div>
                     </div>
 

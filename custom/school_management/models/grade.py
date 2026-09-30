@@ -185,6 +185,29 @@ class SchoolGrade(models.Model):
             else:
                 rec.result = 'fail'
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        students = records.mapped('student_id')
+        if students:
+            students.sudo()._compute_grade_stats()
+        return records
+
+    def write(self, vals):
+        students_before = self.mapped('student_id')
+        res = super().write(vals)
+        students = (students_before | self.mapped('student_id'))
+        if students:
+            students.sudo()._compute_grade_stats()
+        return res
+
+    def unlink(self):
+        students = self.mapped('student_id')
+        res = super().unlink()
+        if students:
+            students.sudo()._compute_grade_stats()
+        return res
+
     def action_export_xlsx(self):
         ids = self.ids or self.env.context.get('active_ids') or []
         ids_str = ','.join(str(x) for x in ids) if ids else ''

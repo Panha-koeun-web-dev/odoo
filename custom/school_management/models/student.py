@@ -290,12 +290,16 @@ class SchoolStudent(models.Model):
             rec.fee_count = len(rec.fee_ids)
 
     @api.depends(
+        'grade_ids',
+        'grade_ids.marks_obtained',
+        'grade_ids.total_marks',
         'grade_ids.percentage',
         'grade_ids.result',
         'grade_ids.grade_letter',
         'grade_ids.subject_id.credits',
         'attendance_rate',
         'attendance_count',
+        'attendance_ids',
         'attendance_ids.status',
     )
     def _compute_grade_stats(self):
@@ -323,25 +327,27 @@ class SchoolStudent(models.Model):
 
                 rec.average_score = round((exam_avg * 0.90) + (att_score * 0.10), 1)
 
-                # Quality Points & GPA on 4.0 Scale
+                # Quality Points & GPA on Standard 4.0 Scale
                 total_creds = 0
                 total_pts = 0.0
                 for g in grades:
                     creds = g.subject_id.credits or 3
-                    gp = grade_pts_map.get(g.grade_letter)
+                    gp = grade_pts_map.get((g.grade_letter or '').lower())
                     if gp is None:
-                        pct = g.percentage
+                        pct = g.percentage if g.percentage else ((g.marks_obtained / g.total_marks * 100) if g.total_marks else 0.0)
                         if pct >= 90:
                             gp = 4.0
                         elif pct >= 80:
-                            gp = 3.7
+                            gp = 4.0
                         elif pct >= 70:
                             gp = 3.3
                         elif pct >= 60:
-                            gp = 2.7
+                            gp = 3.0
                         elif pct >= 50:
-                            gp = 2.0
+                            gp = 2.3
                         elif pct >= 40:
+                            gp = 2.0
+                        elif pct >= 30:
                             gp = 1.0
                         else:
                             gp = 0.0
@@ -376,6 +382,24 @@ class SchoolStudent(models.Model):
                 rec.passed_exam_count = 0
                 rec.failed_exam_count = 0
                 rec.academic_performance = 'No Exams Yet'
+
+    def action_recompute_academic_metrics(self):
+        """Action button to trigger full academic metrics recalculation."""
+        self._compute_attendance_stats()
+        self._compute_grade_stats()
+        certs = self.env['school.certificate'].search([('student_id', 'in', self.ids)])
+        if certs:
+            certs._compute_academic_metrics()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Recalculation Complete'),
+                'message': _('Academic metrics updated: 90%% Exam + 10%% Attendance for %s student(s).') % len(self),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     def _sync_year_payment_with_class(self):
         """Sync student payment record to follow the payment configured by the student's class."""
@@ -426,11 +450,7 @@ class SchoolStudent(models.Model):
     def _compute_timetable_ids(self):
         Timetable = self.env['school.timetable']
         for student in self:
-            domain = [
-                ('active', '=', True),
-                '|',
-                ('is_holiday', '=', True),
-            ]
+            domain = [('active', '=', True), ('is_holiday', '=', False)]
             if student.class_id:
                 domain.extend([
                     '|',
@@ -449,18 +469,7 @@ class SchoolStudent(models.Model):
                 ])
             sessions = Timetable.search(domain)
             student.timetable_ids = [(6, 0, sessions.ids)]
-
-            session_domain = ['|', ('student_id', '=', student.id), ('student_ids', 'in', [student.id])]
-            if student.class_id:
-                session_domain = [
-                    '|', '|',
-                    ('student_id', '=', student.id),
-                    ('student_ids', 'in', [student.id]),
-                    '&',
-                    ('class_id', '=', student.class_id.id),
-                    ('student_id', '=', False),
-                ]
-            student.timetable_count = Timetable.search_count(session_domain)
+            student.timetable_count = len(sessions)
 
             holiday_domain = [
                 ('active', '=', True),
@@ -742,7 +751,7 @@ class SchoolStudent(models.Model):
             if rec.study_start_date and rec.study_end_date and rec.study_end_date < rec.study_start_date:
                 raise ValidationError(_('Study End Date must be after Study Start Date.'))
 
-    @api.depends('attendance_ids.status')
+    @api.depends('attendance_ids', 'attendance_ids.status', 'attendance_ids.student_id')
     def _compute_attendance_stats(self):
         for rec in self:
             attendances = rec.attendance_ids

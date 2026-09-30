@@ -33,6 +33,9 @@
                   multi_edit="1"
                   sample="1">
                 <header>
+                    <button name="action_recompute_academic_metrics" type="object"
+                            string="Recalculate GPA &amp; Average" class="btn-outline-primary" icon="fa-calculator" display="always"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_export_xlsx" type="object"
                             string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
                     <button name="action_print_id_card" type="object"
@@ -52,8 +55,9 @@
                        decoration-warning="year_payment_status == 'partial'"
                        decoration-info="year_payment_status == 'pending'"
                        invisible="not year_payment_status or year_payment_status == 'no_record'"/>
-                <field name="attendance_rate" string="Attendance" widget="progressbar" optional="show"/>
-                <field name="average_score" string="Avg Score (%)" widget="badge" optional="show"
+                <field name="attendance_rate" string="Attendance (10%)" widget="progressbar" optional="show"/>
+                <field name="exam_average_score" string="Exam Avg (90%)" optional="show"/>
+                <field name="average_score" string="Final Avg (%)" widget="badge" optional="show"
                        decoration-success="average_score &gt;= 80"
                        decoration-primary="average_score &gt;= 70 and average_score &lt; 80"
                        decoration-warning="average_score &gt;= 50 and average_score &lt; 70"
@@ -231,6 +235,9 @@
                             string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_print_id_card" type="object"
                             string="Print ID Card (QR)" class="btn-primary" icon="fa-id-card-o"/>
+                    <button name="action_recompute_academic_metrics" type="object"
+                            string="Recalculate GPA &amp; Average" class="btn-outline-primary" icon="fa-calculator"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_print_academic_transcript" type="object"
                             string="Print Transcript (PDF)" class="btn-primary" icon="fa-file-text-o"/>
                     <button name="action_print_student_certificates" type="object"
@@ -433,18 +440,24 @@
                                 </div>
                                 <div class="col-lg-6">
                                     <div class="card border rounded-3 shadow-sm p-3 h-100">
-                                        <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
-                                            <i class="fa fa-tachometer text-primary me-2 fa-lg" title="Academic Standing"/>
-                                            <h6 class="mb-0 fw-bold">Academic Standing &amp; Attendance</h6>
+                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fa fa-tachometer text-primary me-2 fa-lg" title="Academic Standing"/>
+                                                <h6 class="mb-0 fw-bold">Academic Standing &amp; Weighted GPA</h6>
+                                            </div>
+                                            <button name="action_recompute_academic_metrics" type="object"
+                                                    string="Recalculate" class="btn btn-sm btn-outline-primary py-0 px-2"
+                                                    icon="fa-refresh" title="Recalculate 90% Exam + 10% Attendance"
+                                                    groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                         </div>
                                         <group>
-                                            <field name="attendance_rate" string="Attendance Rate (%)"/>
-                                            <field name="attendance_count" string="Total Sessions Marked"/>
-                                            <field name="today_attendance_status" widget="badge"
-                                                   decoration-success="today_attendance_status == 'present'"
-                                                   decoration-danger="today_attendance_status == 'absent'"
-                                                   decoration-warning="today_attendance_status == 'late'"
-                                                   decoration-info="today_attendance_status == 'excused'"/>
+                                            <field name="gpa" string="Cumulative GPA (4.0)"/>
+                                            <field name="average_score" string="Overall Average (90/10 %)"/>
+                                            <field name="exam_average_score" string="Exam Average (90%)"/>
+                                            <field name="attendance_rate" string="Attendance Rate (10%)"/>
+                                            <field name="academic_performance" string="Academic Evaluation"/>
+                                            <field name="grade_count" string="Exams Completed"/>
+                                            <field name="attendance_count" string="Sessions Recorded"/>
                                             <field name="study_period"/>
                                         </group>
                                     </div>
@@ -683,6 +696,107 @@
                                                    decoration-info="status == 'excused'"/>
                                             <field name="class_id"/>
                                             <field name="notes"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page name="grades" string="Exams &amp; Performance">
+                            <!-- Top KPI Summary Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Exam Average (90%)</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="fa fa-pencil" title="Exams"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-primary mb-0">
+                                            <field name="exam_average_score"/>%
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            From <field name="grade_count" class="d-inline fw-semibold"/> exams (<field name="passed_exam_count" class="d-inline text-success"/> passed)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-muted fw-bold small">Attendance (10%)</span>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="fa fa-calendar-check-o" title="Attendance"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-info mb-0">
+                                            <field name="attendance_rate"/>%
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <field name="present_count" class="d-inline fw-semibold"/> present / <field name="attendance_count" class="d-inline"/> total
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-primary-subtle bg-opacity-25 border-start border-primary border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-primary fw-bold small">Final Average</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="fa fa-percent" title="Average"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-primary mb-0">
+                                            <field name="average_score"/>%
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            90% Exam + 10% Attendance
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-xl-3">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 bg-success-subtle bg-opacity-25 border-start border-success border-3 p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase text-success fw-bold small">GPA (4.0 Scale)</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa fa-trophy" title="GPA"/></span>
+                                        </div>
+                                        <div class="fs-4 fw-bold text-success mb-0">
+                                            <field name="gpa"/> / 4.00
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <field name="academic_performance" class="d-inline fw-semibold"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border rounded-3 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="fa fa-graduation-cap text-primary me-2" title="Graded Examinations"/>Graded Examinations &amp; Marks
+                                        </h6>
+                                        <small class="text-muted">Direct course examination results determining the 90% exam score component.</small>
+                                    </div>
+                                    <button name="action_recompute_academic_metrics" type="object"
+                                            string="Recalculate GPA &amp; Average" icon="fa-calculator"
+                                            class="btn btn-outline-primary btn-sm"
+                                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                                </div>
+                                <div class="card-body p-0">
+                                    <field name="grade_ids" nolabel="1" readonly="1">
+                                        <list>
+                                            <field name="exam_id" string="Exam"/>
+                                            <field name="subject_id" string="Subject"/>
+                                            <field name="marks_obtained" string="Marks Obtained"/>
+                                            <field name="total_marks" string="Total Marks"/>
+                                            <field name="percentage" string="Percentage (%)" widget="badge"
+                                                   decoration-success="percentage &gt;= 80"
+                                                   decoration-primary="percentage &gt;= 70 and percentage &lt; 80"
+                                                   decoration-warning="percentage &gt;= 50 and percentage &lt; 70"
+                                                   decoration-danger="percentage &lt; 50"/>
+                                            <field name="grade_letter" string="Grade" widget="badge"
+                                                   decoration-success="grade_letter in ('a+', 'a')"
+                                                   decoration-primary="grade_letter in ('b+', 'b')"
+                                                   decoration-warning="grade_letter in ('c+', 'c')"
+                                                   decoration-danger="grade_letter in ('d', 'f')"/>
+                                            <field name="result" string="Result" widget="badge"
+                                                   decoration-success="result == 'pass'"
+                                                   decoration-danger="result == 'fail'"/>
+                                            <field name="remarks" optional="show"/>
                                         </list>
                                     </field>
                                 </div>
