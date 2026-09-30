@@ -13,6 +13,13 @@ class SchoolAssignSubjectWizard(models.TransientModel):
         ('schedule_quick', 'Fast Timetable Session Scheduler'),
     ], string='Assignment Mode', default='teacher_assign', required=True)
 
+    # Academic Term Integration
+    term_id = fields.Many2one(
+        'school.term',
+        string='Academic Term',
+        help="Academic term (defaults to active term if unspecified)."
+    )
+
     # Core relations
     teacher_id = fields.Many2one('school.teacher', string='Teacher')
     class_id = fields.Many2one('school.class', string='Class')
@@ -50,6 +57,8 @@ class SchoolAssignSubjectWizard(models.TransientModel):
     @api.onchange('class_id')
     def _onchange_class_id(self):
         if self.class_id:
+            if not self.term_id and self.class_id.current_term_id:
+                self.term_id = self.class_id.current_term_id
             if not self.room and self.class_id.room:
                 self.room = self.class_id.room
             if not self.teacher_id and self.class_id.teacher_id:
@@ -69,8 +78,8 @@ class SchoolAssignSubjectWizard(models.TransientModel):
             assignments = self.teacher_id.teaching_assignment_ids.filtered(lambda a: a.active)
             if assignments:
                 self.subject_id = assignments[0].subject_id
-                if not self.class_id and assignments[0].class_id:
-                    self.class_id = assignments[0].class_id
+            elif self.teacher_id.subject_ids:
+                self.subject_id = self.teacher_id.subject_ids[0]
 
     @api.onchange('period')
     def _onchange_period(self):
@@ -79,12 +88,19 @@ class SchoolAssignSubjectWizard(models.TransientModel):
             self.start_time = s_time
             self.end_time = e_time
 
+    @api.onchange('start_time', 'end_time')
+    def _onchange_timing(self):
+        for p_key, (p_start, p_end) in PERIOD_PRESETS.items():
+            if abs(self.start_time - p_start) < 0.02 and abs(self.end_time - p_end) < 0.02:
+                self.period = p_key
+                return
+        self.period = 'custom'
+
     # -------------------------------------------------------------------------
-    # ACTION APPLY
+    # ACTIONS
     # -------------------------------------------------------------------------
     def action_apply(self):
         self.ensure_one()
-
         if self.mode == 'teacher_assign':
             return self._apply_teacher_assign()
         elif self.mode == 'student_enroll':
@@ -95,48 +111,50 @@ class SchoolAssignSubjectWizard(models.TransientModel):
     def _apply_teacher_assign(self):
         if not self.teacher_id:
             raise UserError(_("Please select a Teacher."))
-        subjects = self.subject_ids or (self.subject_id if self.subject_id else self.env['school.subject'])
-        if not subjects:
-            raise UserError(_("Please select at least one Subject."))
         if not self.class_id:
             raise UserError(_("Please select a Class."))
-        if self.weekly_hours <= 0:
-            raise UserError(_("Weekly target hours must be greater than 0."))
+        subjects = self.subject_ids or (self.subject_id if self.subject_id else False)
+        if not subjects:
+            raise UserError(_("Please select at least one Subject to assign."))
 
         Assignment = self.env['school.teaching.assignment']
         StudentSubject = self.env['school.student.subject']
+        target_students = self.class_id.student_ids.filtered(lambda s: s.active and s.study_status == 'studying')
 
-        target_students = self.student_ids or self.class_id.student_ids
-        synced_count = 0
         slot_created = False
+        synced_count = 0
+
+        effective_term = self.term_id or self.class_id.current_term_id or self.env['school.term'].search([('state', '=', 'active')], limit=1)
 
         for subject in subjects:
-            # Auto-link subject to teacher's catalog
-            if subject not in self.teacher_id.subject_ids:
-                self.teacher_id.subject_ids = [(4, subject.id)]
-
-            # 1. Create or update teaching assignment
+            # 1. Teacher Assignment
             asg = Assignment.search([
                 ('teacher_id', '=', self.teacher_id.id),
-                ('subject_id', '=', subject.id),
                 ('class_id', '=', self.class_id.id),
+                ('subject_id', '=', subject.id),
             ], limit=1)
-
-            if asg:
-                asg.write({
+            if not asg:
+                asg = Assignment.create({
+                    'teacher_id': self.teacher_id.id,
+                    'class_id': self.class_id.id,
+                    'subject_id': subject.id,
                     'weekly_hours': self.weekly_hours,
                     'weekly_sessions': self.weekly_sessions,
                     'active': True,
                 })
             else:
-                asg = Assignment.create({
-                    'teacher_id': self.teacher_id.id,
-                    'subject_id': subject.id,
-                    'class_id': self.class_id.id,
+                asg.write({
                     'weekly_hours': self.weekly_hours,
                     'weekly_sessions': self.weekly_sessions,
-                    'notes': self.notes,
+                    'active': True,
                 })
+
+            # Ensure teacher's subject_ids has this subject
+            if subject not in self.teacher_id.subject_ids:
+                self.teacher_id.subject_ids = [(4, subject.id)]
+            # Ensure class's subject_ids has this subject
+            if subject not in self.class_id.subject_ids:
+                self.class_id.subject_ids = [(4, subject.id)]
 
             # 2. Sync to all enrolled students in the class
             for student in target_students:
@@ -165,6 +183,7 @@ class SchoolAssignSubjectWizard(models.TransientModel):
             # 3. Optionally create weekly timetable slot for the first/single subject
             if self.create_timetable_slots and not slot_created:
                 slot = self.env['school.timetable'].create({
+                    'term_id': effective_term.id if effective_term else False,
                     'class_id': self.class_id.id,
                     'subject_id': subject.id,
                     'teacher_id': self.teacher_id.id,
@@ -208,28 +227,25 @@ class SchoolAssignSubjectWizard(models.TransientModel):
 
     def _apply_student_enroll(self):
         students = self.student_ids
-        if not students and self.class_id:
-            students = self.class_id.student_ids
         if not students and self.student_id:
             students = self.student_id
+        if not students and self.class_id:
+            students = self.class_id.student_ids.filtered(lambda s: s.active and s.study_status == 'studying')
 
         if not students:
-            raise UserError(_("Please select at least one Student or a Class."))
+            raise UserError(_("Please select at least one Student or a Class with active students."))
 
-        subjects = self.subject_ids
-        if not subjects and self.subject_id:
-            subjects = self.subject_id
+        subjects = self.subject_ids or (self.subject_id if self.subject_id else False)
         if not subjects:
-            raise UserError(_("Please select at least one Subject."))
+            raise UserError(_("Please select at least one Subject to enroll."))
 
         StudentSubject = self.env['school.student.subject']
         Assignment = self.env['school.teaching.assignment']
-
         total_registered = 0
+
         for student in students:
             c_id = student.class_id.id if student.class_id else (self.class_id.id if self.class_id else False)
             for subject in subjects:
-                # Find default teacher from teaching assignment or wizard teacher
                 assigned_teacher = self.teacher_id
                 if not assigned_teacher and c_id:
                     asg = Assignment.search([
@@ -282,7 +298,14 @@ class SchoolAssignSubjectWizard(models.TransientModel):
         if not self.class_id and not self.student_id and not self.student_ids:
             raise UserError(_("Please select either a Class, a specific Student, or Assigned Students."))
 
+        effective_term = self.term_id
+        if not effective_term and self.class_id and self.class_id.current_term_id:
+            effective_term = self.class_id.current_term_id
+        if not effective_term:
+            effective_term = self.env['school.term'].search([('state', '=', 'active')], limit=1)
+
         vals = {
+            'term_id': effective_term.id if effective_term else False,
             'class_id': self.class_id.id if self.class_id else False,
             'student_id': self.student_id.id if self.student_id else False,
             'teacher_id': self.teacher_id.id,

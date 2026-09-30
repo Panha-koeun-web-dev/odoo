@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================= WIZARD FORM VIEW ======================= -->
+    <record id="view_school_term_schedule_wizard_form" model="ir.ui.view">
+        <field name="name">school.term.schedule.wizard.form</field>
+        <field name="model">school.term.schedule.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Plan &amp; Create Term Schedule">
+                <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-calendar-check-o fa-2x me-3 flex-shrink-0 text-info" title="Info"/>
+                    <div>
+                        <div class="fw-bold">Fast Weekly Schedule Planner (Monday to Friday)</div>
+                        <div class="small">
+                            Select any week (e.g. Week 1, Week 2...) and easily fill in the schedule. All Monday to Friday period slots are automatically prepared so you never have to add them one by one.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Configuration Group -->
+                <group>
+                    <group string="Academic Term &amp; Target Class">
+                        <field name="term_id" options="{'no_create': True}" required="1"/>
+                        <field name="academic_year"/>
+                        <field name="term_number" widget="badge"/>
+                        <field name="term_state" widget="badge"
+                               decoration-info="term_state == 'draft'"
+                               decoration-success="term_state == 'active'"
+                               decoration-muted="term_state == 'finished'"/>
+                    </group>
+                    <group string="Class &amp; Plan Mode">
+                        <field name="class_id" options="{'no_create': True}" required="1"/>
+                        <field name="class_room"/>
+                        <field name="mode" widget="radio"/>
+                        <field name="activate_target_term"/>
+                    </group>
+                </group>
+
+                <!-- SECTION 1: WEEK SELECTION & TARGET CARD (Active for create_slots mode) -->
+                <div invisible="mode != 'create_slots'" class="border rounded p-3 mb-3 bg-light shadow-sm">
+                    <div class="row align-items-center mb-2">
+                        <div class="col-md-4">
+                            <label for="target_week" class="fw-bold text-primary mb-1">
+                                <i class="fa fa-calendar me-1" title="Calendar"/>Select Week:
+                            </label>
+                            <field name="target_week" widget="selection" class="form-select fw-bold"/>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="week_apply_mode" class="fw-bold text-primary mb-1">
+                                <i class="fa fa-sliders me-1" title="Options"/>Apply Schedule To:
+                            </label>
+                            <field name="week_apply_mode" widget="radio" options="{'horizontal': true}"/>
+                        </div>
+                        <div class="col-md-3 text-end pt-3">
+                            <div class="form-check form-switch d-inline-block">
+                                <field name="overwrite_existing" class="form-check-input"/>
+                                <label for="overwrite_existing" class="form-check-label small fw-bold">Replace existing</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Week Date Info Alert -->
+                    <div class="alert alert-secondary py-2 px-3 mt-1 mb-0 d-flex align-items-center justify-content-between" role="status">
+                        <div>
+                            <i class="fa fa-info-circle me-2 text-primary" title="Info"/>
+                            <field name="week_date_info" readonly="1" class="fw-bold oe_inline text-dark"/>
+                        </div>
+                        <span class="badge text-bg-light border text-muted">
+                            <i class="fa fa-clock-o me-1" title="Clock"/>5 Weekdays (Mon - Fri)
+                        </span>
+                    </div>
+
+                    <!-- Specific Weeks Checkboxes (when selected_weeks is chosen) -->
+                    <div invisible="week_apply_mode != 'selected_weeks'" class="mt-2 pt-2 border-top">
+                        <div class="o_form_label fw-bold small text-muted mb-1">Select Weeks to Apply This Schedule To:</div>
+                        <div class="d-flex flex-wrap gap-3 mt-1">
+                            <div><field name="apply_w1" class="oe_inline"/> <label for="apply_w1" string="Week 1" class="m-0"/></div>
+                            <div><field name="apply_w2" class="oe_inline"/> <label for="apply_w2" string="Week 2" class="m-0"/></div>
+                            <div><field name="apply_w3" class="oe_inline"/> <label for="apply_w3" string="Week 3" class="m-0"/></div>
+                            <div><field name="apply_w4" class="oe_inline"/> <label for="apply_w4" string="Week 4" class="m-0"/></div>
+                            <div><field name="apply_w5" class="oe_inline"/> <label for="apply_w5" string="Week 5" class="m-0"/></div>
+                            <div><field name="apply_w6" class="oe_inline"/> <label for="apply_w6" string="Week 6" class="m-0"/></div>
+                            <div><field name="apply_w7" class="oe_inline"/> <label for="apply_w7" string="Week 7" class="m-0"/></div>
+                            <div><field name="apply_w8" class="oe_inline"/> <label for="apply_w8" string="Week 8" class="m-0"/></div>
+                            <div><field name="apply_w9" class="oe_inline"/> <label for="apply_w9" string="Week 9" class="m-0"/></div>
+                            <div><field name="apply_w10" class="oe_inline"/> <label for="apply_w10" string="Week 10" class="m-0"/></div>
+                            <div><field name="apply_w11" class="oe_inline"/> <label for="apply_w11" string="Week 11" class="m-0"/></div>
+                            <div><field name="apply_w12" class="oe_inline"/> <label for="apply_w12" string="Week 12" class="m-0"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: ROLLOVER / COPY MODE -->
+                <div invisible="mode != 'copy_term'" class="border rounded p-3 mb-3 bg-light">
+                    <h5 class="text-primary mb-2">
+                        <i class="fa fa-refresh me-2" title="Rollover"/>Roll Over Previous Term's Timetable
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        Quickly duplicate all verified weekly schedule sessions from a finished or previous term into the selected term.
+                    </p>
+                    <group>
+                        <group>
+                            <field name="source_term_id" options="{'no_create': True}" required="mode == 'copy_term'"/>
+                        </group>
+                        <group>
+                            <label for="source_session_count" string="Sessions to Roll Over"/>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="source_session_count" class="oe_inline fw-bold text-success"/>
+                                <span>sessions found</span>
+                                <button name="action_load_source_term_sessions" string="Customize Before Copying" type="object" class="btn btn-sm btn-outline-secondary ms-2" icon="fa-pencil-square-o"/>
+                            </div>
+                        </group>
+                    </group>
+                </div>
+
+                <!-- SECTION 3: BATCH SESSIONS CREATION (MONDAY TO FRIDAY) -->
+                <div invisible="mode != 'create_slots'">
+                    <!-- Fast Action Toolbar -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 p-2 bg-light border rounded">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <button name="action_populate_empty_mon_fri"
+                                    string="Auto-Fill Monday to Friday Slots"
+                                    type="object"
+                                    class="btn btn-sm btn-primary"
+                                    icon="fa-th"
+                                    help="Instantly prepares 20 Monday to Friday slots so you can assign subjects and teachers."/>
+                            <button name="action_copy_from_week_1"
+                                    string="Copy from Week 1"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-primary"
+                                    icon="fa-copy"
+                                    invisible="target_week == '1'"
+                                    help="Clones the exact schedule from Week 1 into the selected week."/>
+                            <button name="action_copy_monday_to_all_weekdays"
+                                    string="Copy Monday to All Days (Tue-Fri)"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    icon="fa-clone"
+                                    help="Duplicates Monday sessions across Tuesday to Friday."/>
+                            <button name="action_prefill_from_class_curriculum"
+                                    string="Auto-Spread Curriculum"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-info"
+                                    icon="fa-magic"
+                                    help="Fills sessions automatically from class teaching assignments."/>
+                        </div>
+                        <div>
+                            <button name="action_clear_all_lines"
+                                    string="Clear Grid"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-danger"
+                                    icon="fa-trash-o"/>
+                        </div>
+                    </div>
+
+                    <!-- Sessions List -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-primary m-0 fw-bold">
+                            <i class="fa fa-list-ol me-2" title="Schedule"/>Weekly Schedule Sessions (Monday - Friday)
+                        </h6>
+                        <span class="text-muted small">Assign subjects and teachers for each period slot below.</span>
+                    </div>
+                    <!-- Holiday Fast Action Bar -->
+                    <div class="d-flex align-items-center justify-content-between p-2 mb-2 border rounded bg-warning-light" style="background-color: #fff9e6; border-color: #ffe58f !important;">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-bold text-dark"><i class="fa fa-calendar-times-o text-warning me-1"/>Holiday / No Study Day:</span>
+                            <field name="holiday_day" class="oe_inline" style="width: 140px;"/>
+                            <field name="holiday_reason_input" placeholder="Holiday reason (e.g. Water Festival)" class="oe_inline" style="width: 220px;"/>
+                            <button name="action_mark_day_as_holiday"
+                                    string="Mark Entire Day as Holiday"
+                                    type="object"
+                                    class="btn btn-sm btn-warning"
+                                    icon="fa-star"
+                                    help="Marks all session slots on the selected weekday as a Holiday (No Classes)."/>
+                            <button name="action_unmark_day_holiday"
+                                    string="Clear Holiday"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    icon="fa-undo"
+                                    help="Restores holiday slots back to regular class sessions."/>
+                        </div>
+                    </div>
+
+                    <field name="line_ids">
+                        <list editable="bottom" default_order="day_of_week, start_time"
+                              decoration-warning="is_holiday">
+                            <field name="day_of_week" widget="badge"
+                                   decoration-info="day_of_week == '0'"
+                                   decoration-primary="day_of_week == '1'"
+                                   decoration-warning="day_of_week == '2'"
+                                   decoration-success="day_of_week == '3'"
+                                   decoration-danger="day_of_week == '4'"/>
+                            <field name="period"/>
+                            <field name="start_time" widget="float_time"/>
+                            <field name="end_time" widget="float_time"/>
+                            <field name="is_holiday" widget="boolean_toggle" string="Holiday?"/>
+                            <field name="holiday_name" placeholder="e.g. National Holiday" invisible="not is_holiday"/>
+                            <field name="subject_id" options="{'no_create': True}" invisible="is_holiday"/>
+                            <field name="teacher_id" options="{'no_create': True}" invisible="is_holiday"/>
+                            <field name="room" placeholder="e.g. Room 101" invisible="is_holiday"/>
+                            <field name="notes" placeholder="e.g. Chapter 1 / Lab"/>
+                        </list>
+                    </field>
+                </div>
+
+                <!-- SECTION 4: QUICK SINGLE RECURRING SLOT -->
+                <div invisible="mode != 'quick_slot'" class="border rounded p-3 mb-3 bg-light">
+                    <h5 class="text-primary mb-2">
+                        <i class="fa fa-plus-circle me-2" title="Add Slot"/>Add Single Recurring Session
+                    </h5>
+                    <group>
+                        <group string="Subject &amp; Instructor">
+                            <field name="single_subject_id" options="{'no_create': True}" required="mode == 'quick_slot'"/>
+                            <field name="single_teacher_id" options="{'no_create': True}" required="mode == 'quick_slot'"/>
+                            <field name="single_room" placeholder="e.g. Science Lab 2"/>
+                        </group>
+                        <group string="Day &amp; Time Window">
+                            <field name="single_day_of_week"/>
+                            <field name="single_period"/>
+                            <label for="single_start_time" string="Time Range"/>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="single_start_time" widget="float_time" class="oe_inline"/>
+                                <span>to</span>
+                                <field name="single_end_time" widget="float_time" class="oe_inline"/>
+                            </div>
+                            <field name="single_notes" placeholder="Optional notes..."/>
+                        </group>
+                    </group>
+                </div>
+
+                <footer>
+                    <button name="action_apply_schedule" string="Generate / Apply Schedule" type="object" class="btn-primary" icon="fa-check"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= WIZARD ACTION ======================= -->
+    <record id="action_school_term_schedule_wizard" model="ir.actions.act_window">
+        <field name="name">Plan Full Term Schedule</field>
+        <field name="res_model">school.term.schedule.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

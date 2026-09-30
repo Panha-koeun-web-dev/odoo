@@ -11,6 +11,26 @@ class SchoolExam(models.Model):
     name = fields.Char(string='Exam Name', required=True)
     subject_id = fields.Many2one('school.subject', string='Subject', required=True)
     class_id = fields.Many2one('school.class', string='Class', required=True)
+    term_id = fields.Many2one(
+        'school.term',
+        string='Academic Term',
+        index=True,
+        help="Academic term in which this exam is conducted."
+    )
+
+    @api.onchange('class_id')
+    def _onchange_class_id_set_term(self):
+        if self.class_id and self.class_id.current_term_id and not self.term_id:
+            self.term_id = self.class_id.current_term_id
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('term_id') and vals.get('class_id'):
+                class_rec = self.env['school.class'].browse(vals['class_id'])
+                if class_rec.current_term_id:
+                    vals['term_id'] = class_rec.current_term_id.id
+        return super().create(vals_list)
+
     exam_type = fields.Selection([
         ('midterm', 'Midterm'),
         ('final', 'Final'),
@@ -65,6 +85,11 @@ class SchoolExam(models.Model):
     attended_count = fields.Integer(string='Attended', compute='_compute_exam_stats')
     absent_count = fields.Integer(string='Absent', compute='_compute_exam_stats')
     passed_count = fields.Integer(string='Passed', compute='_compute_exam_stats')
+
+    @api.onchange('class_id')
+    def _onchange_class_id(self):
+        if self.class_id and self.class_id.current_term_id and not self.term_id:
+            self.term_id = self.class_id.current_term_id
 
     @api.depends('start_datetime')
     def _compute_date(self):

@@ -11,18 +11,18 @@
                       date_stop="end_datetime"
                       color="color"
                       mode="week"
-                      event_limit="5"
+                      event_limit="8"
                       scales="day,week,month">
                 <field name="display_name"/>
-                <field name="teacher_id"/>
-                <field name="student_id"/>
-                <field name="student_ids"/>
-                <field name="class_id"/>
-                <field name="subject_ids"/>
-                <field name="subject_id"/>
                 <field name="room"/>
-                <field name="day_of_week"/>
-                <field name="period"/>
+                <field name="teacher_id" filters="1"/>
+                <field name="class_id" filters="1"/>
+                <field name="schedule_status" filters="1"/>
+                <field name="term_id" invisible="1"/>
+                <field name="day_of_week" invisible="1"/>
+                <field name="period" invisible="1"/>
+                <field name="subject_id" invisible="1"/>
+                <field name="student_id" invisible="1"/>
             </calendar>
         </field>
     </record>
@@ -32,7 +32,15 @@
         <field name="name">school.timetable.list</field>
         <field name="model">school.timetable</field>
         <field name="arch" type="xml">
-            <list string="Class &amp; Student Timetable" sample="1" multi_edit="1" default_order="day_of_week, start_time, class_id">
+            <list string="Class &amp; Student Timetable" sample="1" multi_edit="1" default_order="day_of_week, start_time, class_id"
+                  decoration-warning="is_holiday">
+                <field name="schedule_status" widget="badge"
+                       decoration-warning="schedule_status == 'holiday'"
+                       decoration-success="schedule_status == 'regular'"/>
+                <field name="is_holiday" widget="boolean_toggle" optional="hide" string="Holiday"/>
+                <field name="holiday_name" optional="show" invisible="not is_holiday"/>
+                <field name="term_id" widget="badge" optional="show"/>
+                <field name="week_name" widget="badge" optional="show"/>
                 <field name="day_of_week" widget="badge"
                        decoration-info="day_of_week in ('0', '1', '2')"
                        decoration-primary="day_of_week in ('3', '4')"
@@ -41,8 +49,8 @@
                 <field name="time_display" string="Time" decoration-bf="1"/>
                 <field name="start_time" widget="float_time" optional="hide"/>
                 <field name="end_time" widget="float_time" optional="hide"/>
-                <field name="teacher_id" decoration-bf="1"/>
-                <field name="subject_ids" widget="many2many_tags" decoration-bf="1"/>
+                <field name="teacher_id" decoration-bf="1" invisible="is_holiday"/>
+                <field name="subject_ids" widget="many2many_tags" decoration-bf="1" invisible="is_holiday"/>
                 <field name="subject_id" optional="hide"/>
                 <field name="class_id"/>
                 <field name="student_id" optional="show"/>
@@ -63,6 +71,10 @@
             <kanban class="o_school_timetable_kanban" default_group_by="day_of_week" sample="1">
                 <field name="display_name"/>
                 <field name="name"/>
+                <field name="is_holiday"/>
+                <field name="holiday_name"/>
+                <field name="schedule_status"/>
+                <field name="term_id"/>
                 <field name="class_id"/>
                 <field name="student_id"/>
                 <field name="student_ids"/>
@@ -76,10 +88,17 @@
                 <field name="start_time"/>
                 <field name="end_time"/>
                 <field name="time_display"/>
+                <field name="week_name"/>
                 <field name="room"/>
                 <field name="color"/>
                 <templates>
                     <t t-name="card" class="o_timetable_card flex-column">
+                        <!-- Holiday Banner if Holiday -->
+                        <div t-if="record.is_holiday.raw_value" role="status" class="alert alert-warning py-1 px-2 mb-2 d-flex align-items-center justify-content-between rounded">
+                            <span class="fw-bold">HOLIDAY / NO CLASS</span>
+                            <span class="badge bg-warning text-dark"><field name="holiday_name"/></span>
+                        </div>
+
                         <!-- Top Header: Period Pill & Time Range -->
                         <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                             <span class="badge rounded-pill o_period_badge">
@@ -93,13 +112,25 @@
                         </div>
 
                         <!-- Subject Name: Primary hero title -->
-                        <div class="o_timetable_subject mb-2">
+                        <div class="o_timetable_subject mb-2" t-if="!record.is_holiday.raw_value">
                             <i class="fa fa-book text-primary me-2 flex-shrink-0" title="Subject"/>
                             <field name="subjects_display"/>
                         </div>
+                        <div class="o_timetable_subject mb-2 text-warning fw-bold" t-else="">
+                            <i class="fa fa-sun-o text-warning me-2 flex-shrink-0" title="Holiday"/>
+                            <field name="holiday_name"/>
+                        </div>
 
-                        <!-- Target Context: Student / Class & Classroom -->
+                        <!-- Target Context: Student / Class & Classroom & Term -->
                         <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                            <span t-if="record.term_id.raw_value" class="badge rounded-pill text-bg-light border" title="Term">
+                                <i class="fa fa-calendar me-1 text-info" title="Term"/>
+                                <field name="term_id"/>
+                            </span>
+                            <span t-if="record.week_name.raw_value" class="badge rounded-pill text-bg-light border" title="Week">
+                                <i class="fa fa-calendar-check-o me-1 text-primary" title="Week"/>
+                                <field name="week_name"/>
+                            </span>
                             <span t-if="record.student_id.raw_value" class="badge rounded-pill bg-info-subtle text-info border border-info-subtle" title="Student">
                                 <i class="fa fa-user me-1" title="Student"/>
                                 <field name="student_id"/>
@@ -139,8 +170,14 @@
         <field name="arch" type="xml">
             <form string="Timetable Session" class="o_school_form">
                 <header>
+                    <button name="action_toggle_holiday" type="object"
+                            string="Toggle Holiday" class="btn-warning" icon="fa-star"
+                            groups="school_management.group_school_admin"/>
                     <button name="action_view_class_students" type="object"
-                            string="View Assigned Students" class="btn-outline-primary" icon="fa-users"/>
+                            string="View Assigned Students" class="btn-outline-primary" icon="fa-users" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_view_teaching_assignments" type="object"
+                            string="Teaching Assignments &amp; Load" class="btn-outline-secondary" icon="fa-book"
+                            invisible="is_holiday or not teacher_id" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_anchor_to_current_week" type="object"
                             string="Re-anchor to Current Week" class="btn-secondary" icon="fa-calendar-check-o"
                             groups="school_management.group_school_admin"/>
@@ -154,15 +191,26 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Academic Assignment &amp; Participants">
-                            <field name="teacher_id" options="{'no_create': True}"/>
-                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True, 'color_field': 'color'}" placeholder="Select one or multiple subjects..." required="1"/>
+                        <group string="Session Type &amp; Holiday Status">
+                            <field name="is_holiday" widget="boolean_toggle"/>
+                            <field name="holiday_name" placeholder="e.g. Khmer New Year, Water Festival" invisible="not is_holiday" required="is_holiday"/>
+                        </group>
+                        <group string="Academic Assignment &amp; Term" invisible="is_holiday">
+                            <field name="term_id" options="{'no_create': True}"/>
+                            <field name="week_number"/>
+                            <field name="teacher_id" options="{'no_create': True}" required="not is_holiday"/>
+                            <field name="subject_ids" widget="many2many_tags" options="{'no_create': True, 'color_field': 'color'}" placeholder="Select one or multiple subjects..." required="not is_holiday"/>
                             <field name="subject_id" invisible="1"/>
                             <field name="subjects_display" invisible="1"/>
                             <field name="class_id" options="{'no_create': True}"/>
                             <field name="student_id" placeholder="Optional: Specific Student (1-on-1 tutoring / elective)" options="{'no_create': True}"/>
                             <field name="student_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select multiple students (for group study / electives)..."/>
                             <field name="room" placeholder="e.g. Room 101 / Science Lab"/>
+                        </group>
+                        <group string="Target Class / Scope" invisible="not is_holiday">
+                            <field name="term_id" options="{'no_create': True}"/>
+                            <field name="week_number"/>
+                            <field name="class_id" options="{'no_create': True}"/>
                         </group>
                         <group string="Schedule &amp; Timing">
                             <field name="day_of_week"/>
@@ -207,6 +255,7 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="term_id"/>
                 <field name="teacher_id"/>
                 <field name="student_id"/>
                 <field name="student_ids"/>
@@ -215,9 +264,34 @@
                 <field name="subject_ids"/>
                 <field name="room"/>
                 <separator/>
-                <filter name="filter_my_timetable" string="My Schedule"
-                        domain="['|', '|', ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
+                <filter name="filter_active_term" string="Current Active Term" domain="[('term_id.state', '=', 'active')]"/>
+                <filter name="filter_term_1" string="Term 1" domain="[('term_id.term_number', '=', 'term_1')]"/>
+                <filter name="filter_term_2" string="Term 2" domain="[('term_id.term_number', '=', 'term_2')]"/>
+                <filter name="filter_term_3" string="Term 3" domain="[('term_id.term_number', '=', 'term_3')]"/>
                 <separator/>
+                <filter name="filter_my_class" string="My Class Timetable"
+                        domain="['|', ('class_id.student_ids.user_id', '=', uid), ('class_id.teacher_id.user_id', '=', uid)]"/>
+                <filter name="filter_my_schedule" string="My Schedule &amp; Class"
+                        domain="['|', ('is_holiday', '=', True), '|', '|', '|', '|', ('teacher_id.user_id', '=', uid), ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), ('class_id.teacher_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
+                <filter name="filter_my_teaching" string="My Teaching Schedule" domain="[('teacher_id.user_id', '=', uid)]"/>
+                <filter name="filter_my_timetable" string="My Study Schedule"
+                        domain="['|', ('is_holiday', '=', True), '|', '|', ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
+                <separator/>
+                <filter name="filter_mon_fri" string="Monday - Friday (Weekdays)" domain="[('day_of_week', 'in', ('0', '1', '2', '3', '4'))]"/>
+                <separator/>
+                <filter name="filter_holidays" string="Holidays &amp; Days Off" domain="[('is_holiday', '=', True)]"/>
+                <filter name="filter_my_holidays" string="My Class &amp; School Holidays"
+                        domain="['&amp;', ('is_holiday', '=', True), '|', ('class_id', '=', False), '|', '|', ('class_id.student_ids.user_id', '=', uid), ('class_id.teacher_id.user_id', '=', uid), ('teacher_id.user_id', '=', uid)]"/>
+                <filter name="filter_school_holidays" string="School-wide Holidays (All Classes)"
+                        domain="[('is_holiday', '=', True), ('class_id', '=', False)]"/>
+                <filter name="filter_class_holidays" string="Class-specific Holidays"
+                        domain="[('is_holiday', '=', True), ('class_id', '!=', False)]"/>
+                <filter name="filter_regular_classes" string="Regular Class Sessions" domain="[('is_holiday', '=', False)]"/>
+                <separator/>
+                <filter name="filter_week_1" string="Week 1" domain="[('week_number', '=', 1)]"/>
+                <filter name="filter_week_2" string="Week 2" domain="[('week_number', '=', 2)]"/>
+                <filter name="filter_week_3" string="Week 3" domain="[('week_number', '=', 3)]"/>
+                <filter name="filter_week_4" string="Week 4" domain="[('week_number', '=', 4)]"/>
                 <filter name="filter_monday" string="Monday" domain="[('day_of_week', '=', '0')]"/>
                 <filter name="filter_tuesday" string="Tuesday" domain="[('day_of_week', '=', '1')]"/>
                 <filter name="filter_wednesday" string="Wednesday" domain="[('day_of_week', '=', '2')]"/>
@@ -233,10 +307,15 @@
                 <separator/>
                 <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
                 <separator/>
+                <filter string="Academic Term" name="group_term" domain="[]" context="{'group_by': 'term_id'}"/>
+                <filter string="Academic Week" name="group_week" domain="[]" context="{'group_by': 'week_name'}"/>
                 <filter string="Teacher" name="group_teacher" domain="[]" context="{'group_by': 'teacher_id'}"/>
                 <filter string="Student" name="group_student" domain="[]" context="{'group_by': 'student_id'}"/>
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by': 'class_id'}"/>
                 <filter string="Subject" name="group_subject" domain="[]" context="{'group_by': 'subject_id'}"/>
+                <filter string="Session Type (Regular vs Holiday)" name="group_schedule_status" domain="[]" context="{'group_by': 'schedule_status'}"/>
+                <filter string="Holiday Name" name="group_holiday_name" domain="[('is_holiday', '=', True)]" context="{'group_by': 'holiday_name'}"/>
+                <filter string="Room / Hall" name="group_room" domain="[]" context="{'group_by': 'room'}"/>
                 <filter string="Day of Week" name="group_day" domain="[]" context="{'group_by': 'day_of_week'}"/>
             </search>
         </field>
@@ -248,7 +327,7 @@
         <field name="res_model">school.timetable</field>
         <field name="view_mode">kanban,calendar,list,form</field>
         <field name="search_view_id" ref="view_school_timetable_search"/>
-        <field name="context">{'search_default_filter_monday': 0}</field>
+        <field name="context">{'search_default_filter_mon_fri': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create the first Timetable session!
@@ -263,15 +342,12 @@
     <record id="action_school_my_timetable" model="ir.actions.act_window">
         <field name="name">My Schedule</field>
         <field name="res_model">school.timetable</field>
-        <field name="view_mode">calendar,kanban,list,form</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
         <field name="search_view_id" ref="view_school_timetable_search"/>
-        <field name="context">{'search_default_filter_my_timetable': 1}</field>
+        <field name="context">{'search_default_filter_my_schedule': 1, 'search_default_filter_mon_fri': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                No scheduled sessions found for your account!
-            </p>
-            <p>
-                When administrators assign classes or sessions to your student account, your personal timetable will appear here.
+                View your personal class timetable and study schedule!
             </p>
         </field>
     </record>
@@ -282,7 +358,7 @@
         <field name="res_model">school.timetable</field>
         <field name="view_mode">calendar,list,kanban,form</field>
         <field name="search_view_id" ref="view_school_timetable_search"/>
-        <field name="context">{}</field>
+        <field name="context">{'search_default_filter_mon_fri': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create the First Timetable Session!
@@ -310,19 +386,84 @@
         </field>
     </record>
 
-    <!-- 3. Student Study Schedules (Grouped by Student / Class) -->
+    <!-- 3. Student Study Schedules (Grouped by Class) -->
     <record id="action_timetable_student" model="ir.actions.act_window">
         <field name="name">Student Study Schedules</field>
         <field name="res_model">school.timetable</field>
         <field name="view_mode">calendar,list,kanban,form</field>
         <field name="search_view_id" ref="view_school_timetable_search"/>
-        <field name="context">{'search_default_group_student': 1}</field>
+        <field name="context">{'search_default_filter_mon_fri': 1, 'search_default_group_class': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Manage Student Study Schedules!
             </p>
             <p>
                 View and schedule studying sessions for individual students and enrolled classes.
+            </p>
+        </field>
+    </record>
+
+    <!-- 4. Teacher Personal Schedule (My Teaching Schedule) -->
+    <record id="action_timetable_my_teaching" model="ir.actions.act_window">
+        <field name="name">My Teaching Schedule</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_filter_my_teaching': 1, 'search_default_filter_mon_fri': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                View your personal teaching timetable!
+            </p>
+        </field>
+    </record>
+
+    <!-- 5. My Class Timetable (Integrated for Student & Teacher) -->
+    <record id="action_timetable_my_class" model="ir.actions.act_window">
+        <field name="name">My Class Timetable &amp; Calendar</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_filter_my_class': 1, 'search_default_filter_mon_fri': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                View your class timetable and weekly calendar!
+            </p>
+            <p>
+                Displays all subjects, teachers, and classroom sessions specifically for your enrolled class.
+            </p>
+        </field>
+    </record>
+
+    <!-- 6. Class & School Holidays Calendar -->
+    <record id="action_timetable_holidays" model="ir.actions.act_window">
+        <field name="name">Class &amp; School Holidays</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_filter_holidays': 1, 'search_default_group_schedule_status': 1, 'default_is_holiday': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No holidays recorded yet!
+            </p>
+            <p>
+                View and manage school-wide and class-specific holidays and days off.
+            </p>
+        </field>
+    </record>
+
+    <!-- 7. My Class & School Holidays -->
+    <record id="action_timetable_my_holidays" model="ir.actions.act_window">
+        <field name="name">My Class &amp; School Holidays</field>
+        <field name="res_model">school.timetable</field>
+        <field name="view_mode">calendar,list,kanban,form</field>
+        <field name="search_view_id" ref="view_school_timetable_search"/>
+        <field name="context">{'search_default_filter_my_holidays': 1, 'search_default_group_schedule_status': 1, 'default_is_holiday': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No holidays scheduled for your class!
+            </p>
+            <p>
+                Track upcoming holidays and days off for your class and school.
             </p>
         </field>
     </record>

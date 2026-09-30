@@ -99,7 +99,7 @@
             <form class="o_school_form">
                 <header>
                     <button name="action_open_assign_wizard" type="object"
-                            string="Assign Subject &amp; Students" class="btn-primary" icon="fa-tasks"/>
+                            string="Assign Subject &amp; Students" class="btn-primary" icon="fa-tasks" groups="school_management.group_school_admin"/>
                     <button name="action_create_user" type="object"
                             string="Create Login Account" class="btn-primary" icon="fa-user-plus"
                             invisible="user_id"
@@ -115,8 +115,8 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_timetable" type="object" class="oe_stat_button" icon="fa-calendar">
                             <div class="o_stat_info">
-                                <span class="o_stat_value"><field name="timetable_count"/></span>
-                                <span class="o_stat_text">Schedule</span>
+                                <span class="o_stat_value"><field name="timetable_count"/> (<field name="total_scheduled_teaching_hours" widget="float_time"/>h)</span>
+                                <span class="o_stat_text">Teaching Schedule</span>
                             </div>
                         </button>
                         <button name="action_view_classes" type="object" class="oe_stat_button" icon="fa-university">
@@ -141,6 +141,12 @@
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="total_weekly_teaching_hours" widget="float_time"/></span>
                                 <span class="o_stat_text">Teaching Load</span>
+                            </div>
+                        </button>
+                        <button name="action_view_holidays" type="object" class="oe_stat_button" icon="fa-star">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="holiday_count"/></span>
+                                <span class="o_stat_text">Holidays</span>
                             </div>
                         </button>
                         <button name="action_view_students_taught" type="object" class="oe_stat_button" icon="fa-users">
@@ -330,6 +336,9 @@
                                             <field name="room" string="Room Number"/>
                                             <field name="capacity" string="Capacity"/>
                                             <field name="student_count" string="Enrolled Students" class="fw-semibold"/>
+                                            <button name="action_view_timetable" type="object"
+                                                    icon="fa-calendar" title="Open Class Timetable &amp; Calendar"
+                                                    class="btn-sm btn-link text-primary"/>
                                         </list>
                                     </field>
                                 </div>
@@ -394,8 +403,44 @@
                         </page>
 
                         <page name="timetable" string="Teaching Schedule">
-                            <field name="timetable_ids" context="{'default_teacher_id': id}">
-                                <list editable="bottom" default_order="day_of_week, start_time">
+                            <div class="card border rounded-3 bg-light-subtle mt-3 mb-3 shadow-none">
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <div class="d-flex align-items-center px-3 py-1 bg-white rounded-pill border shadow-sm">
+                                                <i class="fa fa-calendar text-primary me-2" title="Sessions"/>
+                                                <span class="text-muted small me-1">Teaching Sessions:</span>
+                                                <span class="fw-bold text-dark"><field name="timetable_count"/></span>
+                                            </div>
+                                            <div class="d-flex align-items-center px-3 py-1 bg-white rounded-pill border shadow-sm">
+                                                <i class="fa fa-star text-warning me-2" title="Holidays"/>
+                                                <span class="text-muted small me-1">Holidays:</span>
+                                                <span class="fw-bold text-dark"><field name="holiday_count"/></span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <button name="action_view_timetable" type="object"
+                                                    string="Open My Teaching Calendar" icon="fa-calendar"
+                                                    class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap"/>
+                                            <button name="action_view_holidays" type="object"
+                                                    string="Teaching Holidays Calendar" icon="fa-star"
+                                                    class="btn btn-outline-warning btn-sm px-3 shadow-sm text-nowrap"/>
+                                            <button name="action_view_master_timetable" type="object"
+                                                    string="School Master Timetable" icon="fa-globe"
+                                                    class="btn btn-outline-secondary btn-sm px-3 shadow-sm text-nowrap"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <field name="timetable_ids" readonly="1">
+                                <list default_order="day_of_week, start_time"
+                                      decoration-warning="is_holiday">
+                                    <field name="schedule_status" widget="badge" optional="show"
+                                           decoration-warning="schedule_status == 'holiday'"
+                                           decoration-success="schedule_status == 'regular'"/>
+                                    <field name="holiday_name" optional="show" invisible="not is_holiday"/>
+                                    <field name="term_id" widget="badge" optional="show"/>
+                                    <field name="week_name" widget="badge" optional="show"/>
                                     <field name="day_of_week" widget="badge"
                                            decoration-info="day_of_week in ('0', '1', '2')"
                                            decoration-primary="day_of_week in ('3', '4')"
@@ -404,8 +449,8 @@
                                     <field name="start_time" widget="float_time"/>
                                     <field name="end_time" widget="float_time"/>
                                     <field name="class_id"/>
-                                    <field name="subject_id"/>
-                                    <field name="room"/>
+                                    <field name="subject_id" invisible="is_holiday"/>
+                                    <field name="room" invisible="is_holiday"/>
                                     <field name="start_datetime" column_invisible="True"/>
                                     <field name="end_datetime" column_invisible="True"/>
                                 </list>

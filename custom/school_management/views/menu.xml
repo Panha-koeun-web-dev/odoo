@@ -15,41 +15,39 @@
               sequence="5"/>
 
     <!-- ================= 2. Students ================= -->
-    <menuitem id="menu_school_student_parent"
-              name="Students"
-              parent="menu_school_root"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="10"/>
-    <menuitem id="menu_school_student"
-              name="Student Profiles"
-              parent="menu_school_student_parent"
-              action="action_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="10"/>
-    <menuitem id="menu_school_student_subject"
-              name="Weekly Study Subjects"
-              parent="menu_school_student_parent"
-              action="action_school_student_subject"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="15"/>
+    <record id="menu_school_student_parent" model="ir.ui.menu">
+        <field name="name">Students</field>
+        <field name="parent_id" ref="menu_school_root"/>
+        <field name="sequence">10</field>
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
+    <record id="menu_school_student" model="ir.ui.menu">
+        <field name="name">Student Profiles</field>
+        <field name="parent_id" ref="menu_school_student_parent"/>
+        <field name="action" ref="action_student"/>
+        <field name="sequence">10</field>
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
+    <record id="menu_school_student_subject" model="ir.ui.menu">
+        <field name="name">Weekly Study Subjects</field>
+        <field name="parent_id" ref="menu_school_student_parent"/>
+        <field name="action" ref="action_school_student_subject"/>
+        <field name="sequence">15</field>
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
     <menuitem id="menu_school_student_enroll_wizard"
               name="Enroll in Weekly Subjects"
               parent="menu_school_student_parent"
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="18"/>
-    <menuitem id="menu_school_student_study_schedule"
-              name="Student Study Schedules"
-              parent="menu_school_student_parent"
-              action="action_timetable_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="20"/>
-    <menuitem id="menu_school_student_permission"
-              name="Student Permissions"
-              parent="menu_school_student_parent"
-              action="action_school_permission_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="25"/>
+    <record id="menu_school_student_permission" model="ir.ui.menu">
+        <field name="name">Student Permissions</field>
+        <field name="parent_id" ref="menu_school_student_parent"/>
+        <field name="action" ref="action_school_permission_student"/>
+        <field name="sequence">25</field>
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
     <menuitem id="menu_school_enrollment"
               name="Enrollments"
               parent="menu_school_student_parent"
@@ -81,75 +79,53 @@
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="15"/>
+    <menuitem id="menu_school_teacher_term_schedule_wizard"
+              name="Plan / Roll Over Term Schedule"
+              parent="menu_school_teacher_parent"
+              action="action_school_term_schedule_wizard"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="18"/>
     <menuitem id="menu_school_teacher_teaching_assignments"
               name="Teaching Assignments &amp; Load"
               parent="menu_school_teacher_parent"
               action="action_school_teaching_assignment"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
-    <menuitem id="menu_school_teacher_schedules"
-              name="Teaching Schedules &amp; Timetable"
-              parent="menu_school_teacher_parent"
-              action="action_timetable_teacher"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="30"/>
     <menuitem id="menu_school_teacher_permissions"
               name="Teacher Permissions &amp; Leaves"
               parent="menu_school_teacher_parent"
               action="action_school_permission_teacher"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="35"/>
+              sequence="25"/>
 
-    <!-- ================= 4. Schedules & Timetable (Navbar with Teacher & Student Dropdowns) ================= -->
+    <!-- ================= 4. Schedules & Timetable ================= -->
     <menuitem id="menu_school_schedule_root"
               name="Schedules &amp; Timetable"
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="25"/>
 
-    <!-- 4. Quick Assign Hub -->
-    <menuitem id="menu_school_assign_subject_wizard"
+    <!-- 4A. Unified Timetable & Master Calendar -->
+    <menuitem id="menu_school_sched_master"
+              name="Timetable &amp; Master Calendar"
+              parent="menu_school_schedule_root"
+              action="action_timetable"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="5"/>
+
+    <!-- 4B. Schedule Planning Wizards -->
+    <menuitem id="menu_school_sched_term_schedule_wizard"
+              name="Plan / Roll Over Term Schedule"
+              parent="menu_school_schedule_root"
+              action="action_school_term_schedule_wizard"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="10"/>
+    <menuitem id="menu_school_sched_assign_wizard"
               name="Quick Assign &amp; Schedule Hub"
               parent="menu_school_schedule_root"
               action="action_school_assign_subject_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="5"/>
-
-    <!-- 4A. Teacher Section in Dropdown -->
-    <menuitem id="menu_school_sched_teacher_header"
-              name="Teacher Teaching Schedules"
-              parent="menu_school_schedule_root"
-              action="action_timetable_teacher"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="10"/>
-    <menuitem id="menu_school_sched_teacher_asg"
-              name="Teacher Teaching Assignments"
-              parent="menu_school_schedule_root"
-              action="action_school_teaching_assignment"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="15"/>
-
-    <!-- 4B. Student Section in Dropdown -->
-    <menuitem id="menu_school_sched_student_header"
-              name="Student Study Schedules"
-              parent="menu_school_schedule_root"
-              action="action_timetable_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="20"/>
-    <menuitem id="menu_school_sched_student_subjects"
-              name="Student Weekly Study Plans"
-              parent="menu_school_schedule_root"
-              action="action_school_student_subject"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="25"/>
-
-    <!-- 4C. Master Calendar Section in Dropdown -->
-    <menuitem id="menu_school_sched_master"
-              name="Master Timetable &amp; Calendar"
-              parent="menu_school_schedule_root"
-              action="action_timetable"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="30"/>
 
     <!-- ================= 5. Academics ================= -->
     <menuitem id="menu_school_academic_parent"
@@ -157,6 +133,12 @@
               parent="menu_school_root"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="30"/>
+    <menuitem id="menu_school_academic_term"
+              name="Academic Terms"
+              parent="menu_school_academic_parent"
+              action="action_school_term"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="5"/>
     <menuitem id="menu_school_class"
               name="Classes"
               parent="menu_school_academic_parent"
@@ -267,7 +249,7 @@
               name="Student Permissions"
               parent="menu_school_attendance_parent"
               action="action_school_permission_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="15"/>
     <menuitem id="menu_school_attendance_export_xlsx"
               name="Export Attendance (XLSX)"

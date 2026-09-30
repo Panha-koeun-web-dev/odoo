@@ -74,3 +74,10 @@ access_teacher_permission_reject_wizard,teacher.permission.reject.wizard,model_s
 access_admin_feedback,admin.feedback,model_school_feedback,school_management.group_school_admin,1,1,1,1
 access_teacher_feedback,teacher.feedback,model_school_feedback,school_management.group_school_teacher,1,1,1,0
 access_student_feedback,student.feedback,model_school_feedback,school_management.group_school_student,1,1,1,0
+access_admin_term,admin.term,model_school_term,school_management.group_school_admin,1,1,1,1
+access_teacher_term,teacher.term,model_school_term,school_management.group_school_teacher,1,0,0,0
+access_student_term,student.term,model_school_term,school_management.group_school_student,1,0,0,0
+access_admin_term_schedule_wizard,admin.term.schedule.wizard,model_school_term_schedule_wizard,school_management.group_school_admin,1,1,1,1
+access_teacher_term_schedule_wizard,teacher.term.schedule.wizard,model_school_term_schedule_wizard,school_management.group_school_teacher,0,0,0,0
+access_admin_term_schedule_wizard_line,admin.term.schedule.wizard.line,model_school_term_schedule_wizard_line,school_management.group_school_admin,1,1,1,1
+access_teacher_term_schedule_wizard_line,teacher.term.schedule.wizard.line,model_school_term_schedule_wizard_line,school_management.group_school_teacher,0,0,0,0

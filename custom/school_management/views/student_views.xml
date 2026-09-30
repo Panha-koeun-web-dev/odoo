@@ -53,6 +53,17 @@
                        decoration-info="year_payment_status == 'pending'"
                        invisible="not year_payment_status or year_payment_status == 'no_record'"/>
                 <field name="attendance_rate" string="Attendance" widget="progressbar" optional="show"/>
+                <field name="average_score" string="Avg Score (%)" widget="badge" optional="show"
+                       decoration-success="average_score &gt;= 80"
+                       decoration-primary="average_score &gt;= 70 and average_score &lt; 80"
+                       decoration-warning="average_score &gt;= 50 and average_score &lt; 70"
+                       decoration-danger="average_score &lt; 50"/>
+                <field name="gpa" string="GPA (4.0)" widget="badge" optional="show"
+                       decoration-success="gpa &gt;= 3.5"
+                       decoration-primary="gpa &gt;= 3.0 and gpa &lt; 3.5"
+                       decoration-warning="gpa &gt;= 2.0 and gpa &lt; 3.0"
+                       decoration-danger="gpa &lt; 2.0"/>
+                <field name="academic_performance" string="Grade" widget="badge" optional="show"/>
                 <field name="absent_count" string="Absences" widget="badge" optional="show"
                        decoration-danger="absent_count &gt; 0"
                        decoration-success="absent_count == 0"/>
@@ -80,7 +91,7 @@
 
                 <!-- Action Buttons -->
                 <button name="action_export_xlsx" type="object" string="XLSX" icon="fa-file-excel-o"
-                        title="Export Student Record to Excel" class="btn btn-sm btn-outline-success"/>
+                        title="Export Student Record to Excel" class="btn btn-sm btn-outline-success" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 <button name="action_print_academic_transcript" type="object" string="Transcript" icon="fa-file-text-o"
                         title="Print Official Academic Transcript / Report Card" class="btn btn-sm btn-outline-primary"/>
                 <button name="action_print_student_certificates" type="object" string="Certificate" icon="fa-certificate"
@@ -118,6 +129,8 @@
                 <field name="year_payment_status"/>
                 <field name="absent_count"/>
                 <field name="attendance_rate"/>
+                <field name="average_score"/>
+                <field name="gpa"/>
                 <field name="active"/>
                 <templates>
                     <t t-name="card" class="flex-row">
@@ -186,6 +199,9 @@
                                     <span t-elif="record.attendance_rate.raw_value" class="badge bg-success-subtle text-success border border-success-subtle" title="Attendance Rate">
                                         <i class="fa fa-check-circle me-1"/><t t-esc="record.attendance_rate.raw_value"/>% Att.
                                     </span>
+                                    <span t-if="record.average_score.raw_value" class="badge bg-primary-subtle text-primary border border-primary-subtle" title="Overall Average (90% Exam + 10% Attendance)">
+                                        <i class="fa fa-graduation-cap me-1"/><t t-esc="record.average_score.raw_value"/>% (GPA <t t-esc="record.gpa.raw_value"/>)
+                                    </span>
                                 </div>
                                 <div class="ms-auto" t-if="record.year_payment_status.raw_value and record.year_payment_status.raw_value != 'no_record'">
                                     <field name="year_payment_status" widget="badge"
@@ -210,9 +226,9 @@
             <form class="o_school_form">
                 <header>
                     <button name="action_open_assign_wizard" type="object"
-                            string="Enroll in Weekly Subjects" class="btn-primary" icon="fa-book"/>
+                            string="Enroll in Weekly Subjects" class="btn-primary" icon="fa-book" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_print_id_card" type="object"
                             string="Print ID Card (QR)" class="btn-primary" icon="fa-id-card-o"/>
                     <button name="action_print_academic_transcript" type="object"
@@ -252,6 +268,24 @@
 
 
                     <div class="oe_button_box" name="button_box">
+                        <button name="action_view_student_timetable" type="object" class="oe_stat_button" icon="fa-calendar" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="timetable_count"/> (<field name="total_scheduled_study_hours" widget="float_time"/>h)</span>
+                                <span class="o_stat_text">Study Timetable</span>
+                            </div>
+                        </button>
+                        <button name="action_view_class_timetable" type="object" class="oe_stat_button" icon="fa-users" invisible="not class_id" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="class_id"/></span>
+                                <span class="o_stat_text">Class Timetable</span>
+                            </div>
+                        </button>
+                        <button name="action_view_holidays" type="object" class="oe_stat_button" icon="fa-star" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="holiday_count"/></span>
+                                <span class="o_stat_text">Holidays</span>
+                            </div>
+                        </button>
                         <button name="open_year_payments" type="object" class="oe_stat_button" icon="fa-credit-card" groups="school_management.group_school_admin,school_management.group_school_student">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="total_year_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></span>
@@ -266,8 +300,8 @@
                         </button>
                         <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
                             <div class="o_stat_info">
-                                <span class="o_stat_value"><field name="average_score"/>%</span>
-                                <span class="o_stat_text">Grades (<field name="grade_count"/>)</span>
+                                <span class="o_stat_value"><field name="average_score"/>% (GPA <field name="gpa"/>)</span>
+                                <span class="o_stat_text">Grades (<field name="grade_count"/> Exams)</span>
                             </div>
                         </button>
                         <button name="open_fees" type="object" class="oe_stat_button" icon="fa-money" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
@@ -285,14 +319,8 @@
                         <button name="action_print_id_card" type="object" class="oe_stat_button" icon="fa-id-card-o" title="Print Student ID Card">
                             <div class="o_stat_info"><span class="o_stat_text">ID Card (QR)</span></div>
                         </button>
-                        <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                        <button name="action_generate_certificate" type="object" class="oe_stat_button" icon="fa-graduation-cap" groups="school_management.group_school_admin,school_management.group_school_teacher">
                             <div class="o_stat_info"><span class="o_stat_text">Transcript &amp; Report</span></div>
-                        </button>
-                        <button name="action_view_student_timetable" type="object" class="oe_stat_button" icon="fa-calendar">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value"><field name="total_scheduled_study_hours" widget="float_time"/></span>
-                                <span class="o_stat_text">My Timetable</span>
-                            </div>
                         </button>
                         <button name="action_view_study_teachers" type="object" class="oe_stat_button" icon="fa-user-circle">
                             <div class="o_stat_info">
@@ -456,11 +484,11 @@
                                         <div class="d-flex align-items-center gap-2">
                                             <button name="action_open_assign_wizard" type="object"
                                                     string="Enroll Subjects / Teachers" icon="fa-plus-circle"
-                                                    class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap"/>
+                                                    class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                             <button name="action_manual_sync_subjects_from_class" type="object"
                                                     string="Sync from Class Curriculum" icon="fa-refresh"
                                                     class="btn btn-outline-primary btn-sm px-3 text-nowrap"
-                                                    invisible="not class_id"/>
+                                                    invisible="not class_id" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                             <button name="action_view_student_timetable" type="object"
                                                     string="View My Timetable" icon="fa-calendar"
                                                     class="btn btn-outline-success btn-sm px-3 text-nowrap"/>
@@ -517,26 +545,39 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <button name="action_view_student_timetable" type="object"
-                                                    string="Open Interactive Calendar" icon="fa-calendar-check-o"
+                                                    string="My Schedule &amp; Calendar" icon="fa-calendar"
                                                     class="btn btn-primary btn-sm px-3 shadow-sm text-nowrap"/>
+                                            <button name="action_view_class_timetable" type="object"
+                                                    string="My Class Timetable" icon="fa-users"
+                                                    invisible="not class_id"
+                                                    class="btn btn-outline-primary btn-sm px-3 shadow-sm text-nowrap"/>
+                                            <button name="action_view_master_timetable" type="object"
+                                                    string="School Master Timetable" icon="fa-globe"
+                                                    class="btn btn-outline-secondary btn-sm px-3 shadow-sm text-nowrap"/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <field name="timetable_ids" readonly="1">
                                 <list default_order="day_of_week, start_time"
-                                      decoration-info="day_of_week in ('0', '1', '2')"
-                                      decoration-primary="day_of_week in ('3', '4')"
-                                      decoration-warning="day_of_week in ('5', '6')">
+                                      decoration-warning="is_holiday"
+                                      decoration-info="not is_holiday and day_of_week in ('0', '1', '2')"
+                                      decoration-primary="not is_holiday and day_of_week in ('3', '4')">
+                                    <field name="schedule_status" widget="badge" optional="show"
+                                           decoration-warning="schedule_status == 'holiday'"
+                                           decoration-success="schedule_status == 'regular'"/>
+                                    <field name="holiday_name" optional="show" invisible="not is_holiday"/>
+                                    <field name="term_id" widget="badge" optional="show"/>
+                                    <field name="week_name" widget="badge" optional="show"/>
                                     <field name="day_of_week" widget="badge"/>
                                     <field name="period_short" widget="badge" string="Period"/>
                                     <field name="time_display" string="Time"/>
                                     <field name="start_time" widget="float_time" optional="hide"/>
                                     <field name="end_time" widget="float_time" optional="hide"/>
-                                    <field name="teacher_id" decoration-bf="1"/>
-                                    <field name="subject_ids" widget="many2many_tags"/>
+                                    <field name="teacher_id" decoration-bf="1" invisible="is_holiday"/>
+                                    <field name="subject_ids" widget="many2many_tags" invisible="is_holiday"/>
                                     <field name="class_id" optional="show"/>
-                                    <field name="room" optional="show"/>
+                                    <field name="room" optional="show" invisible="is_holiday"/>
                                 </list>
                             </field>
                         </page>
@@ -806,18 +847,23 @@
                                 <div class="col-12 col-sm-6 col-xl-3">
                                     <div class="card h-100 border-0 shadow-sm rounded-3 bg-light-subtle p-3">
                                         <div class="d-flex align-items-center justify-content-between mb-1">
-                                            <span class="text-uppercase text-muted fw-bold small">Average Score</span>
+                                            <span class="text-uppercase text-muted fw-bold small">Overall Average</span>
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                                                <i class="fa fa-graduation-cap" title="Average Score"/>
+                                                <i class="fa fa-graduation-cap" title="Overall Average"/>
                                             </span>
                                         </div>
                                         <div class="fs-4 fw-bold text-dark mb-0">
                                             <field name="average_score"/>%
+                                            <span class="fs-6 text-primary fw-semibold ms-2">(GPA: <field name="gpa"/>)</span>
                                         </div>
-                                        <div class="small mt-1">
+                                        <div class="small mt-1 d-flex flex-wrap gap-1 align-items-center">
                                             <span class="badge bg-info-subtle text-info border border-info-subtle">
                                                 <field name="academic_performance" class="d-inline"/>
                                             </span>
+                                        </div>
+                                        <div class="text-muted small mt-2 pt-1 border-top" style="font-size: 11px;">
+                                            <i class="fa fa-calculator me-1 text-primary"/>
+                                            90% Exam (<field name="exam_average_score"/>%) + 10% Att (<field name="attendance_rate"/>%)
                                         </div>
                                     </div>
                                 </div>
@@ -884,8 +930,11 @@
                                         <button name="action_open_add_to_exam_wizard" type="object"
                                                 string="Enroll in Exam" class="btn btn-sm btn-primary" icon="fa-user-plus"
                                                 groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                                        <button name="action_recompute_academic_stats" type="object"
+                                                string="Recalculate GPA &amp; Average" class="btn btn-sm btn-outline-secondary" icon="fa-refresh"
+                                                title="Recalculate GPA and Average Score (90% Exam + 10% Attendance)" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                            Avg Score: <field name="average_score" class="fw-bold d-inline"/>%
+                                            Avg Score: <field name="average_score" class="fw-bold d-inline"/>% (GPA: <field name="gpa" class="fw-bold d-inline"/>)
                                         </span>
                                     </div>
                                 </div>
@@ -1107,6 +1156,39 @@
                                            decoration-success="state == 'reviewed'"/>
                                 </list>
                             </field>
+                        </page>
+
+                        <page name="timetable" string="Timetable &amp; Holidays">
+                            <div class="d-flex align-items-center justify-content-between mb-3 p-3 bg-light rounded border flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary fs-6 px-3 py-2">
+                                        <i class="fa fa-calendar me-1" title="Sessions"/> <field name="timetable_count"/> Sessions
+                                    </span>
+                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                        <i class="fa fa-star me-1" title="Holidays"/> <field name="holiday_count"/> Holidays
+                                    </span>
+                                    <span class="text-muted small">Personal and class weekly study timetable</span>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button name="action_view_timetable" type="object"
+                                            string="My Study Calendar"
+                                            class="btn btn-primary btn-sm"
+                                            icon="fa-calendar"/>
+                                    <button name="action_view_class_timetable" type="object"
+                                            string="Class Timetable"
+                                            class="btn btn-outline-primary btn-sm"
+                                            icon="fa-calendar-o"
+                                            invisible="not class_id"/>
+                                    <button name="action_view_holidays" type="object"
+                                            string="My Holidays Calendar"
+                                            class="btn btn-outline-warning btn-sm"
+                                            icon="fa-star"/>
+                                    <button name="action_view_master_timetable" type="object"
+                                            string="School Master Timetable"
+                                            class="btn btn-outline-secondary btn-sm"
+                                            icon="fa-globe"/>
+                                </div>
+                            </div>
                         </page>
 
                         <page name="notes" string="Notes">

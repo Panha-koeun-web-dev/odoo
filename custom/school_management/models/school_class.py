@@ -22,9 +22,25 @@ class SchoolClass(models.Model):
     active = fields.Boolean(default=True)
     capacity_progress = fields.Float(string='Capacity %', compute='_compute_capacity_progress')
 
+    # Academic Term Integration (1 Year = 12 Months = 3 Terms, 3 Months per Term)
+    current_term_id = fields.Many2one(
+        'school.term',
+        string='Current Academic Term',
+        help="Currently active academic term for this class."
+    )
+    term_ids = fields.Many2many(
+        'school.term',
+        'school_term_class_rel',
+        'class_id',
+        'term_id',
+        string='Academic Terms',
+        help="All terms in which this class studies."
+    )
+
     # Timetable Integration
     timetable_ids = fields.One2many('school.timetable', 'class_id', string='Timetable')
     timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_count')
+    holiday_count = fields.Integer(string='Class & School Holidays Count', compute='_compute_timetable_count')
 
     # Weekly Teaching Assignments & Subject Allocation
     teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'class_id', string='Subject Teaching Staff')
@@ -88,6 +104,14 @@ class SchoolClass(models.Model):
     def _compute_timetable_count(self):
         for rec in self:
             rec.timetable_count = len(rec.timetable_ids)
+            domain = [
+                ('active', '=', True),
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', rec.id),
+                ('class_id', '=', False),
+            ]
+            rec.holiday_count = self.env['school.timetable'].search_count(domain)
 
     @api.depends(
         'teaching_assignment_ids',
@@ -238,16 +262,60 @@ class SchoolClass(models.Model):
 
     def action_view_timetable(self):
         self.ensure_one()
+        ctx = {
+            'default_class_id': self.id,
+            'default_room': self.room,
+            'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+            'search_default_class_id': self.id,
+            'search_default_filter_mon_fri': 1,
+        }
+        if self.current_term_id:
+            ctx['default_term_id'] = self.current_term_id.id
+            ctx['search_default_filter_active_term'] = 1
+        domain = [
+            '|',
+            ('class_id', '=', self.id),
+            '&',
+            ('is_holiday', '=', True),
+            ('class_id', '=', False),
+        ]
         return {
-            'name': _('Class Timetable - %s') % (self.name or ''),
+            'name': _('Class Timetable & Calendar - %s') % (self.name or ''),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'domain': [('class_id', '=', self.id)],
+            'domain': domain,
+            'context': ctx,
+        }
+
+    def action_view_master_timetable(self):
+        self.ensure_one()
+        return {
+            'name': _('Master Timetable & Calendar'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'context': {'search_default_filter_mon_fri': 1},
+        }
+
+    def action_view_holidays(self):
+        self.ensure_one()
+        return {
+            'name': _('Class Holidays & Days Off - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': [
+                ('active', '=', True),
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', self.id),
+                ('class_id', '=', False),
+            ],
             'context': {
+                'default_is_holiday': True,
                 'default_class_id': self.id,
-                'default_room': self.room,
-                'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+                'search_default_filter_holidays': 1,
             },
         }
 
@@ -319,5 +387,22 @@ class SchoolClass(models.Model):
                 'default_mode': 'teacher_assign',
                 'default_class_id': self.id,
                 'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+            }
+        }
+
+    def action_open_term_schedule_wizard(self):
+        """Open schedule planner wizard for this class and current/selected term."""
+        self.ensure_one()
+        active_term = self.current_term_id or self.env['school.term'].search([('state', '=', 'active')], limit=1)
+        return {
+            'name': _('Create / Manage Term Schedule - %s') % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.term.schedule.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_class_id': self.id,
+                'default_term_id': active_term.id if active_term else False,
+                'default_source_term_id': (active_term.previous_term_id.id if active_term and active_term.previous_term_id else False),
             }
         }

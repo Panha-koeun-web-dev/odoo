@@ -233,7 +233,9 @@ class TestTeacherStudentVisibility(TransactionCase):
         # 3. Grade information
         self.assertGreater(student_as_teacher.grade_count, 0)
         self.assertIn(grade, student_as_teacher.grade_ids)
-        self.assertAlmostEqual(student_as_teacher.average_score, 88.0)
+        self.assertAlmostEqual(student_as_teacher.average_score, 89.2)
+        self.assertAlmostEqual(student_as_teacher.exam_average_score, 88.0)
+        self.assertGreater(student_as_teacher.gpa, 0.0)
 
         # 4. Financial & Year Payment information
         self.assertIn(payment, student_as_teacher.year_payment_ids)

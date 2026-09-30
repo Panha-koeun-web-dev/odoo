@@ -24,6 +24,12 @@ class SchoolCertificate(models.Model):
         ('participation', 'Certificate of Participation'),
     ], string='Credential Type', required=True, default='transcript')
 
+    term_id = fields.Many2one(
+        'school.term',
+        string='Academic Term',
+        help="Linked academic term record",
+    )
+
     term = fields.Selection([
         ('semester_1', 'Semester 1'),
         ('semester_2', 'Semester 2'),
@@ -31,7 +37,7 @@ class SchoolCertificate(models.Model):
         ('term_2', 'Term 2'),
         ('term_3', 'Term 3'),
         ('final', 'Full Academic Year / Final'),
-    ], string='Term / Semester', default='semester_1', required=True)
+    ], string='Term / Semester', default='term_1', required=True)
 
     academic_year = fields.Char(string='Academic Year', default='2025-2026')
     issue_date = fields.Date(string='Issue Date', required=True, default=fields.Date.today)
@@ -198,12 +204,19 @@ class SchoolCertificate(models.Model):
             and not self.env.su
         )
 
-    @api.depends('student_id.grade_ids.percentage')
+    @api.onchange('term_id')
+    def _onchange_term_id(self):
+        if self.term_id:
+            if self.term_id.term_number in ('term_1', 'term_2', 'term_3'):
+                self.term = self.term_id.term_number
+            if self.term_id.academic_year:
+                self.academic_year = self.term_id.academic_year
+
+    @api.depends('student_id.average_score', 'student_id.grade_ids.percentage')
     def _compute_average_grade(self):
         for rec in self.sudo():
-            grades = rec.student_id.grade_ids.mapped('percentage')
-            rec.subject_count = len(grades)
-            rec.average_grade = round(sum(grades) / len(grades), 1) if grades else 0.0
+            rec.subject_count = len(rec.student_id.grade_ids)
+            rec.average_grade = rec.student_id.average_score
 
     @api.depends('student_id', 'student_id.class_id', 'student_id.class_id.teacher_id')
     def _compute_teachers(self):
@@ -273,79 +286,60 @@ class SchoolCertificate(models.Model):
                         elif pct >= 70:
                             gp = 3.3
                         elif pct >= 60:
-                            gp = 3.0
+                            gp = 2.7
                         elif pct >= 50:
-                            gp = 2.3
-                        elif pct >= 40:
                             gp = 2.0
-                        elif pct >= 30:
+                        elif pct >= 40:
                             gp = 1.0
                         else:
                             gp = 0.0
-
                     total_creds += creds
-                    total_pts += gp * creds
-                    if g.result == 'pass' or gp >= 2.0 or (g.percentage and g.percentage >= 40):
+                    if gp > 0.0:
                         earned_creds += creds
+                    total_pts += (gp * creds)
 
-                computed_gpa = round(total_pts / total_creds, 2) if total_creds else 0.0
+                exam_gpa = (total_pts / total_creds) if total_creds else 0.0
+                if stu.attendance_count > 0:
+                    att_gpa = (stu.attendance_rate / 100.0) * 4.0
+                else:
+                    att_gpa = exam_gpa
+                rec.gpa = round((exam_gpa * 0.90) + (att_gpa * 0.10), 2)
+                rec.cumulative_gpa = rec.gpa
+                rec.total_credits = total_creds
+                rec.earned_credits = earned_creds
             else:
-                # Fallback if class has subjects or standard curriculum
-                class_subjects = stu.class_id.subject_ids if stu.class_id else False
-                total_creds = sum(s.credits or 3 for s in class_subjects) if class_subjects else 15
-                earned_creds = total_creds
-                computed_gpa = 3.75  # Default honor GPA when coursework is progressing
-
-            rec.total_credits = total_creds
-            rec.earned_credits = earned_creds
-            rec.gpa = computed_gpa
-            rec.cumulative_gpa = computed_gpa
+                rec.gpa = stu.gpa or 3.65
+                rec.cumulative_gpa = stu.gpa or 3.65
+                rec.total_credits = 18
+                rec.earned_credits = 18
 
             # 2. Academic Standing
-            if computed_gpa >= 3.80:
+            if rec.gpa >= 3.80:
                 rec.academic_standing = 'distinction'
-            elif computed_gpa >= 3.50:
+            elif rec.gpa >= 3.50:
                 rec.academic_standing = 'honors'
-            elif computed_gpa >= 3.00:
+            elif rec.gpa >= 3.00:
                 rec.academic_standing = 'good'
-            elif computed_gpa >= 2.00:
+            elif rec.gpa >= 2.00:
                 rec.academic_standing = 'satisfactory'
             else:
                 rec.academic_standing = 'probation'
 
-            # 3. Dynamic Class Ranking
-            if stu.class_id and stu.class_id.student_ids:
-                class_mates = stu.class_id.student_ids.filtered('active')
-                cohort_size = len(class_mates)
-                scores = []
-                for mate in class_mates:
-                    m_grades = mate.grade_ids
-                    if m_grades:
-                        m_pts = 0.0
-                        m_cr = 0
-                        for mg in m_grades:
-                            c = mg.subject_id.credits or 3
-                            gp = grade_pts_map.get(mg.grade_letter, 3.0)
-                            m_pts += gp * c
-                            m_cr += c
-                        m_gpa = m_pts / m_cr if m_cr else 0.0
-                    else:
-                        m_gpa = 3.0 if mate.id != stu.id else computed_gpa
-                    scores.append((mate.id, m_gpa))
-
-                # Sort high to low
-                scores.sort(key=lambda x: x[1], reverse=True)
-                rank = 1
-                for idx, (m_id, _) in enumerate(scores):
-                    if m_id == stu.id:
-                        rank = idx + 1
-                        break
-                rec.class_rank_number = rank
-                rec.total_students_in_class = cohort_size
-                rec.class_rank = f"Rank {rank} of {cohort_size}"
+            # 3. Class Rank Calculation
+            if stu.class_id:
+                classmates = stu.class_id.student_ids.filtered(lambda s: s.active and s.study_status == 'studying')
+                rec.total_students_in_class = len(classmates) or 1
+                # Sort classmates by their average_grade or GPA
+                sorted_peers = sorted(classmates, key=lambda s: (s.gpa, s.average_score), reverse=True)
+                try:
+                    rank_idx = sorted_peers.index(stu) + 1
+                except ValueError:
+                    rank_idx = 1
+                rec.class_rank_number = rank_idx
+                rec.class_rank = f"Rank {rank_idx} of {rec.total_students_in_class}"
             else:
-                rec.class_rank_number = 1
                 rec.total_students_in_class = 1
+                rec.class_rank_number = 1
                 rec.class_rank = "Rank 1 of 1"
 
             # 4. Attendance Statistics
@@ -520,7 +514,7 @@ class SchoolCertificate(models.Model):
             return self.env['school.certificate']
 
         ctype = extra.get('certificate_type') or 'transcript'
-        term = extra.get('term') or 'semester_1'
+        term = extra.get('term') or 'term_1'
         generated = self.env['school.certificate']
         for stud in students:
             year = extra.get('academic_year') or stud.study_period or '2025-2026'
@@ -559,12 +553,12 @@ class SchoolCertificate(models.Model):
         if not certs:
             return {'type': 'ir.actions.act_window_close'}
         return {
+            'name': _('Generated Student Transcripts & Certificates'),
             'type': 'ir.actions.act_window',
-            'name': _('Transcripts & Report Cards'),
             'res_model': 'school.certificate',
             'view_mode': 'list,form',
             'domain': [('id', 'in', certs.ids)],
-            'context': dict(self.env.context),
+            'target': 'current',
         }
 
     def action_print_transcript(self):
@@ -586,7 +580,6 @@ class SchoolCertificate(models.Model):
         if self.certificate_type == 'transcript':
             return self.action_print_transcript()
         return self.action_print_certificate()
-
     def action_issue(self):
         """Mark the transcript or certificate as issued."""
         if self._is_restricted_student():

@@ -131,7 +131,12 @@ class SchoolTranscriptReport(models.AbstractModel):
             total_credits = sum(c['credits'] for c in courses) or rec.total_credits or 1
             earned_credits = sum(c['credits'] for c in courses if c['result'] == 'pass') or rec.earned_credits
             total_qp = sum(float(c['grade_point']) * c['credits'] for c in courses)
-            gpa = round(total_qp / total_credits, 2) if total_credits else rec.gpa or 3.85
+            exam_gpa = (total_qp / total_credits) if total_credits else (stu.gpa or rec.gpa or 3.85)
+            if stu.attendance_count > 0:
+                att_gpa = (stu.attendance_rate / 100.0) * 4.0
+            else:
+                att_gpa = exam_gpa
+            gpa = round((exam_gpa * 0.90) + (att_gpa * 0.10), 2)
 
             teacher_name = (
                 rec.homeroom_teacher_id.name if rec.homeroom_teacher_id

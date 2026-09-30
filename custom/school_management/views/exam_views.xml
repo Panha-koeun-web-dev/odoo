@@ -116,23 +116,31 @@
                 <header>
                     <button name="action_open_select_students_wizard" string="Select Students"
                             type="object" class="btn-primary" icon="fa-user-plus"
-                            invisible="state in ('completed', 'cancelled')"/>
+                            invisible="state in ('completed', 'cancelled')"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_populate_students" string="Add All Class Students"
                             type="object" class="btn-outline-primary" icon="fa-users"
-                            invisible="state in ('completed', 'cancelled')"/>
+                            invisible="state in ('completed', 'cancelled')"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_open_schedule_wizard" string="Set Specific Timeslots"
                             type="object" class="btn-info text-white" icon="fa-clock-o"
-                            invisible="state in ('completed', 'cancelled')"/>
+                            invisible="state in ('completed', 'cancelled')"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_set_scheduled" string="Confirm Schedule"
-                            type="object" class="btn-success" invisible="state != 'draft'"/>
+                            type="object" class="btn-success" invisible="state != 'draft'"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_start_exam" string="Start Exam"
-                            type="object" class="btn-warning" invisible="state != 'scheduled'"/>
+                            type="object" class="btn-warning" invisible="state != 'scheduled'"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_done_exam" string="Complete Exam"
-                            type="object" class="btn-success" invisible="state != 'in_progress'"/>
+                            type="object" class="btn-success" invisible="state != 'in_progress'"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_reset_draft" string="Reset to Draft"
-                            type="object" class="btn-outline-secondary" invisible="state not in ('completed', 'cancelled')"/>
+                            type="object" class="btn-outline-secondary" invisible="state not in ('completed', 'cancelled')"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_cancel_exam" string="Cancel Exam"
-                            type="object" class="btn-outline-danger" invisible="state in ('draft', 'completed', 'cancelled')"/>
+                            type="object" class="btn-outline-danger" invisible="state in ('draft', 'completed', 'cancelled')"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,in_progress,completed"/>
                 </header>
                 <sheet>
@@ -254,10 +262,12 @@
                                 <div class="d-flex gap-2">
                                     <button name="action_open_select_students_wizard" string="Select Students"
                                             type="object" class="btn btn-sm btn-primary" icon="fa-user-plus"
-                                            invisible="state in ('completed', 'cancelled')"/>
+                                            invisible="state in ('completed', 'cancelled')"
+                                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                     <button name="action_populate_students" string="Add All Class Students"
                                             type="object" class="btn btn-sm btn-outline-secondary" icon="fa-refresh"
-                                            invisible="state in ('completed', 'cancelled')"/>
+                                            invisible="state in ('completed', 'cancelled')"
+                                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                 </div>
                             </div>
 
@@ -285,10 +295,12 @@
                                     <field name="result" widget="badge" string="Result" readonly="1"/>
                                     <field name="schedule_notes" optional="show" placeholder="Custom slot reason"/>
                                     <button name="action_open_student_schedule_wizard" type="object"
-                                            icon="fa-clock-o" title="Set Specific Schedule" class="btn-sm btn-link"/>
+                                            icon="fa-clock-o" title="Set Specific Schedule" class="btn-sm btn-link"
+                                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                     <button name="action_reset_to_default_schedule" type="object"
                                             icon="fa-undo" title="Reset to General Exam Time" class="btn-sm btn-link text-secondary"
-                                            invisible="not is_custom_schedule"/>
+                                            invisible="not is_custom_schedule"
+                                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                                 </list>
                             </field>
                         </page>

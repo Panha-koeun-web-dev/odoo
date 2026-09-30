@@ -24,7 +24,7 @@ class SchoolStudent(models.Model):
         ('other', 'Other'),
     ], string='Gender', required=True)
     date_of_birth = fields.Date(string='Date of Birth', required=True)
-    age = fields.Integer(string='Age', compute='_compute_age', store=True)
+    age = fields.Integer(string='Age', compute='_compute_age', store=True, compute_sudo=True)
     class_id = fields.Many2one('school.class', string='Class')
     parent_name = fields.Char(string='Parent/Guardian Name')
     parent_phone = fields.Char(string='Parent Phone')
@@ -33,7 +33,7 @@ class SchoolStudent(models.Model):
     enrollment_date = fields.Date(string='Enrollment Date', default=fields.Date.today)
     study_start_date = fields.Date(string='Study Start Date', default=fields.Date.today)
     study_end_date = fields.Date(string='Study End Date')
-    study_period = fields.Char(string='Study Period', compute='_compute_study_period', store=True)
+    study_period = fields.Char(string='Study Period', compute='_compute_study_period', store=True, compute_sudo=True)
     photo = fields.Image(string='Photo', max_width=512, max_height=512, verify_resolution=True)
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', string='Related User')
@@ -65,12 +65,12 @@ class SchoolStudent(models.Model):
     recontinue_date = fields.Date(string='Resumed Date', copy=False, help="Date when student resumed studying")
 
     attendance_ids = fields.One2many('school.attendance', 'student_id', string='Attendance')
-    attendance_count = fields.Integer(string='Total Attendance', compute='_compute_attendance_stats', store=True)
-    absent_count = fields.Integer(string='Absent Days', compute='_compute_attendance_stats', store=True)
-    present_count = fields.Integer(string='Present Days', compute='_compute_attendance_stats', store=True)
-    late_count = fields.Integer(string='Late Days', compute='_compute_attendance_stats', store=True)
-    excused_count = fields.Integer(string='Excused Days', compute='_compute_attendance_stats', store=True)
-    attendance_rate = fields.Float(string='Attendance Rate (%)', compute='_compute_attendance_stats', digits=(5, 1), store=True)
+    attendance_count = fields.Integer(string='Total Attendance', compute='_compute_attendance_stats', store=True, compute_sudo=True)
+    absent_count = fields.Integer(string='Absent Days', compute='_compute_attendance_stats', store=True, compute_sudo=True)
+    present_count = fields.Integer(string='Present Days', compute='_compute_attendance_stats', store=True, compute_sudo=True)
+    late_count = fields.Integer(string='Late Days', compute='_compute_attendance_stats', store=True, compute_sudo=True)
+    excused_count = fields.Integer(string='Excused Days', compute='_compute_attendance_stats', store=True, compute_sudo=True)
+    attendance_rate = fields.Float(string='Attendance Rate (%)', compute='_compute_attendance_stats', digits=(5, 1), store=True, compute_sudo=True)
     today_attendance_status = fields.Selection([
         ('present', 'Present'),
         ('absent', 'Absent'),
@@ -81,11 +81,34 @@ class SchoolStudent(models.Model):
     today_attendance_id = fields.Many2one('school.attendance', string="Today's Attendance Record", compute='_compute_today_attendance')
 
     grade_ids = fields.One2many('school.grade', 'student_id', string='Grades')
-    grade_count = fields.Integer(string='Total Exams', compute='_compute_grade_stats')
-    average_score = fields.Float(string='Average Score (%)', compute='_compute_grade_stats', digits=(5, 1))
-    passed_exam_count = fields.Integer(string='Passed Exams', compute='_compute_grade_stats')
-    failed_exam_count = fields.Integer(string='Failed Exams', compute='_compute_grade_stats')
-    academic_performance = fields.Char(string='Overall Grade', compute='_compute_grade_stats')
+    grade_count = fields.Integer(string='Total Exams', compute='_compute_grade_stats', store=True, compute_sudo=True)
+    exam_average_score = fields.Float(
+        string='Exam Average (%)',
+        compute='_compute_grade_stats',
+        digits=(5, 1),
+        store=True,
+        compute_sudo=True,
+        help="Average score across all exams (weighted at 90% of overall grade)."
+    )
+    average_score = fields.Float(
+        string='Average Score (%)',
+        compute='_compute_grade_stats',
+        digits=(5, 1),
+        store=True,
+        compute_sudo=True,
+        help="Overall academic average weighted as: 90% Exams + 10% Attendance."
+    )
+    gpa = fields.Float(
+        string='GPA (4.0)',
+        compute='_compute_grade_stats',
+        digits=(3, 2),
+        store=True,
+        compute_sudo=True,
+        help="Overall Grade Point Average on 4.0 scale weighted as: 90% Exams + 10% Attendance."
+    )
+    passed_exam_count = fields.Integer(string='Passed Exams', compute='_compute_grade_stats', store=True, compute_sudo=True)
+    failed_exam_count = fields.Integer(string='Failed Exams', compute='_compute_grade_stats', store=True, compute_sudo=True)
+    academic_performance = fields.Char(string='Overall Grade', compute='_compute_grade_stats', store=True, compute_sudo=True)
     fee_ids = fields.One2many('school.fee', 'student_id', string='Fees')
     fee_count = fields.Integer(string='Fee Count', compute='_compute_fee_count')
     enrollment_ids = fields.One2many('school.enrollment', 'student_id', string='Enrollments')
@@ -144,11 +167,7 @@ class SchoolStudent(models.Model):
         compute='_compute_timetable_ids',
         help="All active timetable sessions for this student (both individual tutoring, elective groups, and class sessions)."
     )
-    timetable_count = fields.Integer(
-        string='Scheduled Sessions',
-        compute='_compute_timetable_ids',
-        help="Total number of scheduled sessions in the student's weekly timetable."
-    )
+
     study_subject_count = fields.Integer(string='Study Subjects Count', compute='_compute_study_stats')
     total_weekly_study_hours = fields.Float(string='Total Weekly Study Hours', compute='_compute_study_stats')
     total_weekly_study_sessions = fields.Integer(string='Total Weekly Sessions', compute='_compute_study_stats')
@@ -223,21 +242,120 @@ class SchoolStudent(models.Model):
                     rec.next_payment_deadline = False
                     rec.next_deadline_status = 'no_deadline'
 
+    timetable_count = fields.Integer(string='Schedule Sessions Count', compute='_compute_timetable_ids')
+    holiday_count = fields.Integer(string='Class & School Holidays Count', compute='_compute_timetable_ids')
+
+    def _compute_timetable_count(self):
+        return self._compute_timetable_ids()
+
+    def action_view_timetable(self):
+        self.ensure_one()
+        domain = [
+            ('active', '=', True),
+            '|',
+            ('is_holiday', '=', True),
+            '|',
+            ('student_id', '=', self.id),
+            ('student_ids', 'in', [self.id]),
+        ]
+        if self.class_id:
+            domain = [
+                ('active', '=', True),
+                '|',
+                ('is_holiday', '=', True),
+                '|',
+                '|',
+                ('student_id', '=', self.id),
+                ('student_ids', 'in', [self.id]),
+                '&',
+                ('class_id', '=', self.class_id.id),
+                ('student_id', '=', False),
+            ]
+        return {
+            'name': _('Study Schedule - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': domain,
+            'context': {
+                'default_student_id': self.id,
+                'default_class_id': self.class_id.id if self.class_id else False,
+                'search_default_filter_mon_fri': 1,
+            },
+        }
+
     @api.depends('fee_ids')
     def _compute_fee_count(self):
         for rec in self:
             rec.fee_count = len(rec.fee_ids)
 
-    @api.depends('grade_ids.percentage', 'grade_ids.result')
+    @api.depends(
+        'grade_ids.percentage',
+        'grade_ids.result',
+        'grade_ids.grade_letter',
+        'grade_ids.subject_id.credits',
+        'attendance_rate',
+        'attendance_count',
+        'attendance_ids.status',
+    )
     def _compute_grade_stats(self):
+        grade_pts_map = {
+            'a+': 4.0, 'a': 4.0, 'a-': 3.7,
+            'b+': 3.3, 'b': 3.0, 'b-': 2.7,
+            'c+': 2.3, 'c': 2.0, 'c-': 1.7,
+            'd': 1.0, 'f': 0.0,
+        }
         for rec in self:
             grades = rec.grade_ids
             rec.grade_count = len(grades)
             if grades:
                 percentages = grades.mapped('percentage')
-                rec.average_score = round(sum(percentages) / len(percentages), 1) if percentages else 0.0
+                exam_avg = sum(percentages) / len(percentages) if percentages else 0.0
+                rec.exam_average_score = round(exam_avg, 1)
                 rec.passed_exam_count = len(grades.filtered(lambda g: g.result == 'pass'))
                 rec.failed_exam_count = len(grades.filtered(lambda g: g.result == 'fail'))
+
+                # Weighting: 90% Exam + 10% Attendance
+                if rec.attendance_count > 0:
+                    att_score = rec.attendance_rate
+                else:
+                    att_score = exam_avg  # No attendance records yet; unpenalized baseline
+
+                rec.average_score = round((exam_avg * 0.90) + (att_score * 0.10), 1)
+
+                # Quality Points & GPA on 4.0 Scale
+                total_creds = 0
+                total_pts = 0.0
+                for g in grades:
+                    creds = g.subject_id.credits or 3
+                    gp = grade_pts_map.get(g.grade_letter)
+                    if gp is None:
+                        pct = g.percentage
+                        if pct >= 90:
+                            gp = 4.0
+                        elif pct >= 80:
+                            gp = 3.7
+                        elif pct >= 70:
+                            gp = 3.3
+                        elif pct >= 60:
+                            gp = 2.7
+                        elif pct >= 50:
+                            gp = 2.0
+                        elif pct >= 40:
+                            gp = 1.0
+                        else:
+                            gp = 0.0
+                    total_creds += creds
+                    total_pts += (gp * creds)
+
+                exam_gpa = (total_pts / total_creds) if total_creds else 0.0
+                if rec.attendance_count > 0:
+                    att_gpa = (rec.attendance_rate / 100.0) * 4.0
+                else:
+                    att_gpa = exam_gpa
+
+                rec.gpa = round((exam_gpa * 0.90) + (att_gpa * 0.10), 2)
+
                 avg = rec.average_score
                 if avg >= 90:
                     rec.academic_performance = 'Excellent (A+)'
@@ -252,7 +370,9 @@ class SchoolStudent(models.Model):
                 else:
                     rec.academic_performance = 'Needs Improvement (F)'
             else:
+                rec.exam_average_score = 0.0
                 rec.average_score = 0.0
+                rec.gpa = 0.0
                 rec.passed_exam_count = 0
                 rec.failed_exam_count = 0
                 rec.academic_performance = 'No Exams Yet'
@@ -306,7 +426,11 @@ class SchoolStudent(models.Model):
     def _compute_timetable_ids(self):
         Timetable = self.env['school.timetable']
         for student in self:
-            domain = [('active', '=', True)]
+            domain = [
+                ('active', '=', True),
+                '|',
+                ('is_holiday', '=', True),
+            ]
             if student.class_id:
                 domain.extend([
                     '|',
@@ -325,7 +449,41 @@ class SchoolStudent(models.Model):
                 ])
             sessions = Timetable.search(domain)
             student.timetable_ids = [(6, 0, sessions.ids)]
-            student.timetable_count = len(sessions)
+
+            session_domain = ['|', ('student_id', '=', student.id), ('student_ids', 'in', [student.id])]
+            if student.class_id:
+                session_domain = [
+                    '|', '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', [student.id]),
+                    '&',
+                    ('class_id', '=', student.class_id.id),
+                    ('student_id', '=', False),
+                ]
+            student.timetable_count = Timetable.search_count(session_domain)
+
+            holiday_domain = [
+                ('active', '=', True),
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', False),
+                '|',
+                ('student_id', '=', student.id),
+                ('student_ids', 'in', [student.id]),
+            ]
+            if student.class_id:
+                holiday_domain = [
+                    ('active', '=', True),
+                    ('is_holiday', '=', True),
+                    '|',
+                    ('class_id', '=', False),
+                    '|',
+                    '|',
+                    ('student_id', '=', student.id),
+                    ('student_ids', 'in', [student.id]),
+                    ('class_id', '=', student.class_id.id),
+                ]
+            student.holiday_count = Timetable.search_count(holiday_domain)
 
     def action_sync_subjects_from_class(self):
         """Populate or update student's weekly study subjects from class curriculum / teaching assignments and active timetable."""
@@ -536,7 +694,6 @@ class SchoolStudent(models.Model):
                 'sticky': False,
             }
         }
-
     def action_open_stop_study_wizard(self):
         self.ensure_one()
         return {
@@ -664,6 +821,22 @@ class SchoolStudent(models.Model):
         }
         return action
 
+    def action_recompute_academic_stats(self):
+        """Manually trigger full academic & attendance recalculation (90% Exam + 10% Attendance)."""
+        for rec in self:
+            rec._compute_attendance_stats()
+            rec._compute_grade_stats()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Academic Metrics Recalculated'),
+                'message': _('Recalculated GPA and Average Score (90% Exam + 10% Attendance) successfully.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
     def open_grades(self):
         return _open_records(self, 'grade', [('student_id', '=', self.id)])
 
@@ -743,7 +916,6 @@ class SchoolStudent(models.Model):
         if len(certs) == 1:
             return certs.action_print_certificate()
         return self.env.ref('school_management.action_report_school_certificate_student').report_action(self)
-
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
@@ -754,7 +926,7 @@ class SchoolStudent(models.Model):
         group_student = self.env.ref('school_management.group_school_student')
         group_internal = self.env.ref('base.group_user')
         group_portal = self.env.ref('base.group_portal', raise_if_not_found=False)
-        action_student = self.env.ref('school_management.action_student', raise_if_not_found=False)
+        action_home = self.env.ref('school_management.action_timetable', raise_if_not_found=False)
 
         # Set Default password After reset by admin
         default_pwd = 'password123'
@@ -764,10 +936,10 @@ class SchoolStudent(models.Model):
 
         if existing_user:
             existing_user.sudo().write({
-                'name': self.name,
                 'email': self.email,
+                'name': self.name,
                 'group_ids': groups_to_add,
-                'action_id': action_student.id if action_student else False,
+                'action_id': action_home.id if action_home else False,
             })
             self.sudo().write({'user_id': existing_user.id})
             return {
@@ -792,7 +964,7 @@ class SchoolStudent(models.Model):
                 'password': default_pwd,
                 'partner_id': partner.id,
                 'group_ids': [(6, 0, [group_student.id, group_internal.id])],
-                'action_id': action_student.id if action_student else False,
+                'action_id': action_home.id if action_home else False,
             })
             self.sudo().write({'user_id': new_user.id})
             return {
@@ -805,7 +977,6 @@ class SchoolStudent(models.Model):
                     'sticky': True,
                 }
             }
-
     def action_reset_user_password(self):
         self.ensure_one()
         if not self.user_id:
@@ -1000,32 +1171,57 @@ class SchoolStudent(models.Model):
 
     def action_view_student_timetable(self):
         self.ensure_one()
-        domain = [('active', '=', True)]
-        if self.class_id:
-            domain.extend([
-                '|',
-                '|',
-                ('student_id', '=', self.id),
-                ('student_ids', 'in', self.id),
-                '&',
-                ('student_id', '=', False),
-                ('class_id', '=', self.class_id.id),
-            ])
-        else:
-            domain.extend([
-                '|',
-                ('student_id', '=', self.id),
-                ('student_ids', 'in', self.id),
-            ])
+        return self.action_view_timetable()
+
+    def action_view_class_timetable(self):
+        self.ensure_one()
+        if not self.class_id:
+            raise UserError(_("This student is not assigned to any class."))
+        return self.class_id.action_view_timetable()
+
+    def action_view_master_timetable(self):
+        self.ensure_one()
         return {
-            'name': _('Study Timetable - %s') % (self.name or ''),
+            'name': _('Master Timetable & Calendar'),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'domain': domain,
+            'context': {'search_default_filter_mon_fri': 1},
+        }
+
+    def action_view_holidays(self):
+        self.ensure_one()
+        holiday_domain = [
+            ('active', '=', True),
+            ('is_holiday', '=', True),
+            '|',
+            ('class_id', '=', False),
+            '|',
+            ('student_id', '=', self.id),
+            ('student_ids', 'in', [self.id]),
+        ]
+        if self.class_id:
+            holiday_domain = [
+                ('active', '=', True),
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', False),
+                '|',
+                '|',
+                ('student_id', '=', self.id),
+                ('student_ids', 'in', [self.id]),
+                ('class_id', '=', self.class_id.id),
+            ]
+        return {
+            'name': _('My Study Holidays & Days Off - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': holiday_domain,
             'context': {
-                'default_student_id': self.id,
+                'default_is_holiday': True,
                 'default_class_id': self.class_id.id if self.class_id else False,
+                'search_default_filter_holidays': 1,
             },
         }
 

@@ -26,6 +26,12 @@ function compareRecords(r1, r2, orderBy, fields) {
     }
     const v1 = asc ? getValue(r1, name) : getValue(r2, name);
     const v2 = asc ? getValue(r2, name) : getValue(r1, name);
+    if (!fields || !fields[name]) {
+        if (orderBy.length > 1) {
+            return compareRecords(r1, r2, orderBy.slice(1), fields);
+        }
+        return 0;
+    }
     if (compareFieldValues(v1, v2, fields[name].type)) {
         return -1;
     }

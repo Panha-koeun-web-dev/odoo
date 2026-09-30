@@ -9,7 +9,7 @@
                   decoration-warning="is_custom_schedule">
                 <header>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <field name="student_id"/>
                 <field name="exam_id"/>
@@ -34,7 +34,7 @@
                 <field name="remarks" optional="hide"/>
                 <button name="action_export_xlsx" type="object" string="XLSX"
                         class="btn-sm btn-outline-success" icon="fa-file-excel-o"
-                        title="Export this grade record to Excel"/>
+                        title="Export this grade record to Excel" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
             </list>
         </field>
     </record>
@@ -112,12 +112,12 @@
             <form>
                 <header>
                     <button name="action_open_student_schedule_wizard" string="Set Specific Timeslot"
-                            type="object" class="btn-primary" icon="fa-clock-o"/>
+                            type="object" class="btn-primary" icon="fa-clock-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_reset_to_default_schedule" string="Reset to Exam General Time"
                             type="object" class="btn-outline-secondary" icon="fa-undo"
-                            invisible="not is_custom_schedule"/>
+                            invisible="not is_custom_schedule" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_export_xlsx" string="Export XLSX"
-                            type="object" class="btn-outline-primary" icon="fa-file-excel-o"/>
+                            type="object" class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

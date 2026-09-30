@@ -75,7 +75,7 @@
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="1"/>
             <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
         </record>
 
         <record id="rule_school_grade_admin" model="ir.rule">
@@ -109,7 +109,7 @@
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="1"/>
             <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
         </record>
 
         <record id="rule_school_attendance_admin" model="ir.rule">
@@ -295,9 +295,9 @@
 
         <!-- 9. Class Record Rules -->
         <record id="rule_school_class_student" model="ir.rule">
-            <field name="name">Student: Read Enrolled Classes Only</field>
+            <field name="name">Student: Read All Classes</field>
             <field name="model_id" ref="model_school_class"/>
-            <field name="domain_force">[('student_ids.user_id', '=', user.id)]</field>
+            <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_school_student'))]"/>
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="0"/>
@@ -361,19 +361,11 @@
             <field name="perm_unlink" eval="1"/>
         </record>
 
-        <!-- 11. Timetable Record Rules (Direct Student, Student Group, or Class Assignment) -->
+        <!-- 11. Timetable Record Rules (Allow Student to View Full Master Timetable & Calendar Created by Admin) -->
         <record id="rule_school_timetable_student" model="ir.rule">
-            <field name="name">Student: Read Own Assigned Timetables Only</field>
+            <field name="name">Student: Read All Timetables and Master Calendar</field>
             <field name="model_id" ref="model_school_timetable"/>
-            <field name="domain_force">[
-                '|',
-                '|',
-                ('student_ids.user_id', '=', user.id),
-                ('student_id.user_id', '=', user.id),
-                '&amp;',
-                ('class_id.student_ids.user_id', '=', user.id),
-                ('student_id', '=', False),
-            ]</field>
+            <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_school_student'))]"/>
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="0"/>
@@ -405,9 +397,9 @@
 
         <!-- 12. Teaching Assignment Record Rules -->
         <record id="rule_school_teaching_assignment_student" model="ir.rule">
-            <field name="name">Student: Read Own Class Teaching Assignments Only</field>
+            <field name="name">Student: Read All Teaching Assignments</field>
             <field name="model_id" ref="model_school_teaching_assignment"/>
-            <field name="domain_force">[('class_id.student_ids.user_id', '=', user.id)]</field>
+            <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('group_school_student'))]"/>
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="0"/>

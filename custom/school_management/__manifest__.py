@@ -9,6 +9,7 @@
     'data': [
         'security/school_security.xml',
         'security/ir.model.access.csv',
+        'data/term_data.xml',
         'data/certificate_data.xml',
         'data/permission_data.xml',
         'data/feedback_data.xml',
@@ -20,6 +21,8 @@
         'wizards/export_report_xlsx_views.xml',
         'wizards/assign_subject_wizard_views.xml',
         'wizards/reject_permission_wizard_views.xml',
+        'wizards/term_schedule_wizard_views.xml',
+        'views/term_views.xml',
         'views/student_views.xml',
         'views/teacher_views.xml',
         'views/class_views.xml',
@@ -56,9 +59,6 @@
             'school_management/static/src/kanban/kanban.scss',
         ],
         'web.report_assets_common': [
-            'school_management/static/src/report/school_reports.scss',
-        ],
-        'web.report_assets_pdf': [
             'school_management/static/src/report/school_reports.scss',
         ],
     },

@@ -26,8 +26,14 @@ class SchoolTeacher(models.Model):
     notes = fields.Text(string='Notes')
 
     # Timetable & Teaching Schedule Integration
-    timetable_ids = fields.One2many('school.timetable', 'teacher_id', string='Teaching Schedule')
-    timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_count')
+    timetable_ids = fields.Many2many(
+        'school.timetable',
+        string='Teaching Schedule & School Timetable',
+        compute='_compute_timetable_ids',
+        help="All teaching sessions assigned to this teacher as well as school holidays."
+    )
+    timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_ids')
+    holiday_count = fields.Integer(string='Class & School Holidays Count', compute='_compute_timetable_ids')
 
     # Weekly Teaching Assignments & Load
     teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'teacher_id', string='Teaching Assignments')
@@ -178,20 +184,90 @@ class SchoolTeacher(models.Model):
             rec.students_taught_ids = [(6, 0, students.ids)]
             rec.students_taught_count = len(students)
 
+    def _compute_timetable_ids(self):
+        Timetable = self.env['school.timetable']
+        for teacher in self:
+            class_ids = teacher.class_ids.ids
+            # Teacher sees their own teaching sessions + school/class holidays
+            domain = [
+                ('active', '=', True),
+                '|',
+                ('teacher_id', '=', teacher.id),
+                '&',
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', False),
+                ('class_id', 'in', class_ids or [False])
+            ]
+            sessions = Timetable.search(domain)
+            teacher.timetable_ids = [(6, 0, sessions.ids)]
+            teacher.timetable_count = len(sessions)
+            holiday_domain = [
+                ('active', '=', True),
+                ('is_holiday', '=', True),
+                '|',
+                ('class_id', '=', False),
+                ('class_id', 'in', class_ids or [False]),
+            ]
+            teacher.holiday_count = Timetable.search_count(holiday_domain)
+
     def _compute_timetable_count(self):
-        for rec in self:
-            rec.timetable_count = len(rec.timetable_ids)
+        return self._compute_timetable_ids()
 
     def action_view_timetable(self):
         self.ensure_one()
+        class_ids = self.class_ids.ids
+        domain = [
+            ('active', '=', True),
+            '|',
+            ('teacher_id', '=', self.id),
+            '&',
+            ('is_holiday', '=', True),
+            '|',
+            ('class_id', '=', False),
+            ('class_id', 'in', class_ids or [False])
+        ]
         return {
             'name': _('Teaching Schedule - %s') % (self.name or ''),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'domain': [('teacher_id', '=', self.id)],
+            'domain': domain,
             'context': {
                 'default_teacher_id': self.id,
+                'search_default_filter_mon_fri': 1,
+            },
+        }
+
+    def action_view_master_timetable(self):
+        self.ensure_one()
+        return {
+            'name': _('Master Timetable & Calendar'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'context': {'search_default_filter_mon_fri': 1},
+        }
+
+    def action_view_holidays(self):
+        self.ensure_one()
+        class_ids = self.class_ids.ids
+        domain = [
+            ('active', '=', True),
+            ('is_holiday', '=', True),
+            '|',
+            ('class_id', '=', False),
+            ('class_id', 'in', class_ids or [False]),
+        ]
+        return {
+            'name': _('My Teaching & Class Holidays - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable',
+            'view_mode': 'calendar,list,kanban,form',
+            'domain': domain,
+            'context': {
+                'default_is_holiday': True,
+                'search_default_filter_holidays': 1,
             },
         }
 
@@ -251,9 +327,9 @@ class SchoolTeacher(models.Model):
         existing_user = self.env['res.users'].sudo().search([('login', '=', login)], limit=1)
         group_teacher = self.env.ref('school_management.group_school_teacher')
         group_internal = self.env.ref('base.group_user')
+        # Step 3: Default password preset for teacher accounts
         action_teacher = self.env.ref('school_management.action_teacher', raise_if_not_found=False)
 
-        # Step 3: Default password preset for teacher accounts
         default_pwd = 'password123'
         groups_to_add = [(4, group_teacher.id), (4, group_internal.id)]
 

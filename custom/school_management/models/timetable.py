@@ -47,6 +47,43 @@ class SchoolTimetable(models.Model):
     name = fields.Char(string='Session Title', tracking=True)
     display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
 
+    term_id = fields.Many2one(
+        'school.term',
+        string='Academic Term',
+        tracking=True,
+        index=True,
+        ondelete='cascade',
+        help="Academic term to which this timetable session belongs."
+    )
+    week_number = fields.Integer(
+        string='Academic Week',
+        default=1,
+        index=True,
+        help="Week number within the academic term (e.g. Week 1 to Week 12)."
+    )
+    week_name = fields.Char(
+        string='Week',
+        compute='_compute_week_name',
+        store=True,
+        help="Display label for the academic week (e.g. Week 1)."
+    )
+    is_holiday = fields.Boolean(
+        string='Holiday / No Study',
+        default=False,
+        tracking=True,
+        index=True,
+        help="Mark this session as a school holiday or non-study day (no classes scheduled)."
+    )
+    holiday_name = fields.Char(
+        string='Holiday Reason',
+        tracking=True,
+        help="e.g. Khmer New Year, Water Festival, Public Holiday, Teacher Day, National Break"
+    )
+    schedule_status = fields.Selection([
+        ('regular', 'Class Session'),
+        ('holiday', 'Holiday / No Study'),
+    ], string='Status', compute='_compute_schedule_status', store=True, index=True)
+
     class_id = fields.Many2one(
         'school.class',
         string='Class',
@@ -104,7 +141,7 @@ class SchoolTimetable(models.Model):
     teacher_id = fields.Many2one(
         'school.teacher',
         string='Teacher',
-        required=True,
+        required=False,
         tracking=True,
         index=True
     )
@@ -272,6 +309,16 @@ class SchoolTimetable(models.Model):
 
         return res
 
+    @api.depends('week_number')
+    def _compute_week_name(self):
+        for rec in self:
+            rec.week_name = f"Week {rec.week_number}" if rec.week_number else False
+
+    @api.depends('is_holiday')
+    def _compute_schedule_status(self):
+        for rec in self:
+            rec.schedule_status = 'holiday' if rec.is_holiday else 'regular'
+
     @api.depends('period')
     def _compute_period_short(self):
         period_map = {
@@ -320,33 +367,38 @@ class SchoolTimetable(models.Model):
         for rec in self:
             if rec.student_id:
                 rec.student_ids = [(6, 0, [rec.student_id.id])]
-            elif rec.student_ids:
-                pass
             elif rec.class_id:
                 rec.student_ids = [(6, 0, rec.class_id.student_ids.ids)]
-            else:
+            elif not rec.student_ids:
                 rec.student_ids = False
 
-    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name')
+    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name', 'is_holiday', 'holiday_name')
     def _compute_display_name(self):
         days = dict(DAY_SELECTION)
         for rec in self:
             day_str = days.get(rec.day_of_week, '')
             start_str = rec._format_time(rec.start_time)
             end_str = rec._format_time(rec.end_time)
+            target_name = rec.student_id.name or (rec.class_id.name if rec.class_id else _("Session"))
+            if rec.is_holiday:
+                h_title = rec.holiday_name or rec.name or _("Holiday / No Class")
+                scope_str = f" - {target_name}" if rec.class_id or rec.student_id else " - School-Wide"
+                rec.display_name = f"[HOLIDAY] {h_title}{scope_str} ({day_str} {start_str}-{end_str})"
+                continue
             subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
             subject_name = ', '.join(subs.mapped('name')) if subs else (rec.subject_id.name or _("Subject"))
-            target_name = rec.student_id.name or (rec.class_id.name if rec.class_id else _("Session"))
             room_str = f" [{rec.room}]" if rec.room else ""
             if rec.name and rec.name != f"{target_name} - {subject_name}":
                 rec.display_name = f"[{target_name}] {rec.name} ({day_str} {start_str}-{end_str}){room_str}"
             else:
                 rec.display_name = f"[{target_name}] {subject_name} ({day_str} {start_str}-{end_str}){room_str}"
 
-    @api.depends('subject_id', 'class_id', 'teacher_id')
+    @api.depends('subject_id', 'class_id', 'teacher_id', 'is_holiday')
     def _compute_color(self):
         for rec in self:
-            if rec.teacher_id:
+            if rec.is_holiday:
+                rec.color = 2
+            elif rec.teacher_id:
                 rec.color = (rec.teacher_id.id * 3 + 1) % 11 + 1
             elif rec.subject_id:
                 rec.color = (rec.subject_id.id * 3 + 1) % 11 + 1
@@ -419,6 +471,20 @@ class SchoolTimetable(models.Model):
                 self.end_time = round(local_end.hour + local_end.minute / 60.0, 2)
                 self.period = self._match_period(self.start_time, self.end_time)
 
+    @api.onchange('is_holiday')
+    def _onchange_is_holiday(self):
+        if self.is_holiday:
+            self.teacher_id = False
+            self.subject_id = False
+            self.subject_ids = False
+            self.period = 'custom'
+            self.start_time = 7.5
+            self.end_time = 17.0
+            if not self.holiday_name:
+                self.holiday_name = _("School Holiday")
+        else:
+            self.holiday_name = False
+
     # -------------------------------------------------------------------------
     # CRUD SYNC
     # -------------------------------------------------------------------------
@@ -459,11 +525,34 @@ class SchoolTimetable(models.Model):
                 vals['subject_id'] = extracted_sub_ids[0]
         elif vals.get('subject_id') and not vals.get('subject_ids'):
             vals['subject_ids'] = [(6, 0, [vals['subject_id']])]
-            extracted_sub_ids = [vals['subject_id']]
+            extracted_sub_ids = [vals['subject_id'] if isinstance(vals['subject_id'], int) else vals['subject_id'].id]
 
-        if not vals.get('name') and target_name and extracted_sub_ids:
+        if vals.get('is_holiday'):
+            vals['teacher_id'] = False
+            vals['subject_id'] = False
+            vals['subject_ids'] = [(5, 0, 0)]
+            if not vals.get('name') or vals.get('name') == _("New Session"):
+                vals['name'] = vals.get('holiday_name') or _("School Holiday")
+            if not vals.get('holiday_name'):
+                vals['holiday_name'] = vals.get('name') or _("School Holiday")
+            if 'start_time' not in vals or (vals.get('start_time') == 8.0 and vals.get('end_time') == 9.0):
+                vals.setdefault('start_time', 7.5)
+                vals.setdefault('end_time', 17.0)
+                vals.setdefault('period', 'custom')
+        elif not vals.get('name') and target_name and extracted_sub_ids:
             s_names = ', '.join(self.env['school.subject'].browse(extracted_sub_ids).mapped('name'))
             vals['name'] = f"{s_names} - {target_name}".strip(' -')
+
+        term = None
+        if vals.get('term_id'):
+            term = self.env['school.term'].browse(vals['term_id'])
+
+        if not vals.get('week_number') and vals.get('start_datetime') and term and term.date_start:
+            s_dt = fields.Datetime.to_datetime(vals['start_datetime'])
+            first_mon = term.date_start - timedelta(days=term.date_start.weekday())
+            w_diff = (s_dt.date() - first_mon).days // 7 + 1
+            if 1 <= w_diff <= (term.duration_weeks or 12):
+                vals['week_number'] = w_diff
 
         if 'start_datetime' in vals and 'end_datetime' in vals and ('day_of_week' not in vals or 'start_time' not in vals):
             local_start = self._utc_to_local(vals['start_datetime'])
@@ -478,8 +567,8 @@ class SchoolTimetable(models.Model):
             d_val = vals.get('day_of_week', '0')
             if vals.get('period') in PERIOD_PRESETS and 'start_time' not in vals:
                 vals['start_time'], vals['end_time'] = PERIOD_PRESETS[vals['period']]
-            s_val = vals.get('start_time', 8.0)
-            e_val = vals.get('end_time', 9.0)
+            s_val = vals.get('start_time', 7.5 if vals.get('is_holiday') else 8.0)
+            e_val = vals.get('end_time', 17.0 if vals.get('is_holiday') else 9.0)
             if 'period' not in vals:
                 vals['period'] = self._match_period(s_val, e_val)
             s_dt, e_dt = self._calculate_datetimes(d_val, s_val, e_val)
@@ -511,86 +600,100 @@ class SchoolTimetable(models.Model):
             self._sync_timetable_vals(vals)
         records = super().create(vals_list)
         for rec in records:
-            if rec.teacher_id:
+            if not rec.is_holiday:
                 subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
-                for sub in subs:
-                    if sub not in rec.teacher_id.subject_ids:
-                        rec.teacher_id.subject_ids = [(4, sub.id)]
+                if rec.teacher_id:
+                    rec.teacher_id.subject_ids |= subs
+                    for sub in subs:
+                        existing = self.env['school.teaching.assignment'].search([
+                            ('teacher_id', '=', rec.teacher_id.id),
+                            ('subject_id', '=', sub.id),
+                            ('class_id', '=', rec.class_id.id if rec.class_id else False),
+                            ('active', '=', True),
+                        ], limit=1)
+                        if not existing and rec.class_id:
+                            self.env['school.teaching.assignment'].create({
+                                'teacher_id': rec.teacher_id.id,
+                                'subject_id': sub.id,
+                                'class_id': rec.class_id.id,
+                                'weekly_hours': max(1.0, round(rec.end_time - rec.start_time, 2)),
+                            })
+                students = rec.student_ids or (rec.student_id if rec.student_id else (rec.class_id and rec.class_id.student_ids))
+                if students and subs:
+                    for stu in students:
+                        for sub in subs:
+                            stu_sub = self.env['school.student.subject'].search([
+                                ('student_id', '=', stu.id),
+                                ('subject_id', '=', sub.id),
+                            ], limit=1)
+                            if not stu_sub:
+                                self.env['school.student.subject'].create({
+                                    'student_id': stu.id,
+                                    'subject_id': sub.id,
+                                    'class_id': rec.class_id.id if rec.class_id else (stu.class_id.id if stu.class_id else False),
+                                    'weekly_hours': max(1.0, round(rec.end_time - rec.start_time, 2)),
+                                })
+
+        holidays = records.filtered(lambda r: r.is_holiday)
+        if holidays:
+            holidays._cleanup_regular_classes_for_holiday()
+
         records._trigger_recompute_stats()
         return records
 
     def write(self, vals):
-        for rec in self:
-            merged = dict(vals)
-            has_dt = 'start_datetime' in merged or 'end_datetime' in merged
-            has_timing = 'day_of_week' in merged or 'start_time' in merged or 'end_time' in merged or 'period' in merged
+        if 'student_id' in vals and not vals.get('student_id') and not vals.get('student_ids'):
+            for rec in self:
+                if rec.class_id:
+                    vals['student_ids'] = [(6, 0, rec.class_id.student_ids.ids)]
 
-            # Sync student_id and student_ids if one updated
-            if 'student_id' in merged and 'student_ids' not in merged:
-                if merged['student_id']:
-                    merged['student_ids'] = [(6, 0, [merged['student_id']])]
-                else:
-                    merged['student_ids'] = [(5, 0, 0)]
-            elif 'student_ids' in merged and 'student_id' not in merged:
-                stu_ids = []
-                for cmd in merged['student_ids']:
-                    if isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 6:
-                        stu_ids.extend(cmd[2])
-                    elif isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 4:
-                        stu_ids.append(cmd[1])
-                    elif isinstance(cmd, int):
-                        stu_ids.append(cmd)
-                if len(stu_ids) == 1:
-                    merged['student_id'] = stu_ids[0]
-                elif len(stu_ids) > 1:
-                    merged['student_id'] = False
+        res = super().write(vals)
 
-            if has_dt and not has_timing:
-                s_dt = merged.get('start_datetime', rec.start_datetime)
-                e_dt = merged.get('end_datetime', rec.end_datetime)
-                local_start = rec._utc_to_local(s_dt)
-                local_end = rec._utc_to_local(e_dt)
-                if local_start and local_end:
-                    merged['day_of_week'] = str(local_start.weekday())
-                    s_time = round(local_start.hour + local_start.minute / 60.0, 2)
-                    e_time = round(local_end.hour + local_end.minute / 60.0, 2)
-                    merged['period'] = rec._match_period(s_time, e_time)
-            elif has_timing and not has_dt:
-                if merged.get('period') in PERIOD_PRESETS and 'start_time' not in merged:
-                    merged['start_time'], merged['end_time'] = PERIOD_PRESETS[merged['period']]
-                day_str = merged.get('day_of_week', rec.day_of_week)
-                s_time = merged.get('start_time', rec.start_time)
-                e_time = merged.get('end_time', rec.end_time)
-                if 'period' not in merged:
-                    merged['period'] = rec._match_period(s_time, e_time)
-                s_dt, e_dt = rec._calculate_datetimes(day_str, s_time, e_time)
-                merged['start_datetime'] = s_dt
-                merged['end_datetime'] = e_dt
+        # Resync timing if day or start/end datetimes changed
+        if any(k in vals for k in ('start_datetime', 'end_datetime', 'day_of_week', 'start_time', 'end_time', 'is_holiday')):
+            for rec in self:
+                sync_vals = {}
+                if 'start_datetime' in vals or 'end_datetime' in vals:
+                    local_s = rec._utc_to_local(rec.start_datetime)
+                    local_e = rec._utc_to_local(rec.end_datetime)
+                    if local_s and local_e:
+                        sync_vals['day_of_week'] = str(local_s.weekday())
+                        sync_vals['start_time'] = round(local_s.hour + local_s.minute / 60.0, 2)
+                        sync_vals['end_time'] = round(local_e.hour + local_e.minute / 60.0, 2)
+                        sync_vals['period'] = rec._match_period(sync_vals['start_time'], sync_vals['end_time'])
+                elif 'day_of_week' in vals or 'start_time' in vals or 'end_time' in vals:
+                    s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time)
+                    sync_vals['start_datetime'] = s_dt
+                    sync_vals['end_datetime'] = e_dt
+                    sync_vals['period'] = rec._match_period(rec.start_time, rec.end_time)
 
-            super(SchoolTimetable, rec).write(merged)
-            if 'subject_ids' in merged and 'subject_id' not in merged:
-                extracted = []
-                for cmd in merged['subject_ids']:
-                    if isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 6:
-                        extracted.extend(cmd[2])
-                    elif isinstance(cmd, (list, tuple)) and len(cmd) == 3 and cmd[0] == 4:
-                        extracted.append(cmd[1])
-                if extracted:
-                    merged['subject_id'] = extracted[0]
+                if rec.is_holiday:
+                    sync_vals.update({
+                        'teacher_id': False,
+                        'subject_id': False,
+                        'subject_ids': [(5, 0, 0)],
+                        'period': 'custom',
+                        'start_time': 7.5,
+                        'end_time': 17.0,
+                    })
 
-            if rec.teacher_id:
-                subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
-                for sub in subs:
-                    if sub not in rec.teacher_id.subject_ids:
-                        rec.teacher_id.subject_ids = [(4, sub.id)]
+                if sync_vals:
+                    super(SchoolTimetable, rec).write(sync_vals)
+
+        holidays = self.filtered(lambda r: r.is_holiday)
+        if holidays:
+            holidays._cleanup_regular_classes_for_holiday()
+
         self._trigger_recompute_stats()
-        return True
+        return res
 
     def unlink(self):
-        classes = self.mapped('class_id')
-        subjects = self.mapped('subject_ids') | self.mapped('subject_id')
-        teachers = self.mapped('teacher_id')
-        students = self.mapped('student_ids') | self.mapped('student_id') | self.mapped('class_id.student_ids')
+        regular_sessions = self.filtered(lambda s: not s.is_holiday)
+        subjects = regular_sessions.mapped('subject_ids') | regular_sessions.mapped('subject_id')
+        classes = regular_sessions.mapped('class_id')
+        teachers = regular_sessions.mapped('teacher_id')
+        students = regular_sessions.mapped('student_ids') | regular_sessions.mapped('student_id') | regular_sessions.mapped('class_id.student_ids')
+
         res = super().unlink()
         if subjects:
             asgs = self.env['school.teaching.assignment'].search([
@@ -617,83 +720,33 @@ class SchoolTimetable(models.Model):
         return res
 
     def _trigger_recompute_stats(self):
-        classes = self.mapped('class_id')
-        subjects = self.mapped('subject_ids') | self.mapped('subject_id')
-        teachers = self.mapped('teacher_id')
-        students = self.mapped('student_ids') | self.mapped('student_id') | self.mapped('class_id.student_ids')
+        regular_sessions = self.filtered(lambda s: not s.is_holiday)
+        classes = regular_sessions.mapped('class_id')
+        subjects = regular_sessions.mapped('subject_ids') | regular_sessions.mapped('subject_id')
+        teachers = regular_sessions.mapped('teacher_id')
+        students = regular_sessions.mapped('student_ids') | regular_sessions.mapped('student_id') | regular_sessions.mapped('class_id.student_ids')
 
-        # 1. Auto-ensure teaching assignments for (teacher, subject, class)
-        Assignment = self.env['school.teaching.assignment']
-        for sess in self:
-            if sess.teacher_id and sess.class_id:
-                duration = max(0.0, (sess.end_time or 0.0) - (sess.start_time or 0.0))
-                for sub in (sess.subject_ids | sess.subject_id):
-                    asg = Assignment.search([
-                        ('teacher_id', '=', sess.teacher_id.id),
-                        ('class_id', '=', sess.class_id.id),
-                        ('subject_id', '=', sub.id),
-                    ], limit=1)
-                    if not asg:
-                        Assignment.create({
-                            'teacher_id': sess.teacher_id.id,
-                            'class_id': sess.class_id.id,
-                            'subject_id': sub.id,
-                            'weekly_hours': duration or 2.0,
-                            'weekly_sessions': 1,
-                            'active': True,
-                        })
-
-        # 2. Auto-ensure student study subjects for all attending students
-        StudentSubject = self.env['school.student.subject']
-        for sess in self:
-            if sess.student_ids or sess.student_id:
-                target_students = sess.student_ids | sess.student_id
-            elif sess.class_id:
-                target_students = sess.class_id.student_ids
-            else:
-                target_students = self.env['school.student']
-
-            session_subs = sess.subject_ids | sess.subject_id
-            duration = max(0.0, (sess.end_time or 0.0) - (sess.start_time or 0.0))
-            for stud in target_students:
-                for sub in session_subs:
-                    rec_sub = StudentSubject.search([
-                        ('student_id', '=', stud.id),
-                        ('subject_id', '=', sub.id),
-                    ], limit=1)
-                    if not rec_sub:
-                        StudentSubject.create({
-                            'student_id': stud.id,
-                            'class_id': stud.class_id.id if stud.class_id else (sess.class_id.id if sess.class_id else False),
-                            'subject_id': sub.id,
-                            'teacher_id': sess.teacher_id.id if sess.teacher_id else False,
-                            'weekly_hours': duration or 2.0,
-                            'weekly_sessions': 1,
-                            'study_status': 'active',
-                            'active': True,
-                        })
-                    elif not rec_sub.teacher_id and sess.teacher_id:
-                        rec_sub.teacher_id = sess.teacher_id.id
-
-        # 3. Recalculate scheduled stats on assignments and student subjects
+        # 1. Update teaching assignment counts & hours
         if subjects:
-            asgs = Assignment.search([
+            assignments = self.env['school.teaching.assignment'].search([
                 ('subject_id', 'in', subjects.ids),
                 '|', ('class_id', 'in', classes.ids), ('teacher_id', 'in', teachers.ids),
             ])
-            if asgs:
-                asgs._compute_timetable_stats()
+            if assignments:
+                assignments._compute_timetable_stats()
 
-            stu_subs = StudentSubject.search([
+        # 2. Update student subject study counts & hours
+        if subjects:
+            stu_subjects = self.env['school.student.subject'].search([
                 ('subject_id', 'in', subjects.ids),
                 '|',
                 ('class_id', 'in', classes.ids),
                 ('student_id', 'in', students.ids),
             ])
-            if stu_subs:
-                stu_subs._compute_timetable_stats()
+            if stu_subjects:
+                stu_subjects._compute_timetable_stats()
 
-        # 4. Refresh parent model computations
+        # 3. Refresh parent model computations
         if students:
             students._compute_study_stats()
             students._compute_timetable_ids()
@@ -702,18 +755,243 @@ class SchoolTimetable(models.Model):
         if classes:
             classes._compute_timetable_count()
 
+    def _get_session_calendar_date(self):
+        """Determine the calendar date for a timetable session (from start_datetime or term + week + day)."""
+        self.ensure_one()
+        if self.start_datetime:
+            return self._utc_to_local(self.start_datetime).date()
+        if self.term_id and self.term_id.date_start and self.week_number and self.day_of_week:
+            first_mon = self.term_id.date_start - timedelta(days=self.term_id.date_start.weekday())
+            return first_mon + timedelta(weeks=self.week_number - 1, days=int(self.day_of_week))
+        return False
+
+    def _is_holiday_applicable(self, regular_rec, holiday_rec):
+        """Check if a holiday applies to a given regular class session."""
+        # 1. Class scope:
+        if holiday_rec.class_id:
+            reg_classes = regular_rec.class_id
+            if regular_rec.student_ids or regular_rec.student_id:
+                reg_classes |= (regular_rec.student_ids | regular_rec.student_id).mapped('class_id')
+            if holiday_rec.class_id not in reg_classes:
+                return False
+
+        # 2. Term scope:
+        if regular_rec.term_id and holiday_rec.term_id:
+            if regular_rec.term_id != holiday_rec.term_id:
+                return False
+        elif holiday_rec.term_id:
+            h_term = holiday_rec.term_id
+            if h_term.state != 'active':
+                return False
+            if regular_rec.start_datetime and h_term.date_start and h_term.date_end:
+                r_date = regular_rec._utc_to_local(regular_rec.start_datetime).date()
+                if not (h_term.date_start <= r_date <= h_term.date_end):
+                    return False
+        elif regular_rec.term_id:
+            r_term = regular_rec.term_id
+            if holiday_rec.start_datetime and r_term.date_start and r_term.date_end:
+                h_date = holiday_rec._utc_to_local(holiday_rec.start_datetime).date()
+                if not (r_term.date_start <= h_date <= r_term.date_end):
+                    return False
+
+        # 3. Date / Day match:
+        r_local_date = regular_rec._get_session_calendar_date()
+        h_local_date = holiday_rec._get_session_calendar_date()
+
+        if r_local_date and h_local_date:
+            return r_local_date == h_local_date
+
+        if regular_rec.term_id and holiday_rec.term_id and regular_rec.term_id == holiday_rec.term_id:
+            if regular_rec.week_number and holiday_rec.week_number and regular_rec.week_number == holiday_rec.week_number:
+                return regular_rec.day_of_week == holiday_rec.day_of_week
+
+        if not regular_rec.term_id and not holiday_rec.term_id and not regular_rec.start_datetime and not holiday_rec.start_datetime:
+            return regular_rec.day_of_week == holiday_rec.day_of_week
+
+        return False
+
+    def _cleanup_regular_classes_for_holiday(self):
+        """Ensure no regular classes stay on the same day/column as a holiday.
+        If school-wide holiday (class_id=False): unlinks ALL regular class sessions on that day/date.
+        If class-specific (class_id=X): unlinks all regular class sessions for class X on that day/date."""
+        for holiday in self:
+            if not holiday.is_holiday or not holiday.active:
+                continue
+
+            base_domain = [
+                ('id', '!=', holiday.id),
+                ('is_holiday', '=', False),
+                ('active', '=', True),
+            ]
+            if holiday.class_id:
+                base_domain.append(('class_id', '=', holiday.class_id.id))
+
+            all_candidates = self.env['school.timetable'].search(base_domain)
+            to_remove = self.env['school.timetable']
+            for cand in all_candidates:
+                if self._is_holiday_applicable(cand, holiday):
+                    to_remove |= cand
+
+            if to_remove:
+                to_remove.unlink()
+
+    @api.model
+    def action_cleanup_holiday_conflicts(self):
+        """Purge any regular classes that exist concurrently with holidays across the system."""
+        holidays = self.search([('is_holiday', '=', True), ('active', '=', True)])
+        holidays._cleanup_regular_classes_for_holiday()
+        return True
+
+    def action_toggle_holiday(self):
+        """Toggle holiday status for this timetable session."""
+        for rec in self:
+            if rec.is_holiday:
+                first_tch = (rec.class_id and rec.class_id.teacher_id) or self.env['school.teacher'].search([], limit=1)
+                first_sub = self.env['school.subject'].search([], limit=1)
+                vals = {
+                    'is_holiday': False,
+                    'holiday_name': False,
+                    'schedule_status': 'regular',
+                }
+                if not rec.teacher_id:
+                    vals['teacher_id'] = first_tch.id if first_tch else False
+                if not rec.subject_id and not rec.subject_ids:
+                    if first_sub:
+                        vals['subject_id'] = first_sub.id
+                        vals['subject_ids'] = [(6, 0, [first_sub.id])]
+                rec.write(vals)
+            else:
+                h_name = rec.holiday_name or _("School Holiday")
+                rec.write({
+                    'is_holiday': True,
+                    'holiday_name': h_name,
+                    'schedule_status': 'holiday',
+                    'start_time': 7.5,
+                    'end_time': 17.0,
+                    'period': 'custom',
+                    'teacher_id': False,
+                    'subject_id': False,
+                    'subject_ids': [(5, 0, 0)],
+                })
+                rec._cleanup_regular_classes_for_holiday()
+
+    def action_view_class_students(self):
+        """Navigate to students enrolled in the class or session."""
+        self.ensure_one()
+        target_domain = [('class_id', '=', self.class_id.id)] if self.class_id else [('id', 'in', self.student_ids.ids)]
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Class Students'),
+            'res_model': 'school.student',
+            'view_mode': 'list,form',
+            'domain': target_domain,
+            'context': {'default_class_id': self.class_id.id if self.class_id else False},
+        }
+
+    def action_view_teaching_assignments(self):
+        """Navigate to teaching assignments associated with this session's teacher or class."""
+        self.ensure_one()
+        domain = []
+        name = _('Teaching Assignments')
+        if self.teacher_id:
+            domain = [('teacher_id', '=', self.teacher_id.id)]
+            name = _('Teaching Assignments - %s') % (self.teacher_id.name or '')
+        elif self.class_id:
+            domain = [('class_id', '=', self.class_id.id)]
+            name = _('Teaching Assignments - %s') % (self.class_id.name or '')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': name,
+            'res_model': 'school.teaching.assignment',
+            'view_mode': 'list,kanban,form',
+            'domain': domain,
+            'context': {
+                'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+                'default_class_id': self.class_id.id if self.class_id else False,
+            },
+        }
+
+    def action_anchor_to_current_week(self):
+        """Re-anchor session datetime to match the current week's corresponding weekday."""
+        today = fields.Date.context_today(self)
+        monday_this_week = today - timedelta(days=today.weekday())
+        for rec in self:
+            day_offset = int(rec.day_of_week) if rec.day_of_week else 0
+            session_date = monday_this_week + timedelta(days=day_offset)
+            start_dt = rec._time_to_datetime(session_date, rec.start_time)
+            end_dt = rec._time_to_datetime(session_date, rec.end_time)
+            rec.write({
+                'start_datetime': start_dt,
+                'end_datetime': end_dt,
+            })
+
     # -------------------------------------------------------------------------
-    # CONSTRAINTS & CONFLICT CHECKING
+    # CONSTRAINTS & CONFLICT CHECKING (SCOPED BY ACADEMIC TERM)
     # -------------------------------------------------------------------------
-    @api.constrains('subject_id', 'subject_ids')
+    def _is_term_conflict(self, other):
+        """Returns True if self and other belong to the same term or overlapping terms,
+        AND are scheduled on the same calendar date (if exact dates are specified)."""
+        self.ensure_one()
+        if self.is_holiday or other.is_holiday:
+            return False
+        if self.start_datetime and other.start_datetime:
+            if self.start_datetime.date() != other.start_datetime.date():
+                return False
+        if self.week_number and other.week_number and self.week_number != other.week_number:
+            return False
+        if not self.term_id and not other.term_id:
+            return True
+        if self.term_id and other.term_id:
+            if self.term_id.id == other.term_id.id:
+                return True
+            if self.term_id.date_start and self.term_id.date_end and other.term_id.date_start and other.term_id.date_end:
+                return max(self.term_id.date_start, other.term_id.date_start) <= min(self.term_id.date_end, other.term_id.date_end)
+            return False
+        term_to_check = self.term_id or other.term_id
+        return bool(term_to_check and term_to_check.state == 'active')
+
+    def _check_holiday_conflict_single(self, rec, days):
+        """Check if any active holiday conflicts with this regular session."""
+        domain = [
+            ('id', '!=', rec.id),
+            ('is_holiday', '=', True),
+            ('active', '=', True),
+        ]
+        candidate_holidays = self.env['school.timetable'].search(domain)
+        for hol in candidate_holidays:
+            if self._is_holiday_applicable(rec, hol):
+                h_name = hol.holiday_name or hol.name or _("School Holiday")
+                day_name = days.get(rec.day_of_week, '')
+                rec_local_date = rec._get_session_calendar_date()
+                date_str = str(rec_local_date) if rec_local_date else day_name
+                scope_str = _("School-Wide Holiday") if not hol.class_id else _("Class Holiday (%s)") % hol.class_id.name
+                raise ValidationError(_(
+                    "Cannot schedule class session on %(date)s:\n"
+                    "%(scope)s '%(holiday)s' is active on this day.\n"
+                    "No regular classes are allowed to stay or be scheduled on a holiday."
+                ) % {
+                    'date': date_str,
+                    'scope': scope_str,
+                    'holiday': h_name,
+                })
+
+    @api.constrains('teacher_id', 'is_holiday')
+    def _check_teacher_required(self):
+        for rec in self:
+            if not rec.is_holiday and not rec.teacher_id:
+                raise ValidationError(_("Teacher is required for regular class sessions."))
+
+    @api.constrains('subject_id', 'subject_ids', 'is_holiday')
     def _check_subjects_present(self):
         for rec in self:
-            if not rec.subject_ids and not rec.subject_id:
+            if not rec.is_holiday and not rec.subject_ids and not rec.subject_id:
                 raise ValidationError(_("Please select at least one Subject for this timetable session."))
 
-    @api.constrains('class_id', 'student_id', 'student_ids')
+    @api.constrains('class_id', 'student_id', 'student_ids', 'is_holiday')
     def _check_class_or_student(self):
         for rec in self:
+            if rec.is_holiday:
+                continue
             if not rec.class_id and not rec.student_id and not rec.student_ids:
                 raise ValidationError(_("Please select either a Class or at least one Student for this timetable session."))
 
@@ -732,175 +1010,154 @@ class SchoolTimetable(models.Model):
                     "Invalid Schedule Datetime: Session Start must be strictly earlier than Session End."
                 ))
 
-    @api.constrains('teacher_id', 'day_of_week', 'start_time', 'end_time', 'active')
+    def _check_teacher_conflict_single(self, rec, overlapping, days):
+        """Check if teacher is already booked in overlapping sessions."""
+        if not rec.teacher_id:
+            return
+        t_conflicts = [o for o in overlapping if o.teacher_id == rec.teacher_id]
+        if t_conflicts:
+            other = t_conflicts[0]
+            target = other.student_id.name if other.student_id else (other.class_id.name if other.class_id else '')
+            term_str = f" in {other.term_id.name}" if other.term_id else ""
+            raise ValidationError(_(
+                "Teacher Conflict Detected!\n"
+                "Teacher '%(teacher)s' is already scheduled on %(day)s from %(start)s to %(end)s %(term)s "
+                "for '%(target)s' (Subject: %(subject)s).\n"
+                "A teacher cannot be booked for two overlapping sessions simultaneously."
+            ) % {
+                'teacher': rec.teacher_id.name,
+                'day': days.get(rec.day_of_week),
+                'start': rec._format_time(other.start_time),
+                'end': rec._format_time(other.end_time),
+                'term': term_str,
+                'target': target,
+                'subject': other.subject_id.name,
+            })
+
+    def _check_class_conflict_single(self, rec, overlapping, days):
+        """Check if class is already scheduled in overlapping sessions."""
+        if not rec.class_id or rec.student_id:
+            return
+        c_conflicts = [o for o in overlapping if o.class_id == rec.class_id and not o.student_id]
+        if c_conflicts:
+            other = c_conflicts[0]
+            term_str = f" in {other.term_id.name}" if other.term_id else ""
+            raise ValidationError(_(
+                "Class Conflict Detected!\n"
+                "Class '%(class_name)s' is already scheduled on %(day)s from %(start)s to %(end)s %(term)s "
+                "for Subject '%(subject)s' with Teacher '%(teacher)s'.\n"
+                "A class cannot have two concurrent class-wide subjects at the same time."
+            ) % {
+                'class_name': rec.class_id.name,
+                'day': days.get(rec.day_of_week),
+                'start': rec._format_time(other.start_time),
+                'end': rec._format_time(other.end_time),
+                'term': term_str,
+                'subject': other.subject_id.name,
+                'teacher': other.teacher_id.name,
+            })
+
+    def _check_student_conflict_single(self, rec, overlapping, days):
+        """Check if any enrolled student is already scheduled in overlapping sessions."""
+        students_to_check = rec.student_ids or (rec.student_id if rec.student_id else self.env['school.student'])
+        if not students_to_check and rec.class_id:
+            students_to_check = rec.class_id.student_ids
+        if not students_to_check:
+            return
+        for other in overlapping:
+            other_students = other.student_ids or (other.student_id if other.student_id else other.class_id.student_ids)
+            colliding = students_to_check & other_students
+            if colliding:
+                student_names = ', '.join(colliding.mapped('name')) if colliding else _("Student")
+                term_str = f" in {other.term_id.name}" if other.term_id else ""
+                other_name = other.display_name or (other.subject_id.name if other.subject_id else '')
+                raise ValidationError(_(
+                    "Student Schedule Conflict Detected!\n"
+                    "Student '%(students)s' already has another conflicting session on %(day)s %(term)s:\n"
+                    "%(other_session)s (%(start)s - %(end)s).\n"
+                    "A student cannot be scheduled in multiple timetable sessions at the same time."
+                ) % {
+                    'students': student_names,
+                    'day': days.get(rec.day_of_week),
+                    'term': term_str,
+                    'other_session': other_name,
+                    'start': rec._format_time(other.start_time),
+                    'end': rec._format_time(other.end_time),
+                })
+
+    def _check_room_conflict_single(self, rec, overlapping, days):
+        """Check if classroom is already occupied in overlapping sessions."""
+        if not rec.room:
+            return
+        rec_room = rec.room.strip().lower()
+        r_conflicts = [o for o in overlapping if o.room and o.room.strip().lower() == rec_room]
+        if r_conflicts:
+            other = r_conflicts[0]
+            target = other.student_id.name if other.student_id else (other.class_id.name if other.class_id else '')
+            term_str = f" in {other.term_id.name}" if other.term_id else ""
+            raise ValidationError(_(
+                "Room Collision Detected!\n"
+                "Room '%(room)s' is already booked on %(day)s from %(start)s to %(end)s %(term)s "
+                "for '%(target)s' (Teacher: %(teacher)s, Subject: %(subject)s).\n"
+                "Two classes or sessions cannot occupy the same room simultaneously."
+            ) % {
+                'room': rec.room,
+                'day': days.get(rec.day_of_week),
+                'start': rec._format_time(other.start_time),
+                'end': rec._format_time(other.end_time),
+                'term': term_str,
+                'target': target,
+                'teacher': other.teacher_id.name,
+                'subject': other.subject_id.name,
+            })
+
+    @api.constrains(
+        'teacher_id', 'class_id', 'student_id', 'student_ids', 'room',
+        'day_of_week', 'start_time', 'end_time', 'start_datetime', 'end_datetime',
+        'term_id', 'week_number', 'is_holiday', 'active'
+    )
+    def _check_schedule_conflicts(self):
+        """Unified conflict validation pipeline.
+        Combines holiday, teacher, class, student, and room collision checks into one path,
+        querying overlapping candidates only once for all checks."""
+        days = dict(DAY_SELECTION)
+        for rec in self:
+            if not rec.active or rec.is_holiday:
+                continue
+
+            # 1. Holiday collision check
+            self._check_holiday_conflict_single(rec, days)
+
+            # 2. Shared Overlap Query: find all concurrent sessions once
+            overlapping_candidates = self.search([
+                ('id', '!=', rec.id),
+                ('active', '=', True),
+                ('is_holiday', '=', False),
+                ('day_of_week', '=', rec.day_of_week),
+                ('start_time', '<', rec.end_time),
+                ('end_time', '>', rec.start_time),
+            ])
+            overlapping = [o for o in overlapping_candidates if rec._is_term_conflict(o)]
+            if not overlapping:
+                continue
+
+            # 3. Check specific collisions against overlapping sessions
+            self._check_teacher_conflict_single(rec, overlapping, days)
+            self._check_class_conflict_single(rec, overlapping, days)
+            self._check_student_conflict_single(rec, overlapping, days)
+            self._check_room_conflict_single(rec, overlapping, days)
+
+    def _check_holiday_conflict(self):
+        self._check_schedule_conflicts()
+
     def _check_teacher_conflict(self):
-        days = dict(DAY_SELECTION)
-        for rec in self:
-            if not rec.active or not rec.teacher_id:
-                continue
-            conflicts = self.search([
-                ('id', '!=', rec.id),
-                ('teacher_id', '=', rec.teacher_id.id),
-                ('day_of_week', '=', rec.day_of_week),
-                ('active', '=', True),
-                ('start_time', '<', rec.end_time),
-                ('end_time', '>', rec.start_time),
-            ])
-            if conflicts:
-                other = conflicts[0]
-                target = other.student_id.name if other.student_id else (other.class_id.name if other.class_id else '')
-                raise ValidationError(_(
-                    "Teacher Conflict Detected!\n"
-                    "Teacher '%(teacher)s' is already scheduled on %(day)s from %(start)s to %(end)s "
-                    "for '%(target)s' (Subject: %(subject)s).\n"
-                    "A teacher cannot be booked for two overlapping sessions simultaneously."
-                ) % {
-                    'teacher': rec.teacher_id.name,
-                    'day': days.get(rec.day_of_week),
-                    'start': rec._format_time(other.start_time),
-                    'end': rec._format_time(other.end_time),
-                    'target': target,
-                    'subject': other.subject_id.name,
-                })
+        self._check_schedule_conflicts()
 
-    @api.constrains('class_id', 'day_of_week', 'start_time', 'end_time', 'active')
     def _check_class_conflict(self):
-        days = dict(DAY_SELECTION)
-        for rec in self:
-            if not rec.active or not rec.class_id or rec.student_id:
-                # If specific 1-on-1 student session, class conflict check does not block entire class
-                continue
-            conflicts = self.search([
-                ('id', '!=', rec.id),
-                ('class_id', '=', rec.class_id.id),
-                ('student_id', '=', False),
-                ('day_of_week', '=', rec.day_of_week),
-                ('active', '=', True),
-                ('start_time', '<', rec.end_time),
-                ('end_time', '>', rec.start_time),
-            ])
-            if conflicts:
-                other = conflicts[0]
-                raise ValidationError(_(
-                    "Class Conflict Detected!\n"
-                    "Class '%(class_name)s' is already scheduled on %(day)s from %(start)s to %(end)s "
-                    "for Subject '%(subject)s' with Teacher '%(teacher)s'.\n"
-                    "A class cannot have two concurrent class-wide subjects at the same time."
-                ) % {
-                    'class_name': rec.class_id.name,
-                    'day': days.get(rec.day_of_week),
-                    'start': rec._format_time(other.start_time),
-                    'end': rec._format_time(other.end_time),
-                    'subject': other.subject_id.name,
-                    'teacher': other.teacher_id.name,
-                })
+        self._check_schedule_conflicts()
 
-    @api.constrains('student_id', 'student_ids', 'day_of_week', 'start_time', 'end_time', 'active')
     def _check_student_conflict(self):
-        days = dict(DAY_SELECTION)
-        for rec in self:
-            if not rec.active:
-                continue
-            students_to_check = rec.student_ids or (rec.student_id if rec.student_id else self.env['school.student'])
-            if not students_to_check and rec.class_id:
-                continue
-            for student in students_to_check:
-                conflicts = self.search([
-                    ('id', '!=', rec.id),
-                    ('day_of_week', '=', rec.day_of_week),
-                    ('active', '=', True),
-                    ('start_time', '<', rec.end_time),
-                    ('end_time', '>', rec.start_time),
-                    '|',
-                    ('student_ids', 'in', student.id),
-                    '|',
-                    ('student_id', '=', student.id),
-                    '&', ('class_id', '=', student.class_id.id if student.class_id else False), ('student_id', '=', False),
-                ])
-                if conflicts:
-                    other = conflicts[0]
-                    raise ValidationError(_(
-                        "Student Conflict Detected!\n"
-                        "Student '%(student)s' is already scheduled on %(day)s from %(start)s to %(end)s "
-                        "for session '%(session)s' (Teacher: %(teacher)s, Subject: %(subject)s).\n"
-                        "A student cannot attend two overlapping sessions simultaneously."
-                    ) % {
-                        'student': student.name,
-                        'day': days.get(rec.day_of_week),
-                        'start': rec._format_time(other.start_time),
-                        'end': rec._format_time(other.end_time),
-                        'session': other.display_name or other.name,
-                        'teacher': other.teacher_id.name,
-                        'subject': other.subject_id.name,
-                    })
+        self._check_schedule_conflicts()
 
-    @api.constrains('room', 'day_of_week', 'start_time', 'end_time', 'active')
     def _check_room_conflict(self):
-        days = dict(DAY_SELECTION)
-        for rec in self:
-            if not rec.active or not rec.room or not rec.room.strip():
-                continue
-            room_clean = rec.room.strip().lower()
-            other_slots = self.search([
-                ('id', '!=', rec.id),
-                ('day_of_week', '=', rec.day_of_week),
-                ('active', '=', True),
-                ('start_time', '<', rec.end_time),
-                ('end_time', '>', rec.start_time),
-            ])
-            for other in other_slots:
-                if other.room and other.room.strip().lower() == room_clean:
-                    target = other.student_id.name if other.student_id else (other.class_id.name if other.class_id else '')
-                    raise ValidationError(_(
-                        "Classroom/Room Conflict Detected!\n"
-                        "Room '%(room)s' is already booked on %(day)s from %(start)s to %(end)s "
-                        "for '%(target)s' (Teacher: %(teacher)s, Subject: %(subject)s).\n"
-                        "A room cannot host two simultaneous sessions."
-                    ) % {
-                        'room': rec.room.strip(),
-                        'day': days.get(rec.day_of_week),
-                        'start': rec._format_time(other.start_time),
-                        'end': rec._format_time(other.end_time),
-                        'target': target,
-                        'teacher': other.teacher_id.name,
-                        'subject': other.subject_id.name,
-                    })
-
-    # -------------------------------------------------------------------------
-    # ACTIONS
-    # -------------------------------------------------------------------------
-    def action_view_class_students(self):
-        self.ensure_one()
-        if self.class_id:
-            domain = [('class_id', '=', self.class_id.id)]
-        elif self.student_ids:
-            domain = [('id', 'in', self.student_ids.ids)]
-        else:
-            domain = [('id', '=', self.student_id.id)]
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Students in %s') % (self.student_id.name if self.student_id else (self.class_id.name if self.class_id else _("Session"))),
-            'res_model': 'school.student',
-            'view_mode': 'list,kanban,form',
-            'domain': domain,
-            'target': 'current',
-        }
-
-    def action_anchor_to_current_week(self):
-        for rec in self:
-            if rec.day_of_week and rec.start_time is not None and rec.end_time is not None:
-                s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time)
-                rec.write({
-                    'start_datetime': s_dt,
-                    'end_datetime': e_dt,
-                })
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Timetable Synchronized'),
-                'message': _('Selected sessions anchored to current week datetimes.'),
-                'type': 'success',
-                'sticky': False,
-            }
-        }
+        self._check_schedule_conflicts()

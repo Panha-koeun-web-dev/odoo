@@ -182,6 +182,8 @@ class SchoolStudentSubject(models.Model):
                     ])
                 elif rec.class_id:
                     domain.append(('class_id', '=', rec.class_id.id))
+                if 'week_number' in Timetable._fields:
+                    domain.append(('week_number', 'in', [1, False]))
                 slots = Timetable.search(domain)
                 total_hours = sum(max(0.0, (s.end_time or 0.0) - (s.start_time or 0.0)) for s in slots)
                 rec.scheduled_hours = round(total_hours, 2)

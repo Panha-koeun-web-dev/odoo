@@ -918,7 +918,7 @@ class SchoolXlsxReport:
         headers = [
             '#', 'Student ID', 'Full Name', 'Gender', 'Date of Birth', 'Age',
             'Class', 'Academic Period', 'Status', 'Enrollment Date',
-            'Average Score (%)', 'Overall Grade', 'Attendance Rate (%)',
+            'Average Score (%)', 'Overall Grade', 'GPA (4.0)', 'Attendance Rate (%)',
             'Tuition Total ($)', 'Tuition Paid ($)', 'Tuition Balance ($)',
             'Email', 'Phone', 'Parent / Guardian', 'Parent Phone'
         ]
@@ -984,6 +984,7 @@ class SchoolXlsxReport:
                     (rec.enrollment_date.strftime('%Y-%m-%d') if rec.enrollment_date else '', f['date_z'] if z else f['date']),
                     (score_dec, f['pct_z'] if z else f['pct']),
                     (rec.academic_performance or '', f['td_center_z'] if z else f['td_center']),
+                    (rec.gpa or 0.0, f['num_z'] if z else f['num']),
                     (att_dec, f['pct_z'] if z else f['pct']),
                     (rec.total_year_amount or 0.0, f['curr_z'] if z else f['curr']),
                     (rec.total_year_paid or 0.0, f['curr_z'] if z else f['curr']),

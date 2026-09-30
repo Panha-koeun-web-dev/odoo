@@ -7,38 +7,50 @@ from odoo.addons.web.controllers.home import Home
 class SchoolHome(Home):
 
     def _login_redirect(self, uid, redirect=None):
-        if not redirect or redirect in ('/odoo', '/web', '/', '/web/login', '/odoo/action-'):
-            user = request.env['res.users'].sudo().browse(uid)
-            # 1. If Student: Redirect directly to their own student profile account page!
-            if (user.has_group('school_management.group_school_student')
-                    and not user.has_group('school_management.group_school_teacher')
-                    and not user.has_group('school_management.group_school_admin')):
-                student = request.env['school.student'].sudo().search([('user_id', '=', uid)], limit=1)
-                action = request.env.ref('school_management.action_student', raise_if_not_found=False)
-                if student and action:
-                    return f'/odoo/action-{action.id}/{student.id}'
-                elif action:
-                    return f'/odoo/action-{action.id}'
+        user = request.env['res.users'].sudo().browse(uid)
+        is_student = (
+            user.has_group('school_management.group_school_student')
+            and not user.has_group('school_management.group_school_teacher')
+            and not user.has_group('school_management.group_school_admin')
+        )
+        is_teacher = (
+            user.has_group('school_management.group_school_teacher')
+            and not user.has_group('school_management.group_school_admin')
+        )
 
-            # 2. If Teacher: Redirect to the student list!
-            elif (user.has_group('school_management.group_school_teacher')
-                  and not user.has_group('school_management.group_school_admin')):
-                action = request.env.ref('school_management.action_student', raise_if_not_found=False)
-                if action:
-                    return f'/odoo/action-{action.id}'
+        action_student = request.env.ref('school_management.action_student', raise_if_not_found=False)
+        action_timetable = request.env.ref('school_management.action_timetable', raise_if_not_found=False)
+
+        # 1. If Student: Redirect directly to Unified Timetable & Master Calendar
+        if is_student:
+            # Override if no redirect, generic root redirect, or stale redirect to student action
+            if not redirect or redirect in ('/odoo', '/web', '/', '/web/login', '/odoo/action-') or (action_student and f'action-{action_student.id}' in str(redirect)):
+                if action_timetable:
+                    return f'/odoo/action-{action_timetable.id}'
+
+        # 2. If Teacher: Redirect to Timetable
+        elif is_teacher:
+            if not redirect or redirect in ('/odoo', '/web', '/', '/web/login', '/odoo/action-'):
+                if action_timetable:
+                    return f'/odoo/action-{action_timetable.id}'
 
         return super()._login_redirect(uid, redirect=redirect)
 
     @http.route(['/web', '/odoo', '/odoo/<path:subpath>', '/scoped_app/<path:subpath>'], type='http', auth="none")
     def web_client(self, s_action=None, **kw):
-        # If user is logged in, and visited root '/odoo' or '/web' without specific subpath
-        if request.session.uid and request.httprequest.path in ('/odoo', '/web', '/odoo/'):
+        if request.session.uid:
             user = request.env['res.users'].sudo().browse(request.session.uid)
-            if (user.has_group('school_management.group_school_student')
-                    and not user.has_group('school_management.group_school_teacher')
-                    and not user.has_group('school_management.group_school_admin')):
-                student = request.env['school.student'].sudo().search([('user_id', '=', user.id)], limit=1)
-                action = request.env.ref('school_management.action_student', raise_if_not_found=False)
-                if student and action:
-                    return request.redirect(f'/odoo/action-{action.id}/{student.id}', 303)
+            is_student = (
+                user.has_group('school_management.group_school_student')
+                and not user.has_group('school_management.group_school_teacher')
+                and not user.has_group('school_management.group_school_admin')
+            )
+            if is_student:
+                action_student = request.env.ref('school_management.action_student', raise_if_not_found=False)
+                action_timetable = request.env.ref('school_management.action_timetable', raise_if_not_found=False)
+                current_path = request.httprequest.path or ''
+                # Redirect if on root or trying to load restricted student action page
+                if current_path in ('/odoo', '/web', '/odoo/') or (action_student and f'action-{action_student.id}' in current_path):
+                    if action_timetable:
+                        return request.redirect(f'/odoo/action-{action_timetable.id}', 303)
         return super().web_client(s_action=s_action, **kw)

@@ -1,4 +1,5 @@
 from . import state_notification
+from . import term
 from . import student
 from . import teacher
 from . import school_class

@@ -8,7 +8,7 @@
                   decoration-warning="status == 'partial'" decoration-muted="status == 'pending'">
                 <header>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <field name="student_id"/>
                 <field name="class_id"/>
@@ -28,7 +28,7 @@
                         title="Print Payment Receipt"/>
                 <button name="action_export_xlsx" type="object" string="XLSX"
                         class="btn-sm btn-outline-success" icon="fa-file-excel-o"
-                        title="Export this record to Excel"/>
+                        title="Export this record to Excel" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
             </list>
         </field>
     </record>
@@ -95,7 +95,7 @@
                             invisible="status not in ('paid', 'partial')"/>
                     <button name="action_export_xlsx" type="object" string="Export XLSX"
                             class="btn-outline-primary" icon="fa-file-excel-o"
-                            title="Export Fee Statement to Excel"/>
+                            title="Export Fee Statement to Excel" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <field name="status" widget="statusbar" statusbar_visible="pending,partial,paid"/>
                 </header>
                 <sheet>

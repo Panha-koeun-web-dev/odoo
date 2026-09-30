@@ -10,7 +10,7 @@
                   decoration-muted="overall_status == 'pending'">
                 <header>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <field name="student_id"/>
                 <field name="class_id" optional="show"/>
@@ -50,7 +50,7 @@
                 <field name="receipt_number" optional="hide"/>
                 
                 <button name="action_export_xlsx" type="object" string="XLSX"
-                        icon="fa-file-excel-o" title="Export this record to Excel" class="btn-sm btn-outline-success"/>
+                        icon="fa-file-excel-o" title="Export this record to Excel" class="btn-sm btn-outline-success" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 <button name="action_open_deadline_wizard" type="object" string="Set Deadline"
                         class="btn-sm btn-outline-primary" icon="fa-calendar-check-o" title="Set specific payment deadline schedule"
                         groups="school_management.group_school_admin"/>
@@ -225,7 +225,7 @@
             <form>
                 <header>
                     <button name="action_export_xlsx" type="object" string="Export XLSX"
-                            class="btn-outline-primary" icon="fa-file-excel-o"/>
+                            class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_open_deadline_wizard" type="object" string="Set Specific Deadline"
                             class="btn-primary" icon="fa-calendar-check-o"
                             groups="school_management.group_school_admin"/>

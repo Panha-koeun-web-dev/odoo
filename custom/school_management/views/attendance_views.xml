@@ -11,9 +11,9 @@
                   decoration-muted="status == 'excused'">
                 <header>
                     <button name="%(school_management.action_daily_attendance_wizard)d" type="action"
-                            string="Take Daily Attendance" class="btn-primary" icon="fa-calendar-check-o" display="always"/>
+                            string="Take Daily Attendance" class="btn-primary" icon="fa-calendar-check-o" display="always" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" display="always" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <field name="date"/>
                 <field name="student_code" optional="show"/>
@@ -25,9 +25,9 @@
                        decoration-warning="status == 'late'"
                        decoration-muted="status == 'excused'"/>
                 <field name="notes" placeholder="Remarks or reason..."/>
-                <button name="action_set_present" string="Present" type="object" icon="fa-check" class="text-success" invisible="status == 'present'"/>
-                <button name="action_set_absent" string="Absent" type="object" icon="fa-times" class="text-danger" invisible="status == 'absent'"/>
-                <button name="action_set_late" string="Late" type="object" icon="fa-clock-o" class="text-warning" invisible="status == 'late'"/>
+                <button name="action_set_present" string="Present" type="object" icon="fa-check" class="text-success" invisible="status == 'present'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                <button name="action_set_absent" string="Absent" type="object" icon="fa-times" class="text-danger" invisible="status == 'absent'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                <button name="action_set_late" string="Late" type="object" icon="fa-clock-o" class="text-warning" invisible="status == 'late'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
             </list>
         </field>
     </record>
@@ -83,13 +83,13 @@
             <form>
                 <header>
                     <button name="%(school_management.action_daily_attendance_wizard)d" type="action"
-                            string="Take Daily Attendance" class="btn-outline-primary" icon="fa-calendar-check-o"/>
+                            string="Take Daily Attendance" class="btn-outline-primary" icon="fa-calendar-check-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_export_xlsx" type="object"
-                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o"/>
-                    <button name="action_set_present" string="Set Present" type="object" class="btn-outline-success" invisible="status == 'present'"/>
-                    <button name="action_set_absent" string="Set Absent" type="object" class="btn-outline-danger" invisible="status == 'absent'"/>
-                    <button name="action_set_late" string="Set Late" type="object" class="btn-outline-warning" invisible="status == 'late'"/>
-                    <button name="action_set_excused" string="Set Excused" type="object" class="btn-outline-secondary" invisible="status == 'excused'"/>
+                            string="Export XLSX" class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_set_present" string="Set Present" type="object" class="btn-outline-success" invisible="status == 'present'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_set_absent" string="Set Absent" type="object" class="btn-outline-danger" invisible="status == 'absent'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_set_late" string="Set Late" type="object" class="btn-outline-warning" invisible="status == 'late'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_set_excused" string="Set Excused" type="object" class="btn-outline-secondary" invisible="status == 'excused'" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <field name="status" widget="statusbar" statusbar_visible="present,absent,late,excused"/>
                 </header>
                 <sheet>

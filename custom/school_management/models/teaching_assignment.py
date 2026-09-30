@@ -117,14 +117,17 @@ class SchoolTeachingAssignment(models.Model):
         Timetable = self.env['school.timetable']
         for rec in self:
             if rec.class_id and rec.subject_id and rec.teacher_id:
-                slots = Timetable.search([
+                domain = [
                     ('class_id', '=', rec.class_id.id),
                     ('teacher_id', '=', rec.teacher_id.id),
                     ('active', '=', True),
                     '|',
                     ('subject_id', '=', rec.subject_id.id),
                     ('subject_ids', 'in', rec.subject_id.id),
-                ])
+                ]
+                if 'week_number' in Timetable._fields:
+                    domain.append(('week_number', 'in', [1, False]))
+                slots = Timetable.search(domain)
                 total_hours = sum(max(0.0, (s.end_time or 0.0) - (s.start_time or 0.0)) for s in slots)
                 rec.scheduled_hours = round(total_hours, 2)
                 rec.scheduled_sessions = len(slots)

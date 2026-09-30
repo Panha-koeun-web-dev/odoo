@@ -79,8 +79,8 @@ class TestSchoolTimetable(TransactionCase):
 
     def test_02_calendar_drag_sync(self):
         """Test modifying start_datetime and end_datetime updates day_of_week, start_time, and end_time."""
-        # Assume UTC anchor for testing
-        tz = pytz.timezone(self.env.user.tz or 'UTC')
+        # Sync with model timezone
+        tz = self.Timetable._get_user_tz()
         now = datetime.now(tz)
         # Find next Tuesday at 10:00 AM
         days_ahead = (1 - now.weekday()) % 7  # 1 is Tuesday
@@ -201,3 +201,69 @@ class TestSchoolTimetable(TransactionCase):
         class_students_action = slot.action_view_class_students()
         self.assertEqual(class_students_action['res_model'], 'school.student')
         self.assertIn(('class_id', '=', self.class_a.id), class_students_action['domain'])
+
+    def test_09_holiday_assignment_and_conflict_bypass(self):
+        """Test holiday assignment: no teacher required, conflicts bypassed, visible to all."""
+        # 1. Create a Holiday session without teacher or subject
+        holiday = self.Timetable.create({
+            'class_id': self.class_a.id,
+            'is_holiday': True,
+            'holiday_name': 'Water Festival',
+            'day_of_week': '2',  # Wednesday
+            'period': 'p1',
+            'start_time': 8.0,
+            'end_time': 9.0,
+        })
+        self.assertTrue(holiday.exists())
+        self.assertTrue(holiday.is_holiday)
+        self.assertEqual(holiday.holiday_name, 'Water Festival')
+        self.assertEqual(holiday.color, 2)
+        self.assertIn('Water Festival', holiday.display_name)
+
+        # 2. Toggle Holiday off/on action
+        holiday.action_toggle_holiday()
+        self.assertFalse(holiday.is_holiday)
+        holiday.action_toggle_holiday()
+        self.assertTrue(holiday.is_holiday)
+
+    def test_10_holiday_no_class_enforcement(self):
+        """Test that declaring a holiday clears existing regular classes on that day
+        and prevents any new regular classes from being scheduled on that holiday."""
+        # 1. Create a regular class on Monday
+        reg_slot = self.Timetable.create({
+            'class_id': self.class_a.id,
+            'subject_id': self.subject_math.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '0',  # Monday
+            'period': 'p1',
+            'start_time': 8.0,
+            'end_time': 9.0,
+        })
+        self.assertTrue(reg_slot.exists())
+
+        # 2. Declare a holiday on Monday for class_a
+        holiday = self.Timetable.create({
+            'class_id': self.class_a.id,
+            'is_holiday': True,
+            'holiday_name': 'Mid-Term Break',
+            'day_of_week': '0',
+            'period': 'custom',
+            'start_time': 7.5,
+            'end_time': 17.0,
+        })
+        self.assertTrue(holiday.exists())
+
+        # 3. Regular class on Monday must have been automatically unlinked
+        self.assertFalse(reg_slot.exists())
+
+        # 4. Attempting to schedule a new regular class on Monday raises ValidationError
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'class_id': self.class_a.id,
+                'subject_id': self.subject_physics.id,
+                'teacher_id': self.teacher_2.id,
+                'day_of_week': '0',
+                'period': 'p3',
+                'start_time': 10.25,
+                'end_time': 11.25,
+            })
