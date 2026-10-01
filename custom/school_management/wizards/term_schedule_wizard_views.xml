@@ -7,16 +7,6 @@
         <field name="model">school.term.schedule.wizard</field>
         <field name="arch" type="xml">
             <form string="Plan &amp; Create Term Schedule">
-                <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
-                    <i class="fa fa-calendar-check-o fa-2x me-3 flex-shrink-0 text-info" title="Info"/>
-                    <div>
-                        <div class="fw-bold">Fast Weekly Schedule Planner (Monday to Friday)</div>
-                        <div class="small">
-                            Select any week (e.g. Week 1, Week 2...) and easily fill in the schedule. All Monday to Friday period slots are automatically prepared so you never have to add them one by one.
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Top Configuration Group -->
                 <group>
                     <group string="Academic Term &amp; Target Class">
