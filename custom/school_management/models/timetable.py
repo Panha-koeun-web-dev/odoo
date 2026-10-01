@@ -1113,6 +1113,7 @@ class SchoolTimetable(models.Model):
 
     @api.constrains(
         'teacher_id', 'class_id', 'student_id', 'student_ids', 'room',
+        'subject_id', 'subject_ids',
         'day_of_week', 'start_time', 'end_time', 'start_datetime', 'end_datetime',
         'term_id', 'week_number', 'is_holiday', 'active'
     )
@@ -1146,6 +1147,42 @@ class SchoolTimetable(models.Model):
             self._check_class_conflict_single(rec, overlapping, days)
             self._check_student_conflict_single(rec, overlapping, days)
             self._check_room_conflict_single(rec, overlapping, days)
+            self._check_subject_conflict_single(rec, overlapping, days)
+
+    def _check_subject_conflict_single(self, rec, overlapping, days):
+        """Check if any session has overlapping subjects for the same audience or class."""
+        rec_subjects = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
+        if not rec_subjects:
+            return
+
+        for other in overlapping:
+            other_subjects = other.subject_ids or (other.subject_id if other.subject_id else self.env['school.subject'])
+            common_subjects = rec_subjects & other_subjects
+            if not common_subjects:
+                continue
+
+            # Check if they share the same class or common students
+            shares_class = rec.class_id and other.class_id and (rec.class_id == other.class_id)
+            rec_students = rec.student_ids or (rec.student_id if rec.student_id else (rec.class_id.student_ids if rec.class_id else self.env['school.student']))
+            other_students = other.student_ids or (other.student_id if other.student_id else (other.class_id.student_ids if other.class_id else self.env['school.student']))
+            shares_students = bool(rec_students & other_students)
+
+            if shares_class or shares_students:
+                subj_name = ', '.join(common_subjects.mapped('name'))
+                term_str = f" in {other.term_id.name}" if other.term_id else ""
+                target_name = rec.class_id.name if rec.class_id else (rec.student_id.name if rec.student_id else _("Students"))
+                raise ValidationError(_(
+                    "Subject Conflict Detected!\n"
+                    "The subject '%(subject)s' is already scheduled at the same time on %(day)s from %(start)s to %(end)s%(term)s for '%(target)s'.\n"
+                    "A class or student cannot have the same subject scheduled concurrently at the same time."
+                ) % {
+                    'subject': subj_name,
+                    'day': days.get(rec.day_of_week),
+                    'start': rec._format_time(other.start_time),
+                    'end': rec._format_time(other.end_time),
+                    'term': term_str,
+                    'target': target_name,
+                })
 
     def _check_holiday_conflict(self):
         self._check_schedule_conflicts()
@@ -1160,4 +1197,7 @@ class SchoolTimetable(models.Model):
         self._check_schedule_conflicts()
 
     def _check_room_conflict(self):
+        self._check_schedule_conflicts()
+
+    def _check_subject_conflict(self):
         self._check_schedule_conflicts()

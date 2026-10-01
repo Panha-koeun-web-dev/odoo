@@ -478,3 +478,110 @@ class TestSchoolTermSchedule(TransactionCase):
             ('class_id', '=', self.class_alpha.id),
         ])
         self.assertEqual(len(new_sessions), 1)
+
+    def test_10_full_term_schedule_default_and_subject_conflict_prevention(self):
+        """Test that admin default schedule creation targets the full term,
+        and that scheduling the same subject at the same time is strictly prevented."""
+        term_test = self.Term.create({
+            'academic_year': '2026-2027',
+            'term_number': 'term_1',
+            'date_start': date(2026, 9, 1),
+            'date_end': date(2026, 11, 30),
+            'state': 'active',
+        })
+
+        # 1. Wizard defaults to full term (all_weeks)
+        wiz_default = self.Wizard.new({
+            'term_id': term_test.id,
+            'class_id': self.class_alpha.id,
+        })
+        self.assertEqual(wiz_default.week_apply_mode, 'all_weeks')
+        self.assertEqual(wiz_default.schedule_scope, 'full_term')
+
+        # 2. Prevent same subject at the same time in wizard line setup
+        with self.assertRaises(ValidationError):
+            wiz_duplicate_subject = self.Wizard.create({
+                'term_id': term_test.id,
+                'class_id': self.class_alpha.id,
+                'mode': 'create_slots',
+                'week_apply_mode': 'all_weeks',
+                'line_ids': [
+                    (0, 0, {
+                        'day_of_week': '1',  # Tuesday
+                        'period': 'p1',
+                        'start_time': 8.0,
+                        'end_time': 9.0,
+                        'subject_id': self.subject_math.id,
+                        'teacher_id': self.teacher_1.id,
+                    }),
+                    (0, 0, {
+                        'day_of_week': '1',  # Same Tuesday
+                        'period': 'custom',
+                        'start_time': 8.5,  # Overlaps with 8.0 - 9.0
+                        'end_time': 9.5,
+                        'subject_id': self.subject_math.id,  # Same subject
+                        'teacher_id': self.teacher_2.id,
+                    }),
+                ],
+            })
+            wiz_duplicate_subject.action_apply_schedule()
+
+        # 3. Model-level prevention of same subject at the same time
+        session_1 = self.Timetable.create({
+            'term_id': term_test.id,
+            'class_id': self.class_alpha.id,
+            'subject_id': self.subject_physics.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '2',  # Wednesday
+            'start_time': 10.0,
+            'end_time': 11.0,
+            'week_number': 1,
+        })
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'term_id': term_test.id,
+                'class_id': self.class_alpha.id,
+                'subject_id': self.subject_physics.id,  # Same subject
+                'teacher_id': self.teacher_2.id,       # Different teacher
+                'day_of_week': '2',                   # Same Wednesday
+                'start_time': 10.5,                   # Overlapping time
+                'end_time': 11.5,
+                'week_number': 1,
+            })
+
+        # 4. Clean full-term schedule creation works across all term weeks
+        wiz_full_term = self.Wizard.create({
+            'term_id': term_test.id,
+            'class_id': self.class_alpha.id,
+            'mode': 'create_slots',
+            'week_apply_mode': 'all_weeks',
+            'overwrite_existing': True,
+            'line_ids': [
+                (0, 0, {
+                    'day_of_week': '3',  # Thursday
+                    'period': 'p1',
+                    'start_time': 8.0,
+                    'end_time': 9.0,
+                    'subject_id': self.subject_math.id,
+                    'teacher_id': self.teacher_1.id,
+                }),
+                (0, 0, {
+                    'day_of_week': '3',  # Thursday
+                    'period': 'p2',
+                    'start_time': 9.25,
+                    'end_time': 10.25,
+                    'subject_id': self.subject_physics.id,
+                    'teacher_id': self.teacher_2.id,
+                }),
+            ],
+        })
+        res = wiz_full_term.action_apply_schedule()
+        self.assertEqual(res.get('res_model'), 'school.timetable')
+
+        term_weeks = term_test.duration_weeks or 12
+        alpha_sessions = self.Timetable.search([
+            ('term_id', '=', term_test.id),
+            ('class_id', '=', self.class_alpha.id),
+        ])
+        # 2 periods * term_weeks
+        self.assertEqual(len(alpha_sessions), 2 * term_weeks)

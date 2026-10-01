@@ -89,18 +89,18 @@ class SchoolTermScheduleWizard(models.TransientModel):
         help="Select which week of the term you want to plan and assign."
     )
     week_apply_mode = fields.Selection([
-        ('this_week', 'Current Week Only'),
         ('all_weeks', 'All Weeks of the Term (Week 1 to 12)'),
+        ('this_week', 'Current Week Only'),
         ('selected_weeks', 'Select Specific Weeks...'),
-    ], string='Apply Schedule To', default='this_week', required=True,
+    ], string='Apply Schedule To', default='all_weeks', required=True,
     help="Choose whether this schedule applies only to the selected week or is replicated across the full term.")
 
     schedule_scope = fields.Selection([
-        ('single_week', 'Current Week Only'),
         ('full_term', 'All Weeks of the Term (Week 1 to 12)'),
+        ('single_week', 'Current Week Only'),
         ('all_term_weeks', 'All Weeks of the Term'),
         ('specific_weeks', 'Select Specific Weeks...'),
-    ], string='Schedule Scope (Legacy)', default='single_week')
+    ], string='Schedule Scope (Legacy)', default='full_term')
 
     week_date_info = fields.Char(
         string='Selected Week Dates',
@@ -796,6 +796,40 @@ class SchoolTermScheduleWizard(models.TransientModel):
             )
             if not active_lines:
                 raise UserError(_("Please configure at least one schedule line with a Subject or mark as Holiday."))
+
+            # Intra-wizard validation: detect overlapping regular lines on the same day of week
+            regular_lines = [l for l in active_lines if not l.is_holiday]
+            for i in range(len(regular_lines)):
+                for j in range(i + 1, len(regular_lines)):
+                    l1, l2 = regular_lines[i], regular_lines[j]
+                    if l1.day_of_week == l2.day_of_week:
+                        if l1.start_time < l2.end_time and l1.end_time > l2.start_time:
+                            d_name = dict(DAY_SELECTION).get(l1.day_of_week, l1.day_of_week)
+                            s1_name = l1.subject_id.name or _('Subject 1')
+                            s2_name = l2.subject_id.name or _('Subject 2')
+                            if l1.subject_id == l2.subject_id:
+                                raise ValidationError(_(
+                                    "Duplicate Subject at Same Time!\n"
+                                    "Subject '%(subject)s' is configured multiple times on %(day)s in overlapping time slots (%(t1)s and %(t2)s).\n"
+                                    "A class cannot have the same subject scheduled concurrently at the same time."
+                                ) % {
+                                    'subject': s1_name,
+                                    'day': d_name,
+                                    't1': f"{l1.start_time:.2f}-{l1.end_time:.2f}",
+                                    't2': f"{l2.start_time:.2f}-{l2.end_time:.2f}",
+                                })
+                            else:
+                                raise ValidationError(_(
+                                    "Overlapping Schedule Collision!\n"
+                                    "On %(day)s, '%(s1)s' (%(t1)s) overlaps with '%(s2)s' (%(t2)s).\n"
+                                    "A class cannot have two concurrent subjects at the same time."
+                                ) % {
+                                    'day': d_name,
+                                    's1': s1_name,
+                                    't1': f"{l1.start_time:.2f}-{l1.end_time:.2f}",
+                                    's2': s2_name,
+                                    't2': f"{l2.start_time:.2f}-{l2.end_time:.2f}",
+                                })
 
             for idx, line in enumerate(active_lines, 1):
                 day_name = dict(DAY_SELECTION).get(line.day_of_week, line.day_of_week)
