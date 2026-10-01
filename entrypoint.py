@@ -45,15 +45,28 @@ try:
             VALUES ('ir_attachment.location', 'db')
             ON CONFLICT (key) DO UPDATE SET value = 'db';
         """)
+
+        # 4. Defensive migration: Ensure timetable_id column exists on school_permission table
+        cur.execute("""
+            SELECT 1 FROM information_schema.tables WHERE table_name='school_permission'
+        """)
+        if cur.fetchone():
+            cur.execute("""
+                ALTER TABLE school_permission 
+                ADD COLUMN IF NOT EXISTS timetable_id INTEGER REFERENCES school_timetable(id) ON DELETE SET NULL;
+            """)
+            print("Ensured school_permission.timetable_id column exists in database.")
+
         conn.commit()
 
-        # 4. Check if school_management module is installed
+        # 5. Check if school_management module is installed
         cur.execute("SELECT state FROM ir_module_module WHERE name='school_management'")
         row = cur.fetchone()
         if row and row[0] == 'installed':
             school_installed = True
             print("Detected school_management is installed in database.")
 
+    cur.close()
     conn.close()
 except Exception as e:
     print(f"Database check notice: {e}")

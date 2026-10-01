@@ -555,11 +555,11 @@
         white-space: nowrap !important;
 
         span, font, div, & {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
-            font-size: 0.78rem !important;
+            font-family: inherit !important;
+            font-size: 0.82rem !important;
             font-weight: 600 !important;
-            letter-spacing: 0.02em !important;
-            color: #475569 !important;
+            letter-spacing: normal !important;
+            color: #334155 !important;
         }
 
         span {
