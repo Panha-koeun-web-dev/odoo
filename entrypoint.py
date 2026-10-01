@@ -11,6 +11,7 @@ db_password = os.environ.get('DB_PASSWORD')
 print(f"Connecting to database {db_name} at {db_host}...")
 
 is_initialized = False
+school_installed = False
 try:
     conn = psycopg2.connect(
         host=db_host,
@@ -45,6 +46,14 @@ try:
             ON CONFLICT (key) DO UPDATE SET value = 'db';
         """)
         conn.commit()
+
+        # 4. Check if school_management module is installed
+        cur.execute("SELECT state FROM ir_module_module WHERE name='school_management'")
+        row = cur.fetchone()
+        if row and row[0] == 'installed':
+            school_installed = True
+            print("Detected school_management is installed in database.")
+
     conn.close()
 except Exception as e:
     print(f"Database check notice: {e}")
@@ -65,7 +74,11 @@ if not is_initialized:
     print("Database tables not found. Initializing base module (-i base)...")
     cmd.extend(['-i', 'base'])
 else:
-    print("Database already initialized. Starting Odoo server...")
+    if school_installed:
+        print("Auto-upgrading school_management module to apply latest schema migrations (-u school_management)...")
+        cmd.extend(['-u', 'school_management'])
+    else:
+        print("Database already initialized. Starting Odoo server...")
 
 # Replace process with Odoo
 os.execvp(cmd[0], cmd)
