@@ -12,6 +12,7 @@
                 <field name="student_code" string="Student ID"/>
                 <field name="teacher_id" string="Teacher"/>
                 <field name="class_id" string="Class"/>
+                <field name="timetable_id" string="Session / Timetable"/>
                 <field name="permission_type" string="Permission Type"/>
                 <field name="approved_by" string="Reviewed By"/>
                 <field name="reason" string="Reason"/>
@@ -152,8 +153,13 @@
                                    required="applicant_type == 'teacher'"
                                    readonly="state != 'draft'"/>
                             <field name="teacher_employee_id" string="Teacher ID" invisible="applicant_type != 'teacher'"/>
-                            <field name="class_id" options="{'no_create': True}" readonly="1"
-                                   invisible="applicant_type != 'student'"/>
+                            <field name="class_id" options="{'no_create': True}"
+                                   readonly="state != 'draft' and applicant_type == 'teacher'"
+                                   invisible="applicant_type not in ('student', 'teacher')"/>
+                            <field name="timetable_id" options="{'no_create': True}"
+                                   placeholder="Optional: Select specific class session..."
+                                   readonly="state != 'draft'"
+                                   invisible="applicant_type != 'teacher'"/>
                         </group>
 
                         <group string="Leave Schedule &amp; Duration">

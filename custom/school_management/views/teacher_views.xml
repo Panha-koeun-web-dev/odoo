@@ -108,6 +108,9 @@
                             string="Reset Password" class="btn-secondary" icon="fa-key"
                             invisible="not user_id"
                             groups="school_management.group_school_admin"/>
+                    <button name="action_request_permission" type="object"
+                            string="Request Leave / Permission" class="btn-outline-warning" icon="fa-id-card-o"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>

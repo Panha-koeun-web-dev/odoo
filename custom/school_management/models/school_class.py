@@ -42,6 +42,10 @@ class SchoolClass(models.Model):
     timetable_count = fields.Integer(string='Timetable Sessions', compute='_compute_timetable_count')
     holiday_count = fields.Integer(string='Class & School Holidays Count', compute='_compute_timetable_count')
 
+    # Teacher Permission / Leave Integration
+    permission_ids = fields.One2many('school.permission', 'class_id', string='Teacher Permissions')
+    permission_count = fields.Integer(string='Teacher Leave Requests', compute='_compute_permission_count')
+
     # Weekly Teaching Assignments & Subject Allocation
     teaching_assignment_ids = fields.One2many('school.teaching.assignment', 'class_id', string='Subject Teaching Staff')
     teaching_assignment_count = fields.Integer(string='Assigned Subjects Count', compute='_compute_teaching_assignment_stats')
@@ -57,7 +61,7 @@ class SchoolClass(models.Model):
     )
     payment_year = fields.Char(
         string='Academic Year',
-        default='2024-2025',
+        default='2026-2027',
         help="Academic year for this class's payment (e.g. 2024-2025)"
     )
     year_start = fields.Date(string='Academic Year Start')
@@ -112,6 +116,13 @@ class SchoolClass(models.Model):
                 ('class_id', '=', False),
             ]
             rec.holiday_count = self.env['school.timetable'].search_count(domain)
+
+    def _compute_permission_count(self):
+        for rec in self:
+            rec.permission_count = self.env['school.permission'].search_count([
+                ('class_id', '=', rec.id),
+                ('applicant_type', '=', 'teacher'),
+            ])
 
     @api.depends(
         'teaching_assignment_ids',
@@ -271,7 +282,7 @@ class SchoolClass(models.Model):
         }
         if self.current_term_id:
             ctx['default_term_id'] = self.current_term_id.id
-            ctx['search_default_filter_active_term'] = 1
+            ctx['search_default_term_id'] = self.current_term_id.id
         domain = [
             '|',
             ('class_id', '=', self.id),
@@ -405,4 +416,40 @@ class SchoolClass(models.Model):
                 'default_term_id': active_term.id if active_term else False,
                 'default_source_term_id': (active_term.previous_term_id.id if active_term and active_term.previous_term_id else False),
             }
+        }
+
+    def action_request_teacher_permission(self):
+        """Allow a teacher or admin to submit a leave / absence permission request for this class."""
+        self.ensure_one()
+        current_teacher = self.env['school.teacher'].search([('user_id', '=', self.env.uid)], limit=1)
+        target_teacher_id = current_teacher.id if current_teacher else (self.teacher_id.id if self.teacher_id else False)
+        return {
+            'name': _('Request Leave from Class - %s') % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_applicant_type': 'teacher',
+                'default_teacher_id': target_teacher_id,
+                'default_class_id': self.id,
+                'default_permission_type': 'leave',
+                'default_start_date': fields.Date.context_today(self),
+                'default_end_date': fields.Date.context_today(self),
+            },
+        }
+
+    def action_view_teacher_permissions(self):
+        """View all teacher leave requests for this class."""
+        self.ensure_one()
+        return {
+            'name': _('Teacher Leave Requests - %s') % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'list,form,calendar',
+            'domain': [('class_id', '=', self.id), ('applicant_type', '=', 'teacher')],
+            'context': {
+                'default_applicant_type': 'teacher',
+                'default_class_id': self.id,
+            },
         }

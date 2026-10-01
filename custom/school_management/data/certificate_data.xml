@@ -6,4 +6,12 @@
         <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
+
+    <record id="seq_school_transcript" model="ir.sequence">
+        <field name="name">School Academic Transcript Number</field>
+        <field name="code">school.transcript</field>
+        <field name="prefix">TR/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
 </odoo>

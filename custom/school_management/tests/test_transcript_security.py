@@ -73,3 +73,60 @@ class TestTranscriptSecurity(TransactionCase):
 
         visible_certs = self.Certificate.with_user(self.student_user).search([('id', '=', other_cert.id)])
         self.assertFalse(visible_certs, "Student A should not see Student B's transcript record!")
+
+    def test_student_cannot_print_id_card_directly(self):
+        """Restricted students cannot directly print official student ID cards without admin."""
+        student_as_user = self.student.with_user(self.student_user)
+        with self.assertRaises(UserError) as cm:
+            student_as_user.action_print_id_card()
+        self.assertIn('School Administrator', str(cm.exception))
+
+    def test_print_approval_workflow(self):
+        """Test complete workflow for requesting and approving document printing."""
+        cert = self.admin_cert
+        student_cert = cert.with_user(self.student_user)
+
+        # 1. Initially not requested -> cannot print
+        self.assertEqual(cert.print_state, 'not_requested')
+        with self.assertRaises(UserError) as cm:
+            student_cert.action_print_transcript()
+        self.assertIn('submit a request to the admin and wait for approval', str(cm.exception))
+
+        # 2. Student requests print permission
+        res = student_cert.action_request_print()
+        self.assertEqual(cert.print_state, 'pending')
+        self.assertTrue(cert.print_requested_date)
+        self.assertIn('admin', res['params']['message'].lower())
+
+        # 3. Still cannot print while pending
+        with self.assertRaises(UserError):
+            student_cert.action_print_transcript()
+
+        # 4. Admin reviews and approves request
+        cert.action_approve_print()
+        self.assertEqual(cert.print_state, 'approved')
+        self.assertTrue(cert.print_approval_date)
+
+        # 5. Student can now print
+        action = student_cert.action_print_transcript()
+        self.assertIn('report_name', action)
+
+    def test_print_rejection_workflow(self):
+        """Test workflow when admin declines the print request."""
+        cert = self.admin_cert
+        student_cert = cert.with_user(self.student_user)
+
+        # Student requests print
+        student_cert.action_request_print()
+        self.assertEqual(cert.print_state, 'pending')
+
+        # Admin declines with reason
+        reason = 'Tuition balance remains outstanding.'
+        cert.action_reject_print(reason=reason)
+
+        self.assertEqual(cert.print_state, 'rejected')
+        self.assertEqual(cert.print_rejection_reason, reason)
+
+        # Student is blocked from printing
+        with self.assertRaises(UserError):
+            student_cert.action_print_transcript()

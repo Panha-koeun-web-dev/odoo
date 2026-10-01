@@ -909,22 +909,61 @@ class SchoolStudent(models.Model):
         return action
 
     def action_print_academic_transcript(self):
-        """Directly generate and print the official Academic Transcript / Report Card PDF."""
-        certs = self.env['school.certificate'].generate_certificates(self, certificate_type='transcript')
+        certs = self.env['school.certificate'].sudo().generate_certificates(self, certificate_type='transcript')
         if not certs:
             return {'type': 'ir.actions.act_window_close'}
+        is_student = (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+        if is_student:
+            unapproved = certs.filtered(lambda c: c.print_state != 'approved')
+            if unapproved:
+                first_unapproved = unapproved[0]
+                return {
+                    'name': _('Academic Transcript & Report Card'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'school.certificate',
+                    'view_mode': 'form',
+                    'res_id': first_unapproved.id,
+                    'target': 'current',
+                    'context': {'create': False, 'edit': False, 'delete': False},
+                }
         if len(certs) == 1:
             return certs.action_print_transcript()
         return self.env.ref('school_management.action_report_school_transcript_student').report_action(self)
 
     def action_print_student_certificates(self):
-        """Directly generate and print the official Student Certificate PDF."""
-        certs = self.env['school.certificate'].generate_certificates(self, certificate_type='completion')
+        certs = self.env['school.certificate'].sudo().generate_certificates(self, certificate_type='completion')
         if not certs:
             return {'type': 'ir.actions.act_window_close'}
+        is_student = (
+            self.env.user.has_group('school_management.group_school_student')
+            and not self.env.user.has_group('school_management.group_school_teacher')
+            and not self.env.user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+        if is_student:
+            unapproved = certs.filtered(lambda c: c.print_state != 'approved')
+            if unapproved:
+                first_unapproved = unapproved[0]
+                return {
+                    'name': _('Official Certificate'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'school.certificate',
+                    'view_mode': 'form',
+                    'res_id': first_unapproved.id,
+                    'target': 'current',
+                    'context': {'create': False, 'edit': False, 'delete': False},
+                }
         if len(certs) == 1:
             return certs.action_print_certificate()
         return self.env.ref('school_management.action_report_school_certificate_student').report_action(self)
+
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
@@ -1119,6 +1158,8 @@ class SchoolStudent(models.Model):
 
     def action_print_id_card(self):
         """Generate and print the official Student ID Card (with QR Code) PDF."""
+        if self.env['school.certificate']._is_restricted_student():
+            raise UserError(_('Access Denied: Student ID cards are official identification credentials and must be printed and issued by the School Administrator.'))
         return self.env.ref('school_management.action_report_student_id_card').report_action(self)
 
     def action_export_xlsx(self):

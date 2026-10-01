@@ -178,6 +178,10 @@
                     <button name="action_view_teaching_assignments" type="object"
                             string="Teaching Assignments &amp; Load" class="btn-outline-secondary" icon="fa-book"
                             invisible="is_holiday or not teacher_id" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_teacher_request_permission" type="object"
+                            string="Request Absence for Session" class="btn-outline-warning" icon="fa-calendar-times-o"
+                            invisible="is_holiday"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_anchor_to_current_week" type="object"
                             string="Re-anchor to Current Week" class="btn-secondary" icon="fa-calendar-check-o"
                             groups="school_management.group_school_admin"/>

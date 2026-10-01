@@ -348,3 +348,73 @@ class TestSchoolPermission(TransactionCase):
         self.assertEqual(perm.state, 'rejected')
         self.assertEqual(perm.approved_by.id, self.admin_user.id)
         self.assertEqual(perm.rejection_reason, 'Exam period, coverage unavailable for classes.')
+
+    def test_14_teacher_request_permission_from_class(self):
+        """Teacher requests leave from a specific class via action_request_teacher_permission."""
+        test_class = self.Class.create({
+            'name': 'Class 10A Teacher Leave Test',
+            'teacher_id': self.teacher_1.id,
+            'room': 'Room 201',
+        })
+
+        action = test_class.with_user(self.teacher_user_1).action_request_teacher_permission()
+        self.assertEqual(action.get('res_model'), 'school.permission')
+        ctx = action.get('context', {})
+        self.assertEqual(ctx.get('default_applicant_type'), 'teacher')
+        self.assertEqual(ctx.get('default_teacher_id'), self.teacher_1.id)
+        self.assertEqual(ctx.get('default_class_id'), test_class.id)
+
+        # Create leave request using returned context
+        perm = self.Permission.with_user(self.teacher_user_1).with_context(**ctx).create({
+            'permission_type': 'leave',
+            'session_type': 'full_day',
+            'start_date': date.today() + timedelta(days=2),
+            'end_date': date.today() + timedelta(days=2),
+            'reason': 'Medical checkup during class hours.',
+        })
+        self.assertEqual(perm.class_id.id, test_class.id)
+        self.assertEqual(perm.teacher_id.id, self.teacher_1.id)
+        self.assertIn(perm.id, test_class.permission_ids.ids)
+        self.assertEqual(test_class.permission_count, 1)
+
+    def test_15_teacher_request_permission_from_timetable_session(self):
+        """Teacher requests leave for a specific timetable session via action_teacher_request_permission."""
+        test_class = self.Class.create({
+            'name': 'Class 10B Session Leave Test',
+            'teacher_id': self.teacher_1.id,
+            'room': 'Room 202',
+        })
+        test_subject = self.Subject.create({'name': 'Biology Session Test', 'code': 'BIO_ST'})
+
+        session_slot = self.Timetable.create({
+            'class_id': test_class.id,
+            'teacher_id': self.teacher_1.id,
+            'subject_id': test_subject.id,
+            'day_of_week': '2',
+            'period': 'p2',
+            'start_time': 9.0,
+            'end_time': 10.5,
+            'room': 'Biology Lab',
+        })
+
+        action = session_slot.with_user(self.teacher_user_1).action_teacher_request_permission()
+        self.assertEqual(action.get('res_model'), 'school.permission')
+        ctx = action.get('context', {})
+        self.assertEqual(ctx.get('default_applicant_type'), 'teacher')
+        self.assertEqual(ctx.get('default_teacher_id'), self.teacher_1.id)
+        self.assertEqual(ctx.get('default_class_id'), test_class.id)
+        self.assertEqual(ctx.get('default_timetable_id'), session_slot.id)
+        self.assertEqual(ctx.get('default_start_time'), 9.0)
+        self.assertEqual(ctx.get('default_end_time'), 10.5)
+
+        # Create leave request using returned context
+        perm = self.Permission.with_user(self.teacher_user_1).with_context(**ctx).create({
+            'reason': 'Doctor appointment during Biology session.',
+        })
+        self.assertEqual(perm.timetable_id.id, session_slot.id)
+        self.assertEqual(perm.class_id.id, test_class.id)
+        self.assertEqual(perm.teacher_id.id, self.teacher_1.id)
+        self.assertEqual(perm.session_type, 'custom')
+        self.assertEqual(perm.start_time, 9.0)
+        self.assertEqual(perm.end_time, 10.5)
+        self.assertIn(session_slot.id, perm.affected_timetable_ids.ids)

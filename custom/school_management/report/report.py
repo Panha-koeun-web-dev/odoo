@@ -45,6 +45,24 @@ class SchoolReportCommon(models.AbstractModel):
             return dict(field.selection).get(value, value)
         return value
 
+    def _check_student_print_allowed(self, docs):
+        """Guard against direct student report generation without admin approval."""
+        user = self.env.user
+        is_student = (
+            user.has_group('school_management.group_school_student')
+            and not user.has_group('school_management.group_school_teacher')
+            and not user.has_group('school_management.group_school_admin')
+            and not self.env.is_admin()
+            and not self.env.su
+        )
+        if is_student:
+            unapproved = docs.filtered(lambda c: c.print_state != 'approved')
+            if unapproved:
+                raise UserError(_(
+                    'You cannot print this document yet. '
+                    'You must first submit a request to the admin and wait for approval.'
+                ))
+
 
 class SchoolTranscriptReport(models.AbstractModel):
     _name = 'report.school_management.report_academic_transcript'
@@ -108,6 +126,7 @@ class SchoolTranscriptReport(models.AbstractModel):
     def _get_report_values(self, docids, data=None):
         common = self.env['school.report.common']
         docs = self._get_transcript_docs(docids, data=data).sudo()
+        common._check_student_print_allowed(docs)
         for rec in docs:
             rec.sudo()._compute_academic_metrics()
             rec.sudo()._compute_average_grade()
@@ -281,6 +300,7 @@ class SchoolCertificateReport(models.AbstractModel):
     def _get_report_values(self, docids, data=None):
         common = self.env['school.report.common']
         docs = self._get_certificate_docs(docids, data=data).sudo()
+        common._check_student_print_allowed(docs)
         for rec in docs:
             rec.sudo()._compute_academic_metrics()
             rec.sudo()._compute_average_grade()

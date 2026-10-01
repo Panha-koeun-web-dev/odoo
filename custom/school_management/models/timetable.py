@@ -918,12 +918,48 @@ class SchoolTimetable(models.Model):
         for rec in self:
             day_offset = int(rec.day_of_week) if rec.day_of_week else 0
             session_date = monday_this_week + timedelta(days=day_offset)
-            start_dt = rec._time_to_datetime(session_date, rec.start_time)
-            end_dt = rec._time_to_datetime(session_date, rec.end_time)
+            start_dt = rec._local_to_utc(session_date, rec.start_time)
+            end_dt = rec._local_to_utc(session_date, rec.end_time)
             rec.write({
                 'start_datetime': start_dt,
                 'end_datetime': end_dt,
             })
+
+    def action_teacher_request_permission(self):
+        """Allow a teacher or admin to submit a leave / absence request for this specific session."""
+        self.ensure_one()
+        current_teacher = self.env['school.teacher'].search([('user_id', '=', self.env.uid)], limit=1)
+        target_teacher = current_teacher or self.teacher_id
+        session_date = None
+        if self.start_datetime:
+            local_dt = self._utc_to_local(self.start_datetime)
+            session_date = local_dt.date() if local_dt else None
+        if not session_date:
+            today = fields.Date.context_today(self)
+            monday_this_week = today - timedelta(days=today.weekday())
+            day_offset = int(self.day_of_week) if self.day_of_week else 0
+            session_date = monday_this_week + timedelta(days=day_offset)
+
+        subject_label = self.subject_id.name if self.subject_id else (self.name or _('Session'))
+        return {
+            'name': _('Request Leave for Session: %s') % subject_label,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.permission',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_applicant_type': 'teacher',
+                'default_teacher_id': target_teacher.id if target_teacher else False,
+                'default_class_id': self.class_id.id if self.class_id else False,
+                'default_timetable_id': self.id,
+                'default_permission_type': 'leave',
+                'default_session_type': 'custom',
+                'default_start_date': session_date,
+                'default_end_date': session_date,
+                'default_start_time': self.start_time,
+                'default_end_time': self.end_time,
+            },
+        }
 
     # -------------------------------------------------------------------------
     # CONSTRAINTS & CONFLICT CHECKING (SCOPED BY ACADEMIC TERM)

@@ -75,10 +75,11 @@ class SchoolPermission(models.Model):
     )
     class_id = fields.Many2one(
         'school.class',
-        related='student_id.class_id',
         string='Class',
+        compute='_compute_class_id',
         store=True,
-        readonly=True,
+        readonly=False,
+        tracking=True,
     )
     class_teacher_id = fields.Many2one(
         'school.teacher',
@@ -87,6 +88,22 @@ class SchoolPermission(models.Model):
         store=True,
         readonly=True,
     )
+
+    timetable_id = fields.Many2one(
+        'school.timetable',
+        string='Class Session / Timetable',
+        ondelete='set null',
+        tracking=True,
+        help='Specific timetable session the teacher is requesting absence from.',
+    )
+
+    @api.depends('student_id.class_id')
+    def _compute_class_id(self):
+        for rec in self:
+            if rec.applicant_type == 'student' and rec.student_id and rec.student_id.class_id:
+                rec.class_id = rec.student_id.class_id
+            elif not rec.class_id:
+                rec.class_id = False
 
     @api.model
     def _default_teacher_id(self):
@@ -173,10 +190,33 @@ class SchoolPermission(models.Model):
         help='Duration of the requested permission in days (calculated as difference between End Date and Start Date).',
     )
 
+    @api.onchange('timetable_id')
+    def _onchange_timetable_id(self):
+        if self.timetable_id:
+            slot = self.timetable_id
+            if slot.class_id:
+                self.class_id = slot.class_id
+            if slot.teacher_id:
+                self.teacher_id = slot.teacher_id
+            session_date = None
+            if slot.start_datetime:
+                local_dt = slot._utc_to_local(slot.start_datetime) if hasattr(slot, '_utc_to_local') else slot.start_datetime
+                session_date = local_dt.date() if local_dt else None
+            if not session_date:
+                today = fields.Date.context_today(self)
+                mon = today - timedelta(days=today.weekday())
+                day_offset = int(slot.day_of_week) if slot.day_of_week else 0
+                session_date = mon + timedelta(days=day_offset)
+            self.start_date = session_date
+            self.end_date = session_date
+            self.session_type = 'custom'
+            self.start_time = slot.start_time
+            self.end_time = slot.end_time
+
     @api.onchange('start_date')
     def _onchange_start_date(self):
-        if self.start_date and (not self.end_date or self.end_date <= self.start_date):
-            self.end_date = self.start_date + timedelta(days=1)
+        if self.start_date and (not self.end_date or self.end_date < self.start_date):
+            self.end_date = self.start_date
 
     reason = fields.Text(
         string='Reason / Description',
@@ -294,7 +334,7 @@ class SchoolPermission(models.Model):
                 rec.applicant_name = pname
                 rec.display_name = f"{ref_part}{pname} - {type_label}"
 
-    @api.depends('applicant_type', 'teacher_id', 'start_date', 'end_date')
+    @api.depends('applicant_type', 'teacher_id', 'timetable_id', 'start_date', 'end_date')
     def _compute_affected_timetables(self):
         for rec in self:
             if rec.applicant_type == 'teacher' and rec.teacher_id and rec.start_date and rec.end_date:
@@ -308,8 +348,13 @@ class SchoolPermission(models.Model):
                     ('teacher_id', '=', rec.teacher_id.id),
                     ('day_of_week', 'in', list(days_in_range)),
                 ])
+                if rec.timetable_id and rec.timetable_id not in timetables:
+                    timetables |= rec.timetable_id
                 rec.affected_timetable_ids = [(6, 0, timetables.ids)]
                 rec.affected_timetable_count = len(timetables)
+            elif rec.timetable_id:
+                rec.affected_timetable_ids = [(6, 0, rec.timetable_id.ids)]
+                rec.affected_timetable_count = 1
             else:
                 rec.affected_timetable_ids = [(6, 0, [])]
                 rec.affected_timetable_count = 0

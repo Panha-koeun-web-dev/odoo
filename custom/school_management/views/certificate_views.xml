@@ -25,12 +25,29 @@
                        decoration-danger="academic_standing == 'probation'"/>
                 <field name="certificate_type" widget="badge" optional="show"/>
                 <field name="issue_date" string="Issued Date"/>
+                <field name="print_state" string="Print Approval" widget="badge"
+                       decoration-success="print_state == 'approved'"
+                       decoration-warning="print_state == 'pending'"
+                       decoration-danger="print_state == 'rejected'"
+                       decoration-muted="print_state == 'not_requested'"/>
                 <field name="status" widget="badge"
                        decoration-success="status == 'issued'"
                        decoration-muted="status == 'draft'"/>
 
+                <button name="action_request_print" type="object" string="Request Print"
+                        class="btn-sm btn-primary" icon="fa-paper-plane"
+                        invisible="not can_request_print"/>
+                <button name="action_approve_print" type="object" string="Approve Print"
+                        class="btn-sm btn-success" icon="fa-check"
+                        invisible="not can_approve_print"
+                        groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                <button name="action_reject_print" type="object" string="Decline"
+                        class="btn-sm btn-outline-danger" icon="fa-times"
+                        invisible="not can_approve_print"
+                        groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 <button name="action_smart_print" type="object" string="Print PDF"
-                        class="btn-sm btn-outline-primary" icon="fa-print" title="Print Official Document PDF"/>
+                        class="btn-sm btn-outline-primary" icon="fa-print" title="Print Official Document PDF"
+                        invisible="not can_print"/>
                 <button name="action_issue" type="object" string="Issue"
                         class="btn-sm btn-outline-success" icon="fa-check" invisible="status == 'issued'"
                         groups="school_management.group_school_admin"/>
@@ -57,6 +74,7 @@
                 <field name="attendance_rate"/>
                 <field name="issue_date"/>
                 <field name="status"/>
+                <field name="print_state"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click p-3">
@@ -76,7 +94,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <field name="status" widget="badge"/>
+                                <div class="d-flex align-items-center gap-1">
+                                    <field name="print_state" widget="badge"
+                                           decoration-success="print_state == 'approved'"
+                                           decoration-warning="print_state == 'pending'"
+                                           decoration-danger="print_state == 'rejected'"
+                                           decoration-muted="print_state == 'not_requested'"/>
+                                    <field name="status" widget="badge"/>
+                                </div>
                             </div>
 
                             <!-- Metrics Strip -->
@@ -115,10 +140,31 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <field name="can_request_print" invisible="1"/>
+                    <field name="can_approve_print" invisible="1"/>
+                    <field name="can_print" invisible="1"/>
+
+                    <!-- Print Request & Approval Action Buttons -->
+                    <button name="action_request_print" type="object"
+                            string="Request Print" class="btn-primary" icon="fa-paper-plane"
+                            invisible="not can_request_print"/>
+                    <button name="action_approve_print" type="object"
+                            string="Approve Print Request" class="btn-success" icon="fa-check"
+                            invisible="not can_approve_print"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_reject_print" type="object"
+                            string="Decline Print Request" class="btn-outline-danger" icon="fa-times"
+                            invisible="not can_approve_print"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+
+                    <!-- Print Document Buttons (Enabled when user can print) -->
                     <button name="action_print_transcript" type="object"
-                            string="Print Transcript / Report Card (PDF)" class="btn-primary" icon="fa-file-text-o"/>
+                            string="Print Transcript / Report Card (PDF)" class="btn-primary" icon="fa-file-text-o"
+                            invisible="not can_print"/>
                     <button name="action_print_certificate" type="object"
-                            string="Print Certificate (PDF)" class="btn-secondary" icon="fa-certificate"/>
+                            string="Print Certificate (PDF)" class="btn-secondary" icon="fa-certificate"
+                            invisible="not can_print"/>
+
                     <button name="action_recompute_metrics" type="object"
                             string="Recalculate Metrics" class="btn-secondary" icon="fa-refresh"
                             groups="school_management.group_school_admin,school_management.group_school_teacher"/>
@@ -167,6 +213,23 @@
                             Document Ref: <field name="name" readonly="1"/>
                         </h4>
                     </div>
+
+                    <!-- Print Approval Status Detail -->
+                    <group string="Print Approval Information">
+                        <group>
+                            <field name="print_state" widget="badge"
+                                   decoration-success="print_state == 'approved'"
+                                   decoration-warning="print_state == 'pending'"
+                                   decoration-danger="print_state == 'rejected'"
+                                   decoration-muted="print_state == 'not_requested'"/>
+                            <field name="print_requested_date" invisible="not print_requested_date"/>
+                        </group>
+                        <group>
+                            <field name="print_approved_by" invisible="not print_approved_by"/>
+                            <field name="print_approval_date" invisible="not print_approval_date"/>
+                            <field name="print_rejection_reason" invisible="print_state != 'rejected'"/>
+                        </group>
+                    </group>
 
                     <notebook class="mt-3">
                         <!-- TAB 1: ACADEMIC TRANSCRIPT & REPORT CARD -->
@@ -271,6 +334,10 @@
                 <filter name="filter_transcripts" string="Transcripts / Report Cards" domain="[('certificate_type','=','transcript')]"/>
                 <filter name="filter_certificates" string="Certificates" domain="[('certificate_type','!=','transcript')]"/>
                 <separator/>
+                <filter name="filter_pending_print" string="Pending Print Approval" domain="[('print_state','=','pending')]"/>
+                <filter name="filter_approved_print" string="Approved to Print" domain="[('print_state','=','approved')]"/>
+                <filter name="filter_rejected_print" string="Print Declined" domain="[('print_state','=','rejected')]"/>
+                <separator/>
                 <filter name="filter_issued" string="Issued" domain="[('status','=','issued')]"/>
                 <filter name="filter_draft" string="Draft" domain="[('status','=','draft')]"/>
                 <separator/>
@@ -280,6 +347,7 @@
                 <filter string="Class" name="group_class" domain="[]" context="{'group_by':'class_id'}"/>
                 <filter string="Term" name="group_term" domain="[]" context="{'group_by':'term'}"/>
                 <filter string="Academic Standing" name="group_standing" domain="[]" context="{'group_by':'academic_standing'}"/>
+                <filter string="Print Status" name="group_print_state" domain="[]" context="{'group_by':'print_state'}"/>
                 <filter string="Credential Type" name="group_type" domain="[]" context="{'group_by':'certificate_type'}"/>
                 <filter string="Academic Year" name="group_year" domain="[]" context="{'group_by':'academic_year'}"/>
                 <filter string="Status" name="group_status" domain="[]" context="{'group_by':'status'}"/>

@@ -217,6 +217,9 @@
                 <filter name="filter_term_2" string="Term 2" domain="[('term_number', '=', 'term_2')]"/>
                 <filter name="filter_term_3" string="Term 3" domain="[('term_number', '=', 'term_3')]"/>
                 <separator/>
+                <filter string="Year 2026-2027" name="filter_year_2026_2027" domain="[('academic_year', '=', '2026-2027')]"/>
+                <filter string="Year 2025-2026" name="filter_year_2025_2026" domain="[('academic_year', '=', '2025-2026')]"/>
+                <separator/>
                 <filter string="Academic Year" name="group_year" domain="[]" context="{'group_by': 'academic_year'}"/>
                 <filter string="Status" name="group_state" domain="[]" context="{'group_by': 'state'}"/>
                 <filter string="Term Sequence" name="group_term_number" domain="[]" context="{'group_by': 'term_number'}"/>

@@ -44,7 +44,7 @@ class TestSchoolTermSchedule(TransactionCase):
             'code': 'Y1-A',
             'room': 'Hall 101',
             'teacher_id': cls.teacher_1.id,
-            'payment_year': '2026-2027',
+            'payment_year': '2028-2029',
         })
 
         cls.student_1 = cls.Student.create({
@@ -74,13 +74,13 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_01_term_lifecycle_and_autocalc(self):
         """Test term creation: 3-month duration auto-calculation, transitions, and auto-creating next term."""
         term_1 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
+            'date_start': date(2028, 9, 1),
         })
 
         # Check date_end auto-calculated to 3 months (2026-11-30)
-        self.assertEqual(term_1.date_end, date(2026, 11, 30))
+        self.assertEqual(term_1.date_end, date(2028, 11, 30))
         self.assertAlmostEqual(term_1.duration_months, 3.0, places=1)
         self.assertEqual(term_1.state, 'draft')
 
@@ -99,19 +99,19 @@ class TestSchoolTermSchedule(TransactionCase):
 
         self.assertTrue(term_2.exists())
         self.assertEqual(term_2.term_number, 'term_2')
-        self.assertEqual(term_2.academic_year, '2026-2027')
-        self.assertEqual(term_2.date_start, date(2026, 12, 1))
-        self.assertEqual(term_2.date_end, date(2027, 2, 28))
+        self.assertEqual(term_2.academic_year, '2028-2029')
+        self.assertEqual(term_2.date_start, date(2028, 12, 1))
+        self.assertEqual(term_2.date_end, date(2029, 2, 28))
         self.assertEqual(term_1.next_term_id, term_2)
         self.assertEqual(term_2.previous_term_id, term_1)
 
     def test_02_term_schedule_wizard_batch_creation(self):
         """Test planning a full term schedule for a class using pre-fill from curriculum."""
         term_1 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
 
@@ -143,18 +143,18 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_03_term_rollover_copy_mode(self):
         """Test rolling over timetable from Term 1 to Term 2 in 1 click."""
         term_1 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'finished',
         })
 
         term_2 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_2',
-            'date_start': date(2026, 12, 1),
-            'date_end': date(2027, 2, 28),
+            'date_start': date(2028, 12, 1),
+            'date_end': date(2029, 2, 28),
             'state': 'draft',
             'previous_term_id': term_1.id,
         })
@@ -205,17 +205,17 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_04_scoped_conflict_checking_across_terms(self):
         """Test that identical timetable slots in different 3-month terms do NOT conflict, but same term DOES conflict."""
         term_1 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'finished',
         })
         term_2 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_2',
-            'date_start': date(2026, 12, 1),
-            'date_end': date(2027, 2, 28),
+            'date_start': date(2028, 12, 1),
+            'date_end': date(2029, 2, 28),
             'state': 'active',
         })
 
@@ -263,10 +263,10 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_05_exam_and_certificate_term_integration(self):
         """Test exam and certificate integration with school.term."""
         term_1 = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
         self.class_alpha.current_term_id = term_1
@@ -287,19 +287,19 @@ class TestSchoolTermSchedule(TransactionCase):
             'student_id': self.student_1.id,
             'certificate_type': 'transcript',
             'term_id': term_1.id,
-            'issue_date': date(2026, 11, 30),
+            'issue_date': date(2028, 11, 30),
         })
         cert._onchange_term_id()
         self.assertEqual(cert.term, 'term_1')
-        self.assertEqual(cert.academic_year, '2026-2027')
+        self.assertEqual(cert.academic_year, '2028-2029')
 
     def test_06_monday_to_friday_schedule_generator(self):
         """Test generating full Monday until Friday schedule for a term."""
         term = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
 
@@ -338,10 +338,10 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_07_copy_monday_to_all_weekdays(self):
         """Test duplicating Monday sessions across Tuesday to Friday."""
         term = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
 
@@ -381,10 +381,10 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_08_clear_all_lines(self):
         """Test clearing all session lines."""
         term = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
         })
 
         wizard = self.Wizard.create({
@@ -410,10 +410,10 @@ class TestSchoolTermSchedule(TransactionCase):
     def test_09_full_term_multi_week_generation_and_student_stats(self):
         """Test full 3-month calendar generation populates all weeks and integrates with student schedule."""
         term = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
 
@@ -483,10 +483,10 @@ class TestSchoolTermSchedule(TransactionCase):
         """Test that admin default schedule creation targets the full term,
         and that scheduling the same subject at the same time is strictly prevented."""
         term_test = self.Term.create({
-            'academic_year': '2026-2027',
+            'academic_year': '2028-2029',
             'term_number': 'term_1',
-            'date_start': date(2026, 9, 1),
-            'date_end': date(2026, 11, 30),
+            'date_start': date(2028, 9, 1),
+            'date_end': date(2028, 11, 30),
             'state': 'active',
         })
 

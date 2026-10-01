@@ -3,15 +3,16 @@
 
     <!-- ================================================================= -->
     <!-- STANDARD 3-TERM ACADEMIC YEAR (1 Year = 12 Months = 3 Terms x 3 Months) -->
+    <!-- Academic Year 2026-2027 -->
     <!-- ================================================================= -->
 
     <!-- Term 1 (Past / Finished) -->
-    <record id="term_2025_2026_term_1" model="school.term">
-        <field name="name">Academic Year 2025-2026 - Term 1</field>
-        <field name="academic_year">2025-2026</field>
+    <record id="term_2026_2027_term_1" model="school.term">
+        <field name="name">Academic Year 2026-2027 - Term 1</field>
+        <field name="academic_year">2026-2027</field>
         <field name="term_number">term_1</field>
-        <field name="date_start">2025-09-01</field>
-        <field name="date_end">2025-11-30</field>
+        <field name="date_start">2026-09-01</field>
+        <field name="date_end">2026-11-30</field>
         <field name="duration_months">3.0</field>
         <field name="state">finished</field>
         <field name="color">4</field>
@@ -19,40 +20,40 @@
     </record>
 
     <!-- Term 2 (Currently Active) -->
-    <record id="term_2025_2026_term_2" model="school.term">
-        <field name="name">Academic Year 2025-2026 - Term 2</field>
-        <field name="academic_year">2025-2026</field>
+    <record id="term_2026_2027_term_2" model="school.term">
+        <field name="name">Academic Year 2026-2027 - Term 2</field>
+        <field name="academic_year">2026-2027</field>
         <field name="term_number">term_2</field>
-        <field name="date_start">2025-12-01</field>
-        <field name="date_end">2026-02-28</field>
+        <field name="date_start">2026-12-01</field>
+        <field name="date_end">2027-02-28</field>
         <field name="duration_months">3.0</field>
         <field name="state">active</field>
         <field name="color">2</field>
-        <field name="previous_term_id" ref="term_2025_2026_term_1"/>
+        <field name="previous_term_id" ref="term_2026_2027_term_1"/>
         <field name="notes">Winter Intermediate Term (Months 4-6). Intermediate coursework, practical laboratories, and midterm evaluations.</field>
     </record>
 
     <!-- Term 3 (Upcoming / Next Term) -->
-    <record id="term_2025_2026_term_3" model="school.term">
-        <field name="name">Academic Year 2025-2026 - Term 3</field>
-        <field name="academic_year">2025-2026</field>
+    <record id="term_2026_2027_term_3" model="school.term">
+        <field name="name">Academic Year 2026-2027 - Term 3</field>
+        <field name="academic_year">2026-2027</field>
         <field name="term_number">term_3</field>
-        <field name="date_start">2026-03-01</field>
-        <field name="date_end">2026-05-31</field>
+        <field name="date_start">2027-03-01</field>
+        <field name="date_end">2027-05-31</field>
         <field name="duration_months">3.0</field>
         <field name="state">draft</field>
         <field name="color">7</field>
-        <field name="previous_term_id" ref="term_2025_2026_term_2"/>
+        <field name="previous_term_id" ref="term_2026_2027_term_2"/>
         <field name="notes">Spring Final Term (Months 7-9). Advanced subject modules, final examinations, capstones, and promotion.</field>
     </record>
 
     <!-- Update Forward Links -->
-    <record id="term_2025_2026_term_1" model="school.term">
-        <field name="next_term_id" ref="term_2025_2026_term_2"/>
+    <record id="term_2026_2027_term_1" model="school.term">
+        <field name="next_term_id" ref="term_2026_2027_term_2"/>
     </record>
 
-    <record id="term_2025_2026_term_2" model="school.term">
-        <field name="next_term_id" ref="term_2025_2026_term_3"/>
+    <record id="term_2026_2027_term_2" model="school.term">
+        <field name="next_term_id" ref="term_2026_2027_term_3"/>
     </record>
 
 </odoo>
