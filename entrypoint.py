@@ -57,9 +57,30 @@ try:
             """)
             print("Ensured school_permission.timetable_id column exists in database.")
 
+        # 5. Fix legacy string values in school_certificate.class_rank before integer conversion
+        cur.execute("""
+            SELECT data_type FROM information_schema.columns 
+            WHERE table_name='school_certificate' AND column_name='class_rank'
+        """)
+        row = cur.fetchone()
+        if row and row[0] not in ('integer', 'smallint', 'bigint'):
+            print("Migrating school_certificate.class_rank from text to integer...")
+            cur.execute("""
+                ALTER TABLE school_certificate 
+                ALTER COLUMN class_rank TYPE integer 
+                USING (
+                    CASE 
+                        WHEN class_rank ~ '^Rank ([0-9]+)' THEN (substring(class_rank from '^Rank ([0-9]+)'))::integer
+                        WHEN class_rank ~ '^[0-9]+$' THEN class_rank::integer
+                        ELSE 1
+                    END
+                );
+            """)
+            print("Successfully migrated school_certificate.class_rank to integer.")
+
         conn.commit()
 
-        # 5. Check if school_management module is installed
+        # 6. Check if school_management module is installed
         cur.execute("SELECT state FROM ir_module_module WHERE name='school_management'")
         row = cur.fetchone()
         if row and row[0] == 'installed':
