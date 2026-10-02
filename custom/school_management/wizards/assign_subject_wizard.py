@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
-from ..models.timetable import DAY_SELECTION, PERIOD_SELECTION, PERIOD_PRESETS
+from ..models.timetable import DAY_SELECTION, PERIOD_SELECTION, PERIOD_PRESETS, START_TIME_SELECTION
 
 
 class SchoolAssignSubjectWizard(models.TransientModel):
@@ -46,6 +46,11 @@ class SchoolAssignSubjectWizard(models.TransientModel):
     create_timetable_slots = fields.Boolean(string='Also Create Weekly Timetable Slot', default=False)
     day_of_week = fields.Selection(DAY_SELECTION, string='Day of Week', default='0')
     period = fields.Selection(PERIOD_SELECTION, string='Period', default='p1')
+    specific_start_time = fields.Selection(
+        START_TIME_SELECTION,
+        string='Specific Start Hour',
+        help="Quickly set a specific start time from 12 AM to 11 PM"
+    )
     start_time = fields.Float(string='Start Time', default=8.0)
     end_time = fields.Float(string='End Time', default=9.0)
     room = fields.Char(string='Classroom / Room')
@@ -87,9 +92,36 @@ class SchoolAssignSubjectWizard(models.TransientModel):
             s_time, e_time = PERIOD_PRESETS[self.period]
             self.start_time = s_time
             self.end_time = e_time
+            matched = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(s_time - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.specific_start_time = matched
+
+    @api.onchange('specific_start_time')
+    def _onchange_specific_start_time(self):
+        if self.specific_start_time:
+            val = float(self.specific_start_time)
+            dur = (self.end_time - self.start_time) if (self.end_time and self.end_time > self.start_time) else 1.0
+            self.start_time = val
+            self.end_time = min(24.0, round(val + dur, 2))
+            matched_p = 'custom'
+            for p_key, (ps, pe) in PERIOD_PRESETS.items():
+                if abs(self.start_time - ps) < 0.02 and abs(self.end_time - pe) < 0.02:
+                    matched_p = p_key
+                    break
+            self.period = matched_p
 
     @api.onchange('start_time', 'end_time')
     def _onchange_timing(self):
+        matched = False
+        if self.start_time is not None:
+            for k, _ in START_TIME_SELECTION:
+                if abs(self.start_time - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.specific_start_time = matched
         for p_key, (p_start, p_end) in PERIOD_PRESETS.items():
             if abs(self.start_time - p_start) < 0.02 and abs(self.end_time - p_end) < 0.02:
                 self.period = p_key
@@ -124,10 +156,8 @@ class SchoolAssignSubjectWizard(models.TransientModel):
         slot_created = False
         synced_count = 0
 
-        effective_term = self.term_id or self.class_id.current_term_id or self.env['school.term'].search([('state', '=', 'active')], limit=1)
-
         for subject in subjects:
-            # 1. Teacher Assignment
+            # 1. Upsert SchoolTeachingAssignment
             asg = Assignment.search([
                 ('teacher_id', '=', self.teacher_id.id),
                 ('class_id', '=', self.class_id.id),
@@ -168,9 +198,9 @@ class SchoolAssignSubjectWizard(models.TransientModel):
                     'class_id': self.class_id.id,
                     'subject_id': subject.id,
                     'teacher_id': self.teacher_id.id,
+                    'subject_type': self.subject_type,
                     'weekly_hours': self.weekly_hours,
                     'weekly_sessions': self.weekly_sessions,
-                    'subject_type': self.subject_type,
                     'study_status': self.study_status,
                     'active': True,
                 }
@@ -182,13 +212,26 @@ class SchoolAssignSubjectWizard(models.TransientModel):
 
             # 3. Optionally create weekly timetable slot for the first/single subject
             if self.create_timetable_slots and not slot_created:
+                effective_term = self.term_id or self.class_id.current_term_id
+                if not effective_term:
+                    effective_term = self.env['school.term'].search([('state', '=', 'active')], limit=1)
+                period_val = self.period
+                if self.start_time is not None and self.end_time is not None:
+                    if period_val in PERIOD_PRESETS:
+                        ps, pe = PERIOD_PRESETS[period_val]
+                        if abs(self.start_time - ps) > 0.02 or abs(self.end_time - pe) > 0.02:
+                            period_val = 'custom'
+                            for p_key, (pps, ppe) in PERIOD_PRESETS.items():
+                                if abs(self.start_time - pps) < 0.02 and abs(self.end_time - ppe) < 0.02:
+                                    period_val = p_key
+                                    break
                 slot = self.env['school.timetable'].create({
                     'term_id': effective_term.id if effective_term else False,
                     'class_id': self.class_id.id,
                     'subject_id': subject.id,
                     'teacher_id': self.teacher_id.id,
                     'day_of_week': self.day_of_week,
-                    'period': self.period,
+                    'period': period_val,
                     'start_time': self.start_time,
                     'end_time': self.end_time,
                     'room': self.room or self.class_id.room,
@@ -304,6 +347,17 @@ class SchoolAssignSubjectWizard(models.TransientModel):
         if not effective_term:
             effective_term = self.env['school.term'].search([('state', '=', 'active')], limit=1)
 
+        period_val = self.period
+        if self.start_time is not None and self.end_time is not None:
+            if period_val in PERIOD_PRESETS:
+                ps, pe = PERIOD_PRESETS[period_val]
+                if abs(self.start_time - ps) > 0.02 or abs(self.end_time - pe) > 0.02:
+                    period_val = 'custom'
+                    for p_key, (pps, ppe) in PERIOD_PRESETS.items():
+                        if abs(self.start_time - pps) < 0.02 and abs(self.end_time - ppe) < 0.02:
+                            period_val = p_key
+                            break
+
         vals = {
             'term_id': effective_term.id if effective_term else False,
             'class_id': self.class_id.id if self.class_id else False,
@@ -312,7 +366,7 @@ class SchoolAssignSubjectWizard(models.TransientModel):
             'subject_ids': [(6, 0, subjects.ids)],
             'subject_id': subjects[0].id,
             'day_of_week': self.day_of_week,
-            'period': self.period,
+            'period': period_val,
             'start_time': self.start_time,
             'end_time': self.end_time,
             'room': self.room or (self.class_id.room if self.class_id else ''),

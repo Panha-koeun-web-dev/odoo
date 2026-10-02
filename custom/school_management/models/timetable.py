@@ -15,25 +15,107 @@ DAY_SELECTION = [
     ('6', 'Sunday'),
 ]
 
+START_TIME_SELECTION = [
+    ('0.0', '12:00 AM (00:00)'),
+    ('0.5', '12:30 AM (00:30)'),
+    ('1.0', '01:00 AM (01:00)'),
+    ('1.5', '01:30 AM (01:30)'),
+    ('2.0', '02:00 AM (02:00)'),
+    ('2.5', '02:30 AM (02:30)'),
+    ('3.0', '03:00 AM (03:00)'),
+    ('3.5', '03:30 AM (03:30)'),
+    ('4.0', '04:00 AM (04:00)'),
+    ('4.5', '04:30 AM (04:30)'),
+    ('5.0', '05:00 AM (05:00)'),
+    ('5.5', '05:30 AM (05:30)'),
+    ('6.0', '06:00 AM (06:00)'),
+    ('6.5', '06:30 AM (06:30)'),
+    ('7.0', '07:00 AM (07:00)'),
+    ('7.5', '07:30 AM (07:30)'),
+    ('8.0', '08:00 AM (08:00)'),
+    ('8.5', '08:30 AM (08:30)'),
+    ('9.0', '09:00 AM (09:00)'),
+    ('9.5', '09:30 AM (09:30)'),
+    ('10.0', '10:00 AM (10:00)'),
+    ('10.5', '10:30 AM (10:30)'),
+    ('11.0', '11:00 AM (11:00)'),
+    ('11.5', '11:30 AM (11:30)'),
+    ('12.0', '12:00 PM (12:00)'),
+    ('12.5', '12:30 PM (12:30)'),
+    ('13.0', '01:00 PM (13:00)'),
+    ('13.5', '01:30 PM (13:30)'),
+    ('14.0', '02:00 PM (14:00)'),
+    ('14.5', '02:30 PM (14:30)'),
+    ('15.0', '03:00 PM (15:00)'),
+    ('15.5', '03:30 PM (15:30)'),
+    ('16.0', '04:00 PM (16:00)'),
+    ('16.5', '04:30 PM (16:30)'),
+    ('17.0', '05:00 PM (17:00)'),
+    ('17.5', '05:30 PM (17:30)'),
+    ('18.0', '06:00 PM (18:00)'),
+    ('18.5', '06:30 PM (18:30)'),
+    ('19.0', '07:00 PM (19:00)'),
+    ('19.5', '07:30 PM (19:30)'),
+    ('20.0', '08:00 PM (20:00)'),
+    ('20.5', '08:30 PM (20:30)'),
+    ('21.0', '09:00 PM (21:00)'),
+    ('21.5', '09:30 PM (21:30)'),
+    ('22.0', '10:00 PM (22:00)'),
+    ('22.5', '10:30 PM (22:30)'),
+    ('23.0', '11:00 PM (23:00)'),
+]
+
 PERIOD_SELECTION = [
+    ('h00', '12:00 AM - 01:00 AM (Midnight)'),
+    ('h01', '01:00 AM - 02:00 AM'),
+    ('h02', '02:00 AM - 03:00 AM'),
+    ('h03', '03:00 AM - 04:00 AM'),
+    ('h04', '04:00 AM - 05:00 AM'),
+    ('h05', '05:00 AM - 06:00 AM'),
+    ('h06', '06:00 AM - 07:00 AM (Early Morning)'),
+    ('h07', '07:00 AM - 08:00 AM (Morning Prep)'),
     ('p1', 'Period 1 (08:00 - 09:00)'),
     ('p2', 'Period 2 (09:15 - 10:15)'),
     ('p3', 'Period 3 (10:25 - 11:25)'),
     ('p4', 'Period 4 (11:25 - 12:25)'),
+    ('h12', '12:00 PM - 01:00 PM (Noon / Lunch)'),
     ('p5', 'Period 5 (13:30 - 14:30)'),
     ('p6', 'Period 6 (14:30 - 15:30)'),
     ('p7', 'Period 7 (15:45 - 16:45)'),
+    ('h17', '05:00 PM - 06:00 PM (Evening 1)'),
+    ('h18', '06:00 PM - 07:00 PM (Evening 2)'),
+    ('h19', '07:00 PM - 08:00 PM (Night 1)'),
+    ('h20', '08:00 PM - 09:00 PM (Night 2)'),
+    ('h21', '09:00 PM - 10:00 PM (Late Night 1)'),
+    ('h22', '10:00 PM - 11:00 PM (Late Night 2)'),
+    ('h23', '11:00 PM - 12:00 AM (Night Final)'),
     ('custom', 'Custom Time Window'),
 ]
 
 PERIOD_PRESETS = {
+    'h00': (0.0, 1.0),
+    'h01': (1.0, 2.0),
+    'h02': (2.0, 3.0),
+    'h03': (3.0, 4.0),
+    'h04': (4.0, 5.0),
+    'h05': (5.0, 6.0),
+    'h06': (6.0, 7.0),
+    'h07': (7.0, 8.0),
     'p1': (8.0, 9.0),
     'p2': (9.25, 10.25),
     'p3': (10.25, 11.25),
     'p4': (11.25, 12.25),
+    'h12': (12.0, 13.0),
     'p5': (13.5, 14.5),
     'p6': (14.5, 15.5),
     'p7': (15.75, 16.75),
+    'h17': (17.0, 18.0),
+    'h18': (18.0, 19.0),
+    'h19': (19.0, 20.0),
+    'h20': (20.0, 21.0),
+    'h21': (21.0, 22.0),
+    'h22': (22.0, 23.0),
+    'h23': (23.0, 24.0),
 }
 
 
@@ -164,6 +246,15 @@ class SchoolTimetable(models.Model):
         compute='_compute_period_short',
         store=True,
     )
+    specific_start_time = fields.Selection(
+        START_TIME_SELECTION,
+        string='Specific Start Hour',
+        compute='_compute_specific_start_time',
+        inverse='_inverse_specific_start_time',
+        store=True,
+        tracking=True,
+        help="Select a specific start time from 12:00 AM (00:00) until 11:00 PM (23:00)."
+    )
     start_time = fields.Float(
         string='Start Time',
         default=8.0,
@@ -228,17 +319,41 @@ class SchoolTimetable(models.Model):
             m = 0
         return f"{h:02d}:{m:02d}"
 
+    def _format_time_12h(self, float_hour):
+        """Format float time into 12-hour AM/PM string, e.g. 0.0 -> 12:00 AM, 23.0 -> 11:00 PM."""
+        if float_hour is None:
+            return "12:00 AM"
+        h = int(float_hour)
+        m = int(round((float_hour - h) * 60))
+        if m >= 60:
+            h += 1
+            m = 0
+        if h == 0 or h == 24:
+            return f"12:{m:02d} AM"
+        elif h < 12:
+            return f"{h:02d}:{m:02d} AM"
+        elif h == 12:
+            return f"12:{m:02d} PM"
+        else:
+            return f"{h - 12:02d}:{m:02d} PM"
+
     def _local_to_utc(self, target_date, float_hour):
         tz = self._get_user_tz()
-        hours = int(float_hour)
-        minutes = int(round((float_hour - hours) * 60))
+        if float_hour is None:
+            float_hour = 0.0
+        clamped_hour = max(0.0, min(24.0, float(float_hour)))
+        hours = int(clamped_hour)
+        minutes = int(round((clamped_hour - hours) * 60))
         if minutes >= 60:
             hours += 1
             minutes = 0
         if hours >= 24:
             hours = 23
             minutes = 59
-        naive_dt = datetime.combine(target_date, time(hours, minutes))
+            seconds = 59
+        else:
+            seconds = 0
+        naive_dt = datetime.combine(target_date, time(hours, minutes, seconds))
         try:
             local_dt = tz.localize(naive_dt, is_dst=None)
             return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
@@ -261,11 +376,15 @@ class SchoolTimetable(models.Model):
         monday = self._get_current_week_monday()
         day_idx = int(day_of_week) if day_of_week else 0
         target_date = monday + timedelta(days=day_idx)
-        start_dt = self._local_to_utc(target_date, start_time or 8.0)
-        end_dt = self._local_to_utc(target_date, end_time or 9.0)
+        s_time = 8.0 if start_time is None else start_time
+        e_time = 9.0 if end_time is None else end_time
+        start_dt = self._local_to_utc(target_date, s_time)
+        end_dt = self._local_to_utc(target_date, e_time)
         return start_dt, end_dt
 
     def _match_period(self, start_time, end_time):
+        if start_time is None or end_time is None:
+            return 'custom'
         for p_key, (p_start, p_end) in PERIOD_PRESETS.items():
             if abs(start_time - p_start) < 0.02 and abs(end_time - p_end) < 0.02:
                 return p_key
@@ -292,14 +411,18 @@ class SchoolTimetable(models.Model):
                 res['end_time'] = e_time
                 res['period'] = self._match_period(s_time, e_time)
 
-        if 'day_of_week' in res and ('start_time' in res or 'period' in res):
+        if 'day_of_week' in res and ('start_time' in res or 'period' in res or 'start_time' in self.env.context):
             day_str = res.get('day_of_week', '0')
-            period_val = res.get('period', 'p1')
-            if period_val in PERIOD_PRESETS:
-                s_time, e_time = PERIOD_PRESETS[period_val]
+            if 'start_time' in res and res.get('start_time') is not None:
+                s_time = res['start_time']
+                e_time = res.get('end_time', min(24.0, s_time + 1.0))
             else:
-                s_time = res.get('start_time', 8.0)
-                e_time = res.get('end_time', 9.0)
+                period_val = res.get('period', 'p1')
+                if period_val in PERIOD_PRESETS:
+                    s_time, e_time = PERIOD_PRESETS[period_val]
+                else:
+                    s_time = 8.0
+                    e_time = 9.0
             res['start_time'] = s_time
             res['end_time'] = e_time
             if 'start_datetime' in fields_list or 'end_datetime' in fields_list:
@@ -321,23 +444,46 @@ class SchoolTimetable(models.Model):
 
     @api.depends('period')
     def _compute_period_short(self):
-        period_map = {
-            'p1': 'Period 1',
-            'p2': 'Period 2',
-            'p3': 'Period 3',
-            'p4': 'Period 4',
-            'p5': 'Period 5',
-            'p6': 'Period 6',
-            'p7': 'Period 7',
-            'custom': 'Custom',
-        }
+        period_dict = dict(PERIOD_SELECTION)
         for rec in self:
-            rec.period_short = period_map.get(rec.period, _('Period'))
+            if rec.period in period_dict:
+                raw_label = period_dict[rec.period]
+                if '(' in raw_label:
+                    rec.period_short = raw_label.split('(')[0].strip()
+                elif '-' in raw_label:
+                    rec.period_short = raw_label.split('-')[0].strip()
+                else:
+                    rec.period_short = raw_label
+            else:
+                rec.period_short = _('Period')
 
     @api.depends('start_time', 'end_time')
     def _compute_time_display(self):
         for rec in self:
             rec.time_display = f"{rec._format_time(rec.start_time)} - {rec._format_time(rec.end_time)}"
+
+    @api.depends('start_time')
+    def _compute_specific_start_time(self):
+        valid_keys = [k for k, _ in START_TIME_SELECTION]
+        for rec in self:
+            if rec.start_time is not None:
+                matched_key = False
+                for k in valid_keys:
+                    if abs(rec.start_time - float(k)) < 0.02:
+                        matched_key = k
+                        break
+                rec.specific_start_time = matched_key
+            else:
+                rec.specific_start_time = False
+
+    def _inverse_specific_start_time(self):
+        for rec in self:
+            if rec.specific_start_time:
+                val = float(rec.specific_start_time)
+                duration = (rec.end_time - rec.start_time) if (rec.end_time and rec.end_time > rec.start_time) else 1.0
+                rec.start_time = val
+                rec.end_time = min(24.0, round(val + duration, 2))
+                rec.period = rec._match_period(rec.start_time, rec.end_time)
 
     @api.depends('subject_ids')
     def _compute_subject_id(self):
@@ -446,8 +592,27 @@ class SchoolTimetable(models.Model):
             s_time, e_time = PERIOD_PRESETS[self.period]
             self.start_time = s_time
             self.end_time = e_time
+            matched_key = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(s_time - float(k)) < 0.02:
+                    matched_key = k
+                    break
+            self.specific_start_time = matched_key
             if self.day_of_week:
                 s_dt, e_dt = self._calculate_datetimes(self.day_of_week, s_time, e_time)
+                self.start_datetime = s_dt
+                self.end_datetime = e_dt
+
+    @api.onchange('specific_start_time')
+    def _onchange_specific_start_time(self):
+        if self.specific_start_time:
+            val = float(self.specific_start_time)
+            duration = (self.end_time - self.start_time) if (self.end_time and self.end_time > self.start_time) else 1.0
+            self.start_time = val
+            self.end_time = min(24.0, round(val + duration, 2))
+            self.period = self._match_period(self.start_time, self.end_time)
+            if self.day_of_week:
+                s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time)
                 self.start_datetime = s_dt
                 self.end_datetime = e_dt
 
@@ -455,6 +620,12 @@ class SchoolTimetable(models.Model):
     def _onchange_timing(self):
         if self.start_time is not None and self.end_time is not None:
             self.period = self._match_period(self.start_time, self.end_time)
+            matched_key = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(self.start_time - float(k)) < 0.02:
+                    matched_key = k
+                    break
+            self.specific_start_time = matched_key
         if self.day_of_week and self.start_time is not None and self.end_time is not None:
             s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time)
             self.start_datetime = s_dt
@@ -470,6 +641,12 @@ class SchoolTimetable(models.Model):
                 self.start_time = round(local_start.hour + local_start.minute / 60.0, 2)
                 self.end_time = round(local_end.hour + local_end.minute / 60.0, 2)
                 self.period = self._match_period(self.start_time, self.end_time)
+                matched_key = False
+                for k, _ in START_TIME_SELECTION:
+                    if abs(self.start_time - float(k)) < 0.02:
+                        matched_key = k
+                        break
+                self.specific_start_time = matched_key
 
     @api.onchange('is_holiday')
     def _onchange_is_holiday(self):
@@ -563,14 +740,18 @@ class SchoolTimetable(models.Model):
                 vals['end_time'] = round(local_end.hour + local_end.minute / 60.0, 2)
                 if 'period' not in vals:
                     vals['period'] = self._match_period(vals['start_time'], vals['end_time'])
-        elif ('day_of_week' in vals or 'start_time' in vals or 'end_time' in vals) and ('start_datetime' not in vals):
+        elif ('day_of_week' in vals or 'start_time' in vals or 'end_time' in vals or 'period' in vals) and ('start_datetime' not in vals):
             d_val = vals.get('day_of_week', '0')
             if vals.get('period') in PERIOD_PRESETS and 'start_time' not in vals:
                 vals['start_time'], vals['end_time'] = PERIOD_PRESETS[vals['period']]
-            s_val = vals.get('start_time', 7.5 if vals.get('is_holiday') else 8.0)
-            e_val = vals.get('end_time', 17.0 if vals.get('is_holiday') else 9.0)
+            s_val = vals['start_time'] if ('start_time' in vals and vals['start_time'] is not None) else (7.5 if vals.get('is_holiday') else 8.0)
+            e_val = vals['end_time'] if ('end_time' in vals and vals['end_time'] is not None) else (17.0 if vals.get('is_holiday') else 9.0)
             if 'period' not in vals:
                 vals['period'] = self._match_period(s_val, e_val)
+            elif vals.get('period') in PERIOD_PRESETS and ('start_time' in vals or 'end_time' in vals):
+                ps, pe = PERIOD_PRESETS[vals['period']]
+                if abs(s_val - ps) > 0.02 or abs(e_val - pe) > 0.02:
+                    vals['period'] = self._match_period(s_val, e_val)
             s_dt, e_dt = self._calculate_datetimes(d_val, s_val, e_val)
             vals['start_datetime'] = s_dt
             vals['end_datetime'] = e_dt
@@ -647,10 +828,13 @@ class SchoolTimetable(models.Model):
                 if rec.class_id:
                     vals['student_ids'] = [(6, 0, rec.class_id.student_ids.ids)]
 
+        if vals.get('period') in PERIOD_PRESETS and 'start_time' not in vals:
+            vals['start_time'], vals['end_time'] = PERIOD_PRESETS[vals['period']]
+
         res = super().write(vals)
 
         # Resync timing if day or start/end datetimes changed
-        if any(k in vals for k in ('start_datetime', 'end_datetime', 'day_of_week', 'start_time', 'end_time', 'is_holiday')):
+        if any(k in vals for k in ('start_datetime', 'end_datetime', 'day_of_week', 'start_time', 'end_time', 'period', 'is_holiday')):
             for rec in self:
                 sync_vals = {}
                 if 'start_datetime' in vals or 'end_datetime' in vals:
@@ -661,11 +845,12 @@ class SchoolTimetable(models.Model):
                         sync_vals['start_time'] = round(local_s.hour + local_s.minute / 60.0, 2)
                         sync_vals['end_time'] = round(local_e.hour + local_e.minute / 60.0, 2)
                         sync_vals['period'] = rec._match_period(sync_vals['start_time'], sync_vals['end_time'])
-                elif 'day_of_week' in vals or 'start_time' in vals or 'end_time' in vals:
+                elif 'day_of_week' in vals or 'start_time' in vals or 'end_time' in vals or 'period' in vals:
                     s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time)
                     sync_vals['start_datetime'] = s_dt
                     sync_vals['end_datetime'] = e_dt
-                    sync_vals['period'] = rec._match_period(rec.start_time, rec.end_time)
+                    if 'period' not in vals:
+                        sync_vals['period'] = rec._match_period(rec.start_time, rec.end_time)
 
                 if rec.is_holiday:
                     sync_vals.update({
@@ -1034,6 +1219,18 @@ class SchoolTimetable(models.Model):
     @api.constrains('start_time', 'end_time', 'start_datetime', 'end_datetime')
     def _check_time_order(self):
         for rec in self:
+            if rec.start_time < 0.0 or rec.start_time > 23.0:
+                raise ValidationError(_(
+                    "Invalid Start Time: Start Time (%(start)s) must be between 12:00 AM (00:00) and 11:00 PM (23:00)."
+                ) % {
+                    'start': rec._format_time(rec.start_time),
+                })
+            if rec.end_time <= 0.0 or rec.end_time > 24.0:
+                raise ValidationError(_(
+                    "Invalid End Time: End Time (%(end)s) must be between 00:01 and 24:00 (12:00 AM next day)."
+                ) % {
+                    'end': rec._format_time(rec.end_time),
+                })
             if rec.start_time >= rec.end_time:
                 raise ValidationError(_(
                     "Invalid Schedule Time: Start Time (%(start)s) must be earlier than End Time (%(end)s)."

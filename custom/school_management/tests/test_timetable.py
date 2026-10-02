@@ -267,3 +267,116 @@ class TestSchoolTimetable(TransactionCase):
                 'start_time': 10.25,
                 'end_time': 11.25,
             })
+
+    def test_11_start_time_12am_to_11pm_and_presets(self):
+        """Test scheduling slots from 12 AM (00:00) to 11 PM (23:00) with end times up to 12 AM next day (24:00)."""
+        # 1. Midnight start (12:00 AM / 0.0)
+        slot_12am = self.Timetable.create({
+            'class_id': self.class_b.id,
+            'subject_id': self.subject_math.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '1',  # Tuesday
+            'start_time': 0.0,
+            'end_time': 1.0,
+        })
+        self.assertEqual(slot_12am.start_time, 0.0)
+        self.assertEqual(slot_12am.end_time, 1.0)
+        self.assertEqual(slot_12am.period, 'h00')
+        self.assertEqual(slot_12am.specific_start_time, '0.0')
+        self.assertEqual(slot_12am.time_display, '00:00 - 01:00')
+        self.assertEqual(self.Timetable._format_time_12h(0.0), '12:00 AM')
+        self.assertEqual(self.Timetable._format_time_12h(1.0), '01:00 AM')
+
+        # 2. 11 PM start (23:00) to midnight (24:00)
+        slot_11pm = self.Timetable.create({
+            'class_id': self.class_b.id,
+            'subject_id': self.subject_physics.id,
+            'teacher_id': self.teacher_2.id,
+            'day_of_week': '1',  # Tuesday
+            'start_time': 23.0,
+            'end_time': 24.0,
+        })
+        self.assertEqual(slot_11pm.start_time, 23.0)
+        self.assertEqual(slot_11pm.end_time, 24.0)
+        self.assertEqual(slot_11pm.period, 'h23')
+        self.assertEqual(slot_11pm.specific_start_time, '23.0')
+        self.assertEqual(slot_11pm.time_display, '23:00 - 24:00')
+        self.assertEqual(self.Timetable._format_time_12h(23.0), '11:00 PM')
+        self.assertEqual(self.Timetable._format_time_12h(24.0), '12:00 AM')
+
+        # 3. Inverse specific_start_time update
+        slot_11pm.write({'specific_start_time': '21.0'})
+        self.assertEqual(slot_11pm.start_time, 21.0)
+        self.assertEqual(slot_11pm.end_time, 22.0)
+        self.assertEqual(slot_11pm.period, 'h21')
+
+        # 4. Period preset assignment (e.g. h20 = 20:00 to 21:00, 8 PM)
+        slot_11pm.write({'period': 'h20'})
+        self.assertEqual(slot_11pm.start_time, 20.0)
+        self.assertEqual(slot_11pm.end_time, 21.0)
+        self.assertEqual(slot_11pm.specific_start_time, '20.0')
+
+        # 5. Boundary validation constraints
+        # Reject start_time < 0.0
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'class_id': self.class_b.id,
+                'subject_id': self.subject_math.id,
+                'teacher_id': self.teacher_1.id,
+                'day_of_week': '3',
+                'start_time': -1.0,
+                'end_time': 1.0,
+            })
+
+        # Reject start_time > 23.0
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'class_id': self.class_b.id,
+                'subject_id': self.subject_math.id,
+                'teacher_id': self.teacher_1.id,
+                'day_of_week': '3',
+                'start_time': 23.5,
+                'end_time': 24.0,
+            })
+
+        # Reject end_time > 24.0
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'class_id': self.class_b.id,
+                'subject_id': self.subject_math.id,
+                'teacher_id': self.teacher_1.id,
+                'day_of_week': '3',
+                'start_time': 22.0,
+                'end_time': 24.5,
+            })
+
+        # Reject start_time >= end_time
+        with self.assertRaises(ValidationError):
+            self.Timetable.create({
+                'class_id': self.class_b.id,
+                'subject_id': self.subject_math.id,
+                'teacher_id': self.teacher_1.id,
+                'day_of_week': '3',
+                'start_time': 10.0,
+                'end_time': 10.0,
+            })
+
+        # 6. Assign subject wizard test with specific start hour
+        wizard = self.env['school.assign.subject.wizard'].create({
+            'mode': 'schedule_quick',
+            'class_id': self.class_b.id,
+            'subject_id': self.subject_math.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '4',
+            'specific_start_time': '22.0',
+            'start_time': 22.0,
+            'end_time': 23.0,
+        })
+        wizard.action_apply()
+        created_slot = self.Timetable.search([
+            ('class_id', '=', self.class_b.id),
+            ('day_of_week', '=', '4'),
+            ('start_time', '=', 22.0),
+        ], limit=1)
+        self.assertTrue(created_slot)
+        self.assertEqual(created_slot.period, 'h22')

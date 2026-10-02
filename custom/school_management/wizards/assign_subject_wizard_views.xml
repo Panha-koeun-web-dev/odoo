@@ -53,6 +53,7 @@
                         <group string="Session Time &amp; Location" invisible="mode != 'schedule_quick'">
                             <field name="day_of_week"/>
                             <field name="period"/>
+                            <field name="specific_start_time"/>
                             <label for="start_time" string="Time Range"/>
                             <div class="d-flex align-items-center gap-2">
                                 <field name="start_time" widget="float_time" class="oe_inline"/>
@@ -71,6 +72,7 @@
                                 <field name="create_timetable_slots" widget="boolean_toggle"/>
                                 <field name="day_of_week" invisible="not create_timetable_slots"/>
                                 <field name="period" invisible="not create_timetable_slots"/>
+                                <field name="specific_start_time" invisible="not create_timetable_slots"/>
                             </group>
                             <group invisible="not create_timetable_slots">
                                 <label for="start_time" string="Time Range"/>

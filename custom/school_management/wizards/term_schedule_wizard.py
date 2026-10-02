@@ -2,37 +2,7 @@ from datetime import timedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
-
-DAY_SELECTION = [
-    ('0', 'Monday'),
-    ('1', 'Tuesday'),
-    ('2', 'Wednesday'),
-    ('3', 'Thursday'),
-    ('4', 'Friday'),
-    ('5', 'Saturday'),
-    ('6', 'Sunday'),
-]
-
-PERIOD_SELECTION = [
-    ('p1', 'Period 1 (08:00 - 09:00)'),
-    ('p2', 'Period 2 (09:15 - 10:15)'),
-    ('p3', 'Period 3 (10:25 - 11:25)'),
-    ('p4', 'Period 4 (11:25 - 12:25)'),
-    ('p5', 'Period 5 (13:30 - 14:30)'),
-    ('p6', 'Period 6 (14:30 - 15:30)'),
-    ('p7', 'Period 7 (15:45 - 16:45)'),
-    ('custom', 'Custom Time Window'),
-]
-
-PERIOD_PRESETS = {
-    'p1': (8.0, 9.0),
-    'p2': (9.25, 10.25),
-    'p3': (10.25, 11.25),
-    'p4': (11.25, 12.25),
-    'p5': (13.5, 14.5),
-    'p6': (14.5, 15.5),
-    'p7': (15.75, 16.75),
-}
+from ..models.timetable import DAY_SELECTION, PERIOD_SELECTION, PERIOD_PRESETS, START_TIME_SELECTION
 
 WEEK_SELECTION = [
     ('1', 'Week 1'),
@@ -186,6 +156,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
     single_teacher_id = fields.Many2one('school.teacher', string='Teacher')
     single_day_of_week = fields.Selection(DAY_SELECTION, string='Day of Week', default='0')
     single_period = fields.Selection(PERIOD_SELECTION, string='Period Preset', default='p1')
+    single_specific_start_time = fields.Selection(
+        START_TIME_SELECTION,
+        string='Specific Start Hour',
+        help="Quickly set a specific start time from 12 AM to 11 PM"
+    )
     single_start_time = fields.Float(string='Start Time', default=8.0)
     single_end_time = fields.Float(string='End Time', default=9.0)
     single_room = fields.Char(string='Room / Location')
@@ -217,9 +192,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
         for day_code, _label in weekdays:
             for p_key in period_keys:
                 s_time, e_time = PERIOD_PRESETS.get(p_key, (8.0, 9.0))
+                matched_s = next((k for k, _ in START_TIME_SELECTION if abs(s_time - float(k)) < 0.02), False)
                 lines.append((0, 0, {
                     'day_of_week': day_code,
                     'period': p_key,
+                    'specific_start_time': matched_s,
                     'start_time': s_time,
                     'end_time': e_time,
                     'subject_id': False,
@@ -254,15 +231,15 @@ class SchoolTermScheduleWizard(models.TransientModel):
         Timetable = self.env['school.timetable']
         for rec in self:
             if rec.source_term_id and rec.class_id:
-                rec.source_session_count = Timetable.search_count([
-                    ('term_id', '=', rec.source_term_id.id),
-                    ('class_id', '=', rec.class_id.id),
-                    ('active', '=', True),
+                rec.source_session_count = Timetable.search_count([\
+                    ('term_id', '=', rec.source_term_id.id),\
+                    ('class_id', '=', rec.class_id.id),\
+                    ('active', '=', True),\
                 ])
             elif rec.source_term_id:
-                rec.source_session_count = Timetable.search_count([
-                    ('term_id', '=', rec.source_term_id.id),
-                    ('active', '=', True),
+                rec.source_session_count = Timetable.search_count([\
+                    ('term_id', '=', rec.source_term_id.id),\
+                    ('active', '=', True),\
                 ])
             else:
                 rec.source_session_count = 0
@@ -294,24 +271,25 @@ class SchoolTermScheduleWizard(models.TransientModel):
             cls = self.env['school.class'].browse(res['class_id'])
             term_id = res.get('term_id')
             if term_id:
-                w1_existing = self.env['school.timetable'].search([
-                    ('term_id', '=', term_id),
-                    ('class_id', '=', cls.id),
-                    ('week_number', '=', 1),
-                    ('active', '=', True),
+                w1_existing = self.env['school.timetable'].search([\
+                    ('term_id', '=', term_id),\
+                    ('class_id', '=', cls.id),\
+                    ('week_number', '=', 1),\
+                    ('active', '=', True),\
                 ], order='day_of_week, start_time')
                 if w1_existing:
                     lines = []
                     for s in w1_existing:
-                        lines.append((0, 0, {
-                            'day_of_week': s.day_of_week,
-                            'period': s.period,
-                            'start_time': s.start_time,
-                            'end_time': s.end_time,
-                            'subject_id': s.subject_id.id if s.subject_id else False,
-                            'teacher_id': s.teacher_id.id if s.teacher_id else False,
-                            'room': s.room or cls.room or '',
-                            'notes': s.notes or '',
+                        lines.append((0, 0, {\
+                            'day_of_week': s.day_of_week,\
+                            'period': s.period,\
+                            'specific_start_time': s.specific_start_time,\
+                            'start_time': s.start_time,\
+                            'end_time': s.end_time,\
+                            'subject_id': s.subject_id.id if s.subject_id else False,\
+                            'teacher_id': s.teacher_id.id if s.teacher_id else False,\
+                            'room': s.room or cls.room or '',\
+                            'notes': s.notes or '',\
                         }))
                     res['line_ids'] = lines
 
@@ -326,9 +304,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
             if self.term_id.previous_term_id:
                 self.source_term_id = self.term_id.previous_term_id
             else:
-                prev = self.env['school.term'].search([
-                    ('id', '!=', self.term_id.id),
-                    ('date_end', '<=', self.term_id.date_start),
+                prev = self.env['school.term'].search([\
+                    ('id', '!=', self.term_id.id),\
+                    ('date_end', '<=', self.term_id.date_start),\
                 ], order='date_end desc', limit=1)
                 if prev:
                     self.source_term_id = prev
@@ -355,24 +333,25 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id or not self.term_id:
             return
         w_num = int(self.target_week or '1')
-        existing = self.env['school.timetable'].search([
-            ('term_id', '=', self.term_id.id),
-            ('class_id', '=', self.class_id.id),
-            ('week_number', '=', w_num),
-            ('active', '=', True),
+        existing = self.env['school.timetable'].search([\
+            ('term_id', '=', self.term_id.id),\
+            ('class_id', '=', self.class_id.id),\
+            ('week_number', '=', w_num),\
+            ('active', '=', True),\
         ], order='day_of_week, start_time')
         if existing:
             lines = []
             for s in existing:
-                lines.append((0, 0, {
-                    'day_of_week': s.day_of_week,
-                    'period': s.period,
-                    'start_time': s.start_time,
-                    'end_time': s.end_time,
-                    'subject_id': s.subject_id.id if s.subject_id else False,
-                    'teacher_id': s.teacher_id.id if s.teacher_id else False,
-                    'room': s.room or self.class_id.room or '',
-                    'notes': s.notes or '',
+                lines.append((0, 0, {\
+                    'day_of_week': s.day_of_week,\
+                    'period': s.period,\
+                    'specific_start_time': s.specific_start_time,\
+                    'start_time': s.start_time,\
+                    'end_time': s.end_time,\
+                    'subject_id': s.subject_id.id if s.subject_id else False,\
+                    'teacher_id': s.teacher_id.id if s.teacher_id else False,\
+                    'room': s.room or self.class_id.room or '',\
+                    'notes': s.notes or '',\
                 }))
             self.line_ids = [(5, 0, 0)] + lines
         else:
@@ -384,6 +363,43 @@ class SchoolTermScheduleWizard(models.TransientModel):
             s_time, e_time = PERIOD_PRESETS[self.single_period]
             self.single_start_time = s_time
             self.single_end_time = e_time
+            matched = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(s_time - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.single_specific_start_time = matched
+
+    @api.onchange('single_specific_start_time')
+    def _onchange_single_specific_start_time(self):
+        if self.single_specific_start_time:
+            val = float(self.single_specific_start_time)
+            dur = (self.single_end_time - self.single_start_time) if (self.single_end_time and self.single_end_time > self.single_start_time) else 1.0
+            self.single_start_time = val
+            self.single_end_time = min(24.0, round(val + dur, 2))
+            matched_p = 'custom'
+            for p_key, (ps, pe) in PERIOD_PRESETS.items():
+                if abs(self.single_start_time - ps) < 0.02 and abs(self.single_end_time - pe) < 0.02:
+                    matched_p = p_key
+                    break
+            self.single_period = matched_p
+
+    @api.onchange('single_start_time', 'single_end_time')
+    def _onchange_single_start_end_time(self):
+        if self.single_start_time is not None:
+            matched = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(self.single_start_time - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.single_specific_start_time = matched
+        if self.single_start_time is not None and self.single_end_time is not None:
+            matched_p = 'custom'
+            for p_key, (ps, pe) in PERIOD_PRESETS.items():
+                if abs(self.single_start_time - ps) < 0.02 and abs(self.single_end_time - pe) < 0.02:
+                    matched_p = p_key
+                    break
+            self.single_period = matched_p
 
     # -------------------------------------------------------------------------
     # QUICK ACTIONS
@@ -440,6 +456,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         first_line = target_lines[0]
         first_line.write({
             'period': 'custom',
+            'specific_start_time': False,
             'start_time': 7.5,
             'end_time': 17.0,
             'is_holiday': True,
@@ -485,9 +502,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
         ]
         default_room = self.class_id.room if self.class_id else False
         for p_code, s_time, e_time in default_periods:
+            matched_s = next((k for k, _ in START_TIME_SELECTION if abs(s_time - float(k)) < 0.02), False)
             day_lines.append((0, 0, {
                 'day_of_week': self.holiday_day,
                 'period': p_code,
+                'specific_start_time': matched_s,
                 'start_time': s_time,
                 'end_time': e_time,
                 'is_holiday': False,
@@ -513,11 +532,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id or not self.term_id:
             raise UserError(_("Please select Class and Term first."))
 
-        w1_sessions = self.env['school.timetable'].search([
-            ('term_id', '=', self.term_id.id),
-            ('class_id', '=', self.class_id.id),
-            ('week_number', '=', 1),
-            ('active', '=', True),
+        w1_sessions = self.env['school.timetable'].search([\
+            ('term_id', '=', self.term_id.id),\
+            ('class_id', '=', self.class_id.id),\
+            ('week_number', '=', 1),\
+            ('active', '=', True),\
         ], order='day_of_week, start_time')
 
         if not w1_sessions:
@@ -528,6 +547,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
             lines.append((0, 0, {
                 'day_of_week': s.day_of_week,
                 'period': s.period,
+                'specific_start_time': s.specific_start_time,
                 'start_time': s.start_time,
                 'end_time': s.end_time,
                 'subject_id': s.subject_id.id if s.subject_id else False,
@@ -562,6 +582,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 new_lines.append((0, 0, {
                     'day_of_week': day_code,
                     'period': m.period,
+                    'specific_start_time': m.specific_start_time,
                     'start_time': m.start_time,
                     'end_time': m.end_time,
                     'subject_id': m.subject_id.id if m.subject_id else False,
@@ -589,9 +610,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id:
             raise UserError(_("Please select a Class first."))
 
-        assignments = self.env['school.teaching.assignment'].search([
-            ('class_id', '=', self.class_id.id),
-            ('active', '=', True),
+        assignments = self.env['school.teaching.assignment'].search([\
+            ('class_id', '=', self.class_id.id),\
+            ('active', '=', True),\
         ], order='weekly_hours desc, id asc')
 
         if not assignments:
@@ -638,15 +659,15 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id:
             raise UserError(_("Please select a Class first."))
 
-        source_sessions = self.env['school.timetable'].search([
-            ('term_id', '=', self.source_term_id.id),
-            ('class_id', '=', self.class_id.id),
-            ('active', '=', True),
+        source_sessions = self.env['school.timetable'].search([\
+            ('term_id', '=', self.source_term_id.id),\
+            ('class_id', '=', self.class_id.id),\
+            ('active', '=', True),\
         ], order='day_of_week, start_time')
 
         if not source_sessions:
-            raise UserError(_("No active timetable sessions found in source term '%s' for class '%s'.") % (
-                self.source_term_id.name, self.class_id.name
+            raise UserError(_("No active timetable sessions found in source term '%s' for class '%s'.") % (\
+                self.source_term_id.name, self.class_id.name\
             ))
 
         lines = []
@@ -656,6 +677,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 'teacher_id': s.teacher_id.id if s.teacher_id else False,
                 'day_of_week': s.day_of_week,
                 'period': s.period,
+                'specific_start_time': s.specific_start_time,
                 'start_time': s.start_time,
                 'end_time': s.end_time,
                 'room': s.room or self.class_id.room or '',
@@ -705,10 +727,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         # Check existing sessions for this class, term, and target weeks
         if self.overwrite_existing:
-            existing = Timetable.search([
-                ('term_id', '=', self.term_id.id),
-                ('class_id', '=', self.class_id.id),
-                
+            existing = Timetable.search([\
+                ('term_id', '=', self.term_id.id),\
+                ('class_id', '=', self.class_id.id),\
             ])
             if existing:
                 existing.unlink()
@@ -720,10 +741,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
         target_students = [(6, 0, self.class_id.student_ids.ids)] if self.class_id.student_ids else False
 
         # Query all existing active holidays (school-wide or class-specific)
-        existing_holidays = Timetable.search([
-            ('is_holiday', '=', True),
-            ('active', '=', True),
-            '|', ('class_id', '=', False), ('class_id', '=', self.class_id.id),
+        existing_holidays = Timetable.search([\
+            ('is_holiday', '=', True),\
+            ('active', '=', True),\
+            '|', ('class_id', '=', False), ('class_id', '=', self.class_id.id),\
         ])
         existing_holiday_dates = set()
         for h in existing_holidays:
@@ -737,10 +758,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if self.mode == 'copy_term':
             if not self.source_term_id:
                 raise UserError(_("Please select a Source Term."))
-            source_sessions = Timetable.search([
-                ('term_id', '=', self.source_term_id.id),
-                ('class_id', '=', self.class_id.id),
-                ('active', '=', True),
+            source_sessions = Timetable.search([\
+                ('term_id', '=', self.source_term_id.id),\
+                ('class_id', '=', self.class_id.id),\
+                ('active', '=', True),\
             ])
             if not source_sessions:
                 raise UserError(_("No active timetable sessions found in '%s'.") % self.source_term_id.name)
@@ -774,6 +795,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                         'student_ids': target_students,
                         'day_of_week': s.day_of_week,
                         'period': s.period,
+                        'specific_start_time': s.specific_start_time,
                         'start_time': s.start_time,
                         'end_time': s.end_time,
                         'start_datetime': s_dt,
@@ -827,7 +849,6 @@ class SchoolTermScheduleWizard(models.TransientModel):
                                     'day': d_name,
                                     's1': s1_name,
                                     't1': f"{l1.start_time:.2f}-{l1.end_time:.2f}",
-                                    's2': s2_name,
                                     't2': f"{l2.start_time:.2f}-{l2.end_time:.2f}",
                                 })
 
@@ -874,6 +895,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                             'student_ids': target_students,
                             'day_of_week': line.day_of_week,
                             'period': 'custom',
+                            'specific_start_time': False,
                             'start_time': 7.5,
                             'end_time': 17.0,
                             'start_datetime': s_dt,
@@ -898,6 +920,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                             'student_ids': target_students,
                             'day_of_week': line.day_of_week,
                             'period': line.period,
+                            'specific_start_time': line.specific_start_time,
                             'start_time': line.start_time,
                             'end_time': line.end_time,
                             'start_datetime': s_dt,
@@ -934,6 +957,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     'student_ids': target_students,
                     'day_of_week': self.single_day_of_week,
                     'period': self.single_period,
+                    'specific_start_time': self.single_specific_start_time,
                     'start_time': self.single_start_time,
                     'end_time': self.single_end_time,
                     'start_datetime': s_dt,
@@ -976,6 +1000,7 @@ class SchoolTermScheduleWizardLine(models.TransientModel):
     wizard_id = fields.Many2one('school.term.schedule.wizard', string='Wizard', ondelete='cascade', required=True)
     day_of_week = fields.Selection(DAY_SELECTION, string='Day of Week', default='0', required=True)
     period = fields.Selection(PERIOD_SELECTION, string='Period', default='p1', required=True)
+    specific_start_time = fields.Selection(START_TIME_SELECTION, string='Start Hour')
     start_time = fields.Float(string='Start Time', default=8.0, required=True)
     end_time = fields.Float(string='End Time', default=9.0, required=True)
     is_holiday = fields.Boolean(string='Holiday', default=False)
@@ -994,6 +1019,7 @@ class SchoolTermScheduleWizardLine(models.TransientModel):
             self.period = 'custom'
             self.start_time = 7.5
             self.end_time = 17.0
+            self.specific_start_time = False
             if not self.holiday_name:
                 self.holiday_name = _("Holiday")
         else:
@@ -1005,11 +1031,32 @@ class SchoolTermScheduleWizardLine(models.TransientModel):
             s, e = PERIOD_PRESETS[self.period]
             self.start_time = s
             self.end_time = e
+            matched = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(s - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.specific_start_time = matched
+
+    @api.onchange('specific_start_time')
+    def _onchange_specific_start_time(self):
+        if self.specific_start_time:
+            val = float(self.specific_start_time)
+            dur = (self.end_time - self.start_time) if (self.end_time and self.end_time > self.start_time) else 1.0
+            self.start_time = val
+            self.end_time = min(24.0, round(val + dur, 2))
+            self.period = self._match_period(self.start_time, self.end_time)
 
     @api.onchange('start_time', 'end_time')
     def _onchange_start_end_time(self):
         if self.start_time is not None and self.end_time is not None:
             self.period = self._match_period(self.start_time, self.end_time)
+            matched = False
+            for k, _ in START_TIME_SELECTION:
+                if abs(self.start_time - float(k)) < 0.02:
+                    matched = k
+                    break
+            self.specific_start_time = matched
 
     def _match_period(self, s, e):
         for code, (ps, pe) in PERIOD_PRESETS.items():

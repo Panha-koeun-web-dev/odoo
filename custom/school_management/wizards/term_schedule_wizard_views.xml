@@ -181,6 +181,7 @@
                                    decoration-success="day_of_week == '3'"
                                    decoration-danger="day_of_week == '4'"/>
                             <field name="period"/>
+                            <field name="specific_start_time" optional="show"/>
                             <field name="start_time" widget="float_time"/>
                             <field name="end_time" widget="float_time"/>
                             <field name="is_holiday" widget="boolean_toggle" string="Holiday?"/>
@@ -207,6 +208,7 @@
                         <group string="Day &amp; Time Window">
                             <field name="single_day_of_week"/>
                             <field name="single_period"/>
+                            <field name="single_specific_start_time"/>
                             <label for="single_start_time" string="Time Range"/>
                             <div class="d-flex align-items-center gap-2">
                                 <field name="single_start_time" widget="float_time" class="oe_inline"/>
