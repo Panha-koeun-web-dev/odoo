@@ -128,9 +128,7 @@ class SchoolTranscriptReport(models.AbstractModel):
         docs = self._get_transcript_docs(docids, data=data).sudo()
         common._check_student_print_allowed(docs)
         for rec in docs:
-            rec.sudo()._compute_academic_metrics()
-            rec.sudo()._compute_average_grade()
-            rec.sudo()._compute_teachers()
+            rec.sudo().action_recompute_metrics()
         docids = docs.ids
         company = self.env.company.sudo()
         from odoo.tools import format_date
@@ -302,9 +300,7 @@ class SchoolCertificateReport(models.AbstractModel):
         docs = self._get_certificate_docs(docids, data=data).sudo()
         common._check_student_print_allowed(docs)
         for rec in docs:
-            rec.sudo()._compute_academic_metrics()
-            rec.sudo()._compute_average_grade()
-            rec.sudo()._compute_teachers()
+            rec.sudo().action_recompute_metrics()
         docids = docs.ids
         company = self.env.company.sudo()
         from odoo.tools import format_date

@@ -444,6 +444,14 @@ class SchoolCertificate(models.Model):
         self.sudo()._compute_teachers()
         return True
 
+    def _compute_academic_metrics(self):
+        """Compatibility helper alias for action_recompute_metrics."""
+        return self.action_recompute_metrics()
+
+    def _compute_average_grade(self):
+        """Compatibility helper alias for _compute_academic_performance."""
+        return self._compute_academic_performance()
+
     def action_draft(self):
         self.status = 'draft'
 

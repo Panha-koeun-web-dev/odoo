@@ -414,7 +414,7 @@ class SchoolStudent(models.Model):
         self._compute_grade_stats()
         certs = self.env['school.certificate'].search([('student_id', 'in', self.ids)])
         if certs:
-            certs._compute_academic_metrics()
+            certs.action_recompute_metrics()
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
