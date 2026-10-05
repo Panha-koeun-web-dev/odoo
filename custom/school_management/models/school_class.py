@@ -283,6 +283,8 @@ class SchoolClass(models.Model):
         if self.current_term_id:
             ctx['default_term_id'] = self.current_term_id.id
             ctx['search_default_term_id'] = self.current_term_id.id
+            if self.current_term_id.date_start:
+                ctx['initial_date'] = self.current_term_id.date_start.isoformat()
         domain = [
             '|',
             ('class_id', '=', self.id),
@@ -301,12 +303,20 @@ class SchoolClass(models.Model):
 
     def action_view_master_timetable(self):
         self.ensure_one()
+        ctx = {
+            'search_default_filter_mon_fri': 1,
+            'search_default_filter_active_term': 1,
+        }
+        if self.current_term_id:
+            ctx['search_default_term_id'] = self.current_term_id.id
+            if self.current_term_id.date_start:
+                ctx['initial_date'] = self.current_term_id.date_start.isoformat()
         return {
             'name': _('Master Timetable & Calendar'),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'context': {'search_default_filter_mon_fri': 1},
+            'context': ctx,
         }
 
     def action_view_holidays(self):

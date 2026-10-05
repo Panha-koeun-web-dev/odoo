@@ -953,17 +953,21 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 self.term_id.action_start_term()
             self.class_id.current_term_id = self.term_id.id
 
+        ctx = {
+            'default_term_id': self.term_id.id,
+            'default_class_id': self.class_id.id,
+            'search_default_filter_mon_fri': 1,
+        }
+        if self.term_id.date_start:
+            ctx['initial_date'] = self.term_id.date_start.isoformat()
+
         return {
             'name': _('Timetable - %s (%s)') % (self.class_id.name, self.term_id.name),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
-            'view_mode': 'calendar,list,kanban,form',
+            'view_mode': 'calendar,kanban,list,form',
             'domain': [('term_id', '=', self.term_id.id), ('class_id', '=', self.class_id.id)],
-            'context': {
-                'default_term_id': self.term_id.id,
-                'default_class_id': self.class_id.id,
-                'search_default_filter_mon_fri': 1,
-            },
+            'context': ctx,
         }
 
 

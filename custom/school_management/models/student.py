@@ -273,17 +273,20 @@ class SchoolStudent(models.Model):
                 ('class_id', '=', self.class_id.id),
                 ('student_id', '=', False),
             ]
+        ctx = {
+            'default_student_id': self.id,
+            'default_class_id': self.class_id.id if self.class_id else False,
+            'search_default_filter_mon_fri': 1,
+        }
+        if self.class_id and self.class_id.current_term_id and self.class_id.current_term_id.date_start:
+            ctx['initial_date'] = self.class_id.current_term_id.date_start.isoformat()
         return {
             'name': _('Study Schedule - %s') % (self.name or ''),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
-            'view_mode': 'calendar,list,kanban,form',
+            'view_mode': 'calendar,kanban,list,form',
             'domain': domain,
-            'context': {
-                'default_student_id': self.id,
-                'default_class_id': self.class_id.id if self.class_id else False,
-                'search_default_filter_mon_fri': 1,
-            },
+            'context': ctx,
         }
 
     @api.depends('fee_ids')

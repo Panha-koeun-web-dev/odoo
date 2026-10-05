@@ -336,16 +336,20 @@ class SchoolTerm(models.Model):
     def action_view_timetable(self):
         """View all timetable sessions for this term."""
         self.ensure_one()
+        ctx = {
+            'default_term_id': self.id,
+            'search_default_group_class': 1,
+            'search_default_filter_mon_fri': 1,
+        }
+        if self.date_start:
+            ctx['initial_date'] = self.date_start.isoformat()
         return {
             'name': _('Term Timetable - %s') % self.name,
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,kanban,list,form',
             'domain': [('term_id', '=', self.id)],
-            'context': {
-                'default_term_id': self.id,
-                'search_default_group_class': 1,
-            },
+            'context': ctx,
         }
 
     def action_view_classes(self):

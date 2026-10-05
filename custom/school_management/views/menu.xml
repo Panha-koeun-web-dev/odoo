@@ -104,7 +104,7 @@
     <menuitem id="menu_school_sched_master"
               name="Timetable &amp; Master Calendar"
               parent="menu_school_schedule_root"
-              action="action_timetable"
+              action="action_server_master_timetable"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="5"/>
 

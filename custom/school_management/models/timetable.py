@@ -388,10 +388,22 @@ class SchoolTimetable(models.Model):
         except Exception:
             return dt
 
-    def _calculate_datetimes(self, day_of_week, start_time, end_time):
-        monday = self._get_current_week_monday()
+    def _calculate_datetimes(self, day_of_week, start_time, end_time, term=None, week_number=None):
+        if not term and hasattr(self, 'term_id') and self.term_id:
+            term = self.term_id
+        if not week_number and hasattr(self, 'week_number') and self.week_number:
+            week_number = self.week_number
+
+        w_num = int(week_number or 1)
         day_idx = int(day_of_week) if day_of_week else 0
-        target_date = monday + timedelta(days=day_idx)
+
+        if term and term.date_start:
+            first_monday = term.date_start - timedelta(days=term.date_start.weekday())
+            target_date = first_monday + timedelta(weeks=w_num - 1, days=day_idx)
+        else:
+            monday = self._get_current_week_monday()
+            target_date = monday + timedelta(days=day_idx)
+
         s_time = 8.0 if start_time is None else start_time
         e_time = 9.0 if end_time is None else end_time
         start_dt = self._local_to_utc(target_date, s_time)
@@ -442,7 +454,10 @@ class SchoolTimetable(models.Model):
             res['start_time'] = s_time
             res['end_time'] = e_time
             if 'start_datetime' in fields_list or 'end_datetime' in fields_list:
-                s_dt, e_dt = self._calculate_datetimes(day_str, s_time, e_time)
+                effective_term_id = res.get('term_id') or self.env.context.get('default_term_id')
+                term_obj = self.env['school.term'].browse(effective_term_id) if effective_term_id else False
+                w_num = res.get('week_number', 1)
+                s_dt, e_dt = self._calculate_datetimes(day_str, s_time, e_time, term=term_obj, week_number=w_num)
                 res.setdefault('start_datetime', s_dt)
                 res.setdefault('end_datetime', e_dt)
 
@@ -501,10 +516,11 @@ class SchoolTimetable(models.Model):
         for rec in self:
             if rec.specific_start_time:
                 val = float(rec.specific_start_time)
-                duration = (rec.end_time - rec.start_time) if (rec.end_time and rec.end_time > rec.start_time) else 1.0
-                rec.start_time = val
-                rec.end_time = min(24.0, round(val + duration, 2))
-                rec.period = rec._match_period(rec.start_time, rec.end_time)
+                if abs(rec.start_time - val) > 0.001:
+                    duration = (rec.end_time - rec.start_time) if (rec.end_time and rec.end_time > rec.start_time) else 1.0
+                    rec.start_time = val
+                    rec.end_time = min(24.0, round(val + duration, 2))
+                    rec.period = rec._match_period(rec.start_time, rec.end_time)
 
     @api.depends('subject_ids')
     def _compute_subject_id(self):
@@ -547,23 +563,22 @@ class SchoolTimetable(models.Model):
             start_str = rec._format_time(rec.start_time)
             end_str = rec._format_time(rec.end_time)
             target_name = rec.student_id.name or (rec.class_id.name if rec.class_id else _("Session"))
+            target_str = f" ({target_name})" if target_name else ""
+            room_str = f" [{rec.room}]" if rec.room else ""
             if rec.is_holiday:
                 h_title = rec.holiday_name or rec.name or _("Holiday / No Class")
-                scope_str = f" - {target_name}" if rec.class_id or rec.student_id else " - School-Wide"
-                rec.display_name = f"[HOLIDAY] {h_title}{scope_str} ({day_str} {start_str}-{end_str})"
+                rec.display_name = f"Holiday: {h_title}{target_str}"
                 continue
             if rec.is_exam or rec.exam_id:
                 e_title = rec.exam_id.name or rec.name or _("Exam")
-                room_str = f" [{rec.room}]" if rec.room else ""
-                rec.display_name = f"[EXAM] {e_title} - {target_name} ({day_str} {start_str}-{end_str}){room_str}"
+                rec.display_name = f"Exam: {e_title}{target_str}{room_str}"
                 continue
             subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
             subject_name = ', '.join(subs.mapped('name')) if subs else (rec.subject_id.name or _("Subject"))
-            room_str = f" [{rec.room}]" if rec.room else ""
-            if rec.name and rec.name != f"{target_name} - {subject_name}":
-                rec.display_name = f"[{target_name}] {rec.name} ({day_str} {start_str}-{end_str}){room_str}"
+            if rec.name and rec.name != f"{target_name} - {subject_name}" and rec.name != f"{subject_name} - {target_name}":
+                rec.display_name = f"{rec.name}{target_str}{room_str}"
             else:
-                rec.display_name = f"[{target_name}] {subject_name} ({day_str} {start_str}-{end_str}){room_str}"
+                rec.display_name = f"{subject_name}{target_str}{room_str}"
 
     @api.depends('subject_id', 'class_id', 'teacher_id', 'is_holiday', 'is_exam', 'exam_id')
     def _compute_color(self):
@@ -627,7 +642,7 @@ class SchoolTimetable(models.Model):
                     break
             self.specific_start_time = matched_key
             if self.day_of_week:
-                s_dt, e_dt = self._calculate_datetimes(self.day_of_week, s_time, e_time)
+                s_dt, e_dt = self._calculate_datetimes(self.day_of_week, s_time, e_time, term=self.term_id, week_number=self.week_number)
                 self.start_datetime = s_dt
                 self.end_datetime = e_dt
 
@@ -640,7 +655,7 @@ class SchoolTimetable(models.Model):
             self.end_time = min(24.0, round(val + duration, 2))
             self.period = self._match_period(self.start_time, self.end_time)
             if self.day_of_week:
-                s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time)
+                s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time, term=self.term_id, week_number=self.week_number)
                 self.start_datetime = s_dt
                 self.end_datetime = e_dt
 
@@ -655,7 +670,7 @@ class SchoolTimetable(models.Model):
                     break
             self.specific_start_time = matched_key
         if self.day_of_week and self.start_time is not None and self.end_time is not None:
-            s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time)
+            s_dt, e_dt = self._calculate_datetimes(self.day_of_week, self.start_time, self.end_time, term=self.term_id, week_number=self.week_number)
             self.start_datetime = s_dt
             self.end_datetime = e_dt
 
@@ -780,7 +795,9 @@ class SchoolTimetable(models.Model):
                 ps, pe = PERIOD_PRESETS[vals['period']]
                 if abs(s_val - ps) > 0.02 or abs(e_val - pe) > 0.02:
                     vals['period'] = self._match_period(s_val, e_val)
-            s_dt, e_dt = self._calculate_datetimes(d_val, s_val, e_val)
+            term = self.env['school.term'].browse(vals['term_id']) if vals.get('term_id') else (getattr(self, 'term_id', False))
+            w_num = vals.get('week_number') or getattr(self, 'week_number', 1)
+            s_dt, e_dt = self._calculate_datetimes(d_val, s_val, e_val, term=term, week_number=w_num)
             vals['start_datetime'] = s_dt
             vals['end_datetime'] = e_dt
 
@@ -874,7 +891,9 @@ class SchoolTimetable(models.Model):
                         sync_vals['end_time'] = round(local_e.hour + local_e.minute / 60.0, 2)
                         sync_vals['period'] = rec._match_period(sync_vals['start_time'], sync_vals['end_time'])
                 elif 'day_of_week' in vals or 'start_time' in vals or 'end_time' in vals or 'period' in vals:
-                    s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time)
+                    term = rec.term_id
+                    w_num = rec.week_number
+                    s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time, term=term, week_number=w_num)
                     sync_vals['start_datetime'] = s_dt
                     sync_vals['end_datetime'] = e_dt
                     if 'period' not in vals:
@@ -1125,12 +1144,17 @@ class SchoolTimetable(models.Model):
         }
 
     def action_anchor_to_current_week(self):
-        """Re-anchor session datetime to match the current week's corresponding weekday."""
+        """Re-anchor session datetime to match corresponding term week and weekday."""
         today = fields.Date.context_today(self)
         monday_this_week = today - timedelta(days=today.weekday())
         for rec in self:
             day_offset = int(rec.day_of_week) if rec.day_of_week else 0
-            session_date = monday_this_week + timedelta(days=day_offset)
+            w_num = int(rec.week_number or 1)
+            if rec.term_id and rec.term_id.date_start:
+                first_monday = rec.term_id.date_start - timedelta(days=rec.term_id.date_start.weekday())
+                session_date = first_monday + timedelta(weeks=w_num - 1, days=day_offset)
+            else:
+                session_date = monday_this_week + timedelta(weeks=w_num - 1, days=day_offset)
             start_dt = rec._local_to_utc(session_date, rec.start_time)
             end_dt = rec._local_to_utc(session_date, rec.end_time)
             rec.write({
@@ -1479,3 +1503,25 @@ class SchoolTimetable(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    @api.model
+    def action_open_master_timetable(self):
+        """Open master timetable calendar dynamically anchored to the active term's start date."""
+        active_term = self.env['school.term'].search([('state', '=', 'active')], limit=1)
+        if not active_term:
+            active_term = self.env['school.term'].search([], order='date_start desc', limit=1)
+        ctx = {
+            'search_default_filter_active_term': 1,
+            'search_default_filter_mon_fri': 1,
+        }
+        if active_term and active_term.date_start:
+            ctx['default_term_id'] = active_term.id
+            today = fields.Date.context_today(self)
+            if active_term.date_end and (today < active_term.date_start or today > active_term.date_end):
+                ctx['initial_date'] = active_term.date_start.isoformat()
+            else:
+                ctx['initial_date'] = today.isoformat()
+
+        action = self.env.ref('school_management.action_timetable').read()[0]
+        action['context'] = ctx
+        return action

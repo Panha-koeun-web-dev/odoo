@@ -225,9 +225,10 @@ class SchoolAssignSubjectWizard(models.TransientModel):
                                 if abs(self.start_time - pps) < 0.02 and abs(self.end_time - ppe) < 0.02:
                                     period_val = p_key
                                     break
-                slot = self.env['school.timetable'].create({
+                slot_vals = {
                     'term_id': effective_term.id if effective_term else False,
                     'class_id': self.class_id.id,
+                    'week_number': 1,
                     'subject_id': subject.id,
                     'teacher_id': self.teacher_id.id,
                     'day_of_week': self.day_of_week,
@@ -236,7 +237,15 @@ class SchoolAssignSubjectWizard(models.TransientModel):
                     'end_time': self.end_time,
                     'room': self.room or self.class_id.room,
                     'notes': self.notes,
-                })
+                }
+                if effective_term and effective_term.date_start:
+                    first_mon = effective_term.date_start - timedelta(days=effective_term.date_start.weekday())
+                    t_date = first_mon + timedelta(days=int(self.day_of_week or 0))
+                    s_dt = self.env['school.timetable']._local_to_utc(t_date, self.start_time)
+                    e_dt = self.env['school.timetable']._local_to_utc(t_date, self.end_time)
+                    slot_vals['start_datetime'] = s_dt
+                    slot_vals['end_datetime'] = e_dt
+                slot = self.env['school.timetable'].create(slot_vals)
                 slot_created = bool(slot)
 
         sub_names = ', '.join(subjects.mapped('name'))
