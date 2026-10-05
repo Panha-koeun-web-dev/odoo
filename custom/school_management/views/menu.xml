@@ -28,19 +28,20 @@
         <field name="sequence">10</field>
         <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
     </record>
+    <record id="menu_school_enrollment" model="ir.ui.menu">
+        <field name="name">Enrollments &amp; Weekly Subjects</field>
+        <field name="parent_id" ref="menu_school_student_parent"/>
+        <field name="action" ref="action_enrollment"/>
+        <field name="sequence">15</field>
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
     <record id="menu_school_student_subject" model="ir.ui.menu">
         <field name="name">Weekly Study Subjects</field>
         <field name="parent_id" ref="menu_school_student_parent"/>
         <field name="action" ref="action_school_student_subject"/>
-        <field name="sequence">15</field>
+        <field name="sequence">20</field>
         <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
     </record>
-    <menuitem id="menu_school_student_enroll_wizard"
-              name="Enroll in Weekly Subjects"
-              parent="menu_school_student_parent"
-              action="action_school_assign_subject_wizard"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="18"/>
     <record id="menu_school_student_permission" model="ir.ui.menu">
         <field name="name">Student Permissions</field>
         <field name="parent_id" ref="menu_school_student_parent"/>
@@ -48,18 +49,12 @@
         <field name="sequence">25</field>
         <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
     </record>
-    <menuitem id="menu_school_enrollment"
-              name="Enrollments"
-              parent="menu_school_student_parent"
-              action="action_enrollment"
-              groups="school_management.group_school_admin"
-              sequence="30"/>
     <menuitem id="menu_school_student_export_xlsx"
               name="Export Students (XLSX)"
               parent="menu_school_student_parent"
               action="action_school_report_student_xlsx"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="40"/>
+              sequence="30"/>
 
     <!-- ================= 3. Teachers ================= -->
     <menuitem id="menu_school_teacher_parent"

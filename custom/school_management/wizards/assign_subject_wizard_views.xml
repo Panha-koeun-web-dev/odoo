@@ -99,12 +99,21 @@
         </field>
     </record>
 
-    <!-- ======================= ACTION ======================= -->
+    <!-- ======================= ACTIONS ======================= -->
     <record id="action_school_assign_subject_wizard" model="ir.actions.act_window">
         <field name="name">Quick Subject &amp; Schedule Assignment Hub</field>
         <field name="res_model">school.assign.subject.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
         <field name="view_id" ref="view_school_assign_subject_wizard_form"/>
+    </record>
+
+    <record id="action_school_assign_student_enroll" model="ir.actions.act_window">
+        <field name="name">Enroll in Weekly Subjects</field>
+        <field name="res_model">school.assign.subject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_school_assign_subject_wizard_form"/>
+        <field name="context">{'default_mode': 'student_enroll'}</field>
     </record>
 </odoo>

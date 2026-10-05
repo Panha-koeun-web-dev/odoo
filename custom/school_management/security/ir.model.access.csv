@@ -31,7 +31,8 @@ access_teacher_daily_attendance_line_wizard,teacher.daily.attendance.line.wizard
 access_teacher_exam,teacher.exam,model_school_exam,school_management.group_school_teacher,1,1,1,0
 access_teacher_grade,teacher.grade,model_school_grade,school_management.group_school_teacher,1,1,1,0
 access_teacher_certificate,teacher.certificate,model_school_certificate,school_management.group_school_teacher,1,1,0,0
-access_teacher_enrollment,teacher.enrollment,model_school_enrollment,school_management.group_school_teacher,1,0,0,0
+access_teacher_enrollment,teacher.enrollment,model_school_enrollment,school_management.group_school_teacher,1,1,1,0
+access_teacher_enroll_students_wizard,teacher.enroll.students.wizard,model_school_enroll_students_wizard,school_management.group_school_teacher,1,1,1,1
 access_teacher_major,teacher.major,model_school_major,school_management.group_school_teacher,1,0,0,0
 access_teacher_major_enrollment,teacher.major.enrollment,model_school_major_enrollment,school_management.group_school_teacher,1,0,0,0
 access_teacher_dashboard,teacher.dashboard,model_school_dashboard,school_management.group_school_teacher,1,0,0,0

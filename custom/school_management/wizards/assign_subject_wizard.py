@@ -284,6 +284,7 @@ class SchoolAssignSubjectWizard(models.TransientModel):
 
         StudentSubject = self.env['school.student.subject']
         Assignment = self.env['school.teaching.assignment']
+        Enrollment = self.env['school.enrollment']
         total_registered = 0
 
         for student in students:
@@ -320,6 +321,24 @@ class SchoolAssignSubjectWizard(models.TransientModel):
                 else:
                     StudentSubject.create(vals)
                 total_registered += 1
+
+            # Two-way synchronization: ensure school.enrollment includes these enrolled subjects
+            if c_id:
+                enr = Enrollment.search([
+                    ('student_id', '=', student.id),
+                    ('class_id', '=', c_id),
+                ], limit=1)
+                if enr:
+                    merged_subs = enr.subject_ids | subjects
+                    enr.write({'subject_ids': [(6, 0, merged_subs.ids)]})
+                else:
+                    Enrollment.create({
+                        'student_id': student.id,
+                        'class_id': c_id,
+                        'academic_year': '2025-2026',
+                        'semester': '1',
+                        'subject_ids': [(6, 0, subjects.ids)],
+                    })
 
         return {
             'type': 'ir.actions.client',
