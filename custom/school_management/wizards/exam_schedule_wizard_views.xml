@@ -36,7 +36,11 @@
                     </group>
                     <notebook>
                         <page name="students" string="Selected Students">
-                            <field name="grade_ids" readonly="1">
+                            <div class="mb-2 d-flex gap-2">
+                                <button name="action_select_all_students" type="object" string="Select All Students" class="btn btn-sm btn-outline-primary" icon="fa-check-square-o"/>
+                                <button name="action_clear_students" type="object" string="Clear Selection" class="btn btn-sm btn-outline-secondary" icon="fa-square-o"/>
+                            </div>
+                            <field name="grade_ids" domain="[('exam_id', '=', exam_id)]">
                                 <list>
                                     <field name="student_id"/>
                                     <field name="class_id"/>

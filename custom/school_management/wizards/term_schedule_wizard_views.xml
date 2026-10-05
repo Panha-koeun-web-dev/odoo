@@ -174,12 +174,7 @@
                     <field name="line_ids">
                         <list editable="bottom" default_order="day_of_week, start_time"
                               decoration-warning="is_holiday">
-                            <field name="day_of_week" widget="badge"
-                                   decoration-info="day_of_week == '0'"
-                                   decoration-primary="day_of_week == '1'"
-                                   decoration-warning="day_of_week == '2'"
-                                   decoration-success="day_of_week == '3'"
-                                   decoration-danger="day_of_week == '4'"/>
+                            <field name="day_of_week"/>
                             <field name="period"/>
                             <field name="specific_start_time" optional="show"/>
                             <field name="start_time" widget="float_time"/>

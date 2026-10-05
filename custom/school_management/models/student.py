@@ -111,6 +111,8 @@ class SchoolStudent(models.Model):
     academic_performance = fields.Char(string='Overall Grade', compute='_compute_grade_stats', store=True, compute_sudo=True)
     fee_ids = fields.One2many('school.fee', 'student_id', string='Fees')
     fee_count = fields.Integer(string='Fee Count', compute='_compute_fee_count')
+    exam_count = fields.Integer(string='Scheduled Exams', compute='_compute_student_exam_stats')
+    upcoming_exam_count = fields.Integer(string='Upcoming Exams', compute='_compute_student_exam_stats')
     enrollment_ids = fields.One2many('school.enrollment', 'student_id', string='Enrollments')
     major_enrollment_ids = fields.One2many('school.major.enrollment', 'student_id', string='Major Enrollments')
     major_ids = fields.Many2many(
@@ -382,6 +384,29 @@ class SchoolStudent(models.Model):
                 rec.passed_exam_count = 0
                 rec.failed_exam_count = 0
                 rec.academic_performance = 'No Exams Yet'
+
+    @api.depends('grade_ids', 'grade_ids.exam_id', 'grade_ids.exam_datetime')
+    def _compute_student_exam_stats(self):
+        now = fields.Datetime.now()
+        for student in self:
+            grades = student.grade_ids
+            student.exam_count = len(grades)
+            student.upcoming_exam_count = len(grades.filtered(
+                lambda g: g.exam_datetime and g.exam_datetime >= now and g.attendance_status == 'scheduled'
+            ))
+
+    def action_view_student_exams(self):
+        self.ensure_one()
+        return {
+            'name': _('My Examinations - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.grade',
+            'view_mode': 'list,form',
+            'domain': [('student_id', '=', self.id)],
+            'context': {
+                'default_student_id': self.id,
+            },
+        }
 
     def action_recompute_academic_metrics(self):
         """Action button to trigger full academic metrics recalculation."""

@@ -122,6 +122,12 @@
                                 <span class="o_stat_text">Teaching Schedule</span>
                             </div>
                         </button>
+                        <button name="action_view_supervised_exams" type="object" class="oe_stat_button" icon="fa-pencil-square-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="exam_count"/></span>
+                                <span class="o_stat_text">Exam Duties</span>
+                            </div>
+                        </button>
                         <button name="action_view_classes" type="object" class="oe_stat_button" icon="fa-university">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="class_count"/></span>

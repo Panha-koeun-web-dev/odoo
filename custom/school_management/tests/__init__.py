@@ -5,3 +5,4 @@ from . import test_timetable
 from . import test_weekly_subjects
 from . import test_permission
 from . import test_term_schedule
+from . import test_exam_schedule_timetable

@@ -231,15 +231,15 @@ class SchoolTermScheduleWizard(models.TransientModel):
         Timetable = self.env['school.timetable']
         for rec in self:
             if rec.source_term_id and rec.class_id:
-                rec.source_session_count = Timetable.search_count([\
-                    ('term_id', '=', rec.source_term_id.id),\
-                    ('class_id', '=', rec.class_id.id),\
-                    ('active', '=', True),\
+                rec.source_session_count = Timetable.search_count([
+                    ('term_id', '=', rec.source_term_id.id),
+                    ('class_id', '=', rec.class_id.id),
+                    ('active', '=', True),
                 ])
             elif rec.source_term_id:
-                rec.source_session_count = Timetable.search_count([\
-                    ('term_id', '=', rec.source_term_id.id),\
-                    ('active', '=', True),\
+                rec.source_session_count = Timetable.search_count([
+                    ('term_id', '=', rec.source_term_id.id),
+                    ('active', '=', True),
                 ])
             else:
                 rec.source_session_count = 0
@@ -271,25 +271,25 @@ class SchoolTermScheduleWizard(models.TransientModel):
             cls = self.env['school.class'].browse(res['class_id'])
             term_id = res.get('term_id')
             if term_id:
-                w1_existing = self.env['school.timetable'].search([\
-                    ('term_id', '=', term_id),\
-                    ('class_id', '=', cls.id),\
-                    ('week_number', '=', 1),\
-                    ('active', '=', True),\
+                w1_existing = self.env['school.timetable'].search([
+                    ('term_id', '=', term_id),
+                    ('class_id', '=', cls.id),
+                    ('week_number', '=', 1),
+                    ('active', '=', True),
                 ], order='day_of_week, start_time')
                 if w1_existing:
                     lines = []
                     for s in w1_existing:
-                        lines.append((0, 0, {\
-                            'day_of_week': s.day_of_week,\
-                            'period': s.period,\
-                            'specific_start_time': s.specific_start_time,\
-                            'start_time': s.start_time,\
-                            'end_time': s.end_time,\
-                            'subject_id': s.subject_id.id if s.subject_id else False,\
-                            'teacher_id': s.teacher_id.id if s.teacher_id else False,\
-                            'room': s.room or cls.room or '',\
-                            'notes': s.notes or '',\
+                        lines.append((0, 0, {
+                            'day_of_week': s.day_of_week,
+                            'period': s.period,
+                            'specific_start_time': s.specific_start_time,
+                            'start_time': s.start_time,
+                            'end_time': s.end_time,
+                            'subject_id': s.subject_id.id if s.subject_id else False,
+                            'teacher_id': s.teacher_id.id if s.teacher_id else False,
+                            'room': s.room or cls.room or '',
+                            'notes': s.notes or '',
                         }))
                     res['line_ids'] = lines
 
@@ -304,9 +304,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
             if self.term_id.previous_term_id:
                 self.source_term_id = self.term_id.previous_term_id
             else:
-                prev = self.env['school.term'].search([\
-                    ('id', '!=', self.term_id.id),\
-                    ('date_end', '<=', self.term_id.date_start),\
+                prev = self.env['school.term'].search([
+                    ('id', '!=', self.term_id.id),
+                    ('date_end', '<=', self.term_id.date_start),
                 ], order='date_end desc', limit=1)
                 if prev:
                     self.source_term_id = prev
@@ -333,25 +333,25 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id or not self.term_id:
             return
         w_num = int(self.target_week or '1')
-        existing = self.env['school.timetable'].search([\
-            ('term_id', '=', self.term_id.id),\
-            ('class_id', '=', self.class_id.id),\
-            ('week_number', '=', w_num),\
-            ('active', '=', True),\
+        existing = self.env['school.timetable'].search([
+            ('term_id', '=', self.term_id.id),
+            ('class_id', '=', self.class_id.id),
+            ('week_number', '=', w_num),
+            ('active', '=', True),
         ], order='day_of_week, start_time')
         if existing:
             lines = []
             for s in existing:
-                lines.append((0, 0, {\
-                    'day_of_week': s.day_of_week,\
-                    'period': s.period,\
-                    'specific_start_time': s.specific_start_time,\
-                    'start_time': s.start_time,\
-                    'end_time': s.end_time,\
-                    'subject_id': s.subject_id.id if s.subject_id else False,\
-                    'teacher_id': s.teacher_id.id if s.teacher_id else False,\
-                    'room': s.room or self.class_id.room or '',\
-                    'notes': s.notes or '',\
+                lines.append((0, 0, {
+                    'day_of_week': s.day_of_week,
+                    'period': s.period,
+                    'specific_start_time': s.specific_start_time,
+                    'start_time': s.start_time,
+                    'end_time': s.end_time,
+                    'subject_id': s.subject_id.id if s.subject_id else False,
+                    'teacher_id': s.teacher_id.id if s.teacher_id else False,
+                    'room': s.room or self.class_id.room or '',
+                    'notes': s.notes or '',
                 }))
             self.line_ids = [(5, 0, 0)] + lines
         else:
@@ -376,7 +376,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
             val = float(self.single_specific_start_time)
             dur = (self.single_end_time - self.single_start_time) if (self.single_end_time and self.single_end_time > self.single_start_time) else 1.0
             self.single_start_time = val
-            self.single_end_time = min(24.0, round(val + dur, 2))
+            self.end_time = min(24.0, round(val + dur, 2))
             matched_p = 'custom'
             for p_key, (ps, pe) in PERIOD_PRESETS.items():
                 if abs(self.single_start_time - ps) < 0.02 and abs(self.single_end_time - pe) < 0.02:
@@ -401,38 +401,87 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     break
             self.single_period = matched_p
 
+    def _reopen_wizard(self):
+        """Helper to reload the wizard dialog so modified line_ids immediately refresh in the UI."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': dict(self.env.context),
+        }
+
     # -------------------------------------------------------------------------
     # QUICK ACTIONS
     # -------------------------------------------------------------------------
-    def action_populate_empty_mon_fri(self):
-        """Prepare or reset Monday to Friday slots (20 rows: 5 days x 4 periods)."""
+    def _get_class_curriculum_pool(self):
+        """Build pool of (subject_id, teacher_id) for the class with multi-level fallbacks."""
         self.ensure_one()
-        self.line_ids = [(5, 0, 0)] + self._build_empty_mon_fri_lines(self.class_id)
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Monday to Friday Grid Ready'),
-                'message': _('Prepared 20 slots for Monday to Friday. Assign your subjects and teachers below.'),
-                'type': 'info',
-                'sticky': False,
-            }
-        }
+        if not self.class_id:
+            return []
+
+        # 1. Try class-specific teaching assignments
+        assignments = self.env['school.teaching.assignment'].search([
+            ('class_id', '=', self.class_id.id),
+            ('active', '=', True),
+        ], order='weekly_hours desc, id asc')
+
+        pool = []
+        for asg in assignments:
+            slots_needed = max(1, int(round(asg.weekly_hours or 2.0)))
+            for _slot_idx in range(slots_needed):
+                pool.append((asg.subject_id.id, asg.teacher_id.id if asg.teacher_id else (self.class_id.teacher_id.id if self.class_id.teacher_id else False)))
+
+        # 2. Fallback to subjects directly linked to class
+        if not pool and self.class_id.subject_ids:
+            for sub in self.class_id.subject_ids:
+                t_id = sub.teacher_ids[0].id if sub.teacher_ids else (self.class_id.teacher_id.id if self.class_id.teacher_id else False)
+                for _ in range(2):
+                    pool.append((sub.id, t_id))
+
+        # 3. Fallback to active subjects in the school
+        if not pool:
+            active_subjects = self.env['school.subject'].search([('active', '=', True)], limit=8)
+            for sub in active_subjects:
+                t_id = sub.teacher_ids[0].id if sub.teacher_ids else (self.class_id.teacher_id.id if self.class_id.teacher_id else False)
+                for _ in range(2):
+                    pool.append((sub.id, t_id))
+
+        return pool
+
+    def action_populate_empty_mon_fri(self):
+        """Prepare Monday to Friday slots (20 rows) and auto-fill weekly schedule with subjects and teachers."""
+        self.ensure_one()
+        pool = self._get_class_curriculum_pool()
+        pool_len = len(pool) if pool else 0
+        empty_slots = self._build_empty_mon_fri_lines(self.class_id)
+
+        # If lines already exist, update them in place to preserve their record IDs in the browser!
+        if len(self.line_ids) == len(empty_slots):
+            for idx, (_, _, vals) in enumerate(empty_slots):
+                if pool:
+                    sub_id, tch_id = pool[idx % pool_len]
+                    vals['subject_id'] = sub_id
+                    vals['teacher_id'] = tch_id or (self.class_id.teacher_id.id if self.class_id.teacher_id else False)
+                self.line_ids[idx].write(vals)
+        else:
+            built_lines = []
+            for idx, (_, _, vals) in enumerate(empty_slots):
+                if pool:
+                    sub_id, tch_id = pool[idx % pool_len]
+                    vals['subject_id'] = sub_id
+                    vals['teacher_id'] = tch_id or (self.class_id.teacher_id.id if self.class_id.teacher_id else False)
+                built_lines.append((0, 0, vals))
+            self.line_ids = [(5, 0, 0)] + built_lines
+        return self._reopen_wizard()
 
     def action_clear_all_lines(self):
         """Remove all schedule lines."""
         self.ensure_one()
         self.line_ids.unlink()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Lines Cleared'),
-                'message': _('All session lines have been removed.'),
-                'type': 'info',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_generate_monday_to_friday(self):
         """Generate Monday to Friday schedule grid and optionally distribute curriculum."""
@@ -440,7 +489,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         self.action_populate_empty_mon_fri()
         if self.distribute_subjects:
             self.action_prefill_from_class_curriculum()
-        return True
+        return self._reopen_wizard()
 
     def action_mark_day_as_holiday(self):
         """Mark all session lines on the selected day as Holiday / No Study."""
@@ -470,20 +519,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if other_lines:
             other_lines.unlink()
 
-        day_label = dict(DAY_SELECTION).get(self.holiday_day, self.holiday_day)
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Holiday Assigned'),
-                'message': _("%(day)s is set as a full-day Holiday (%(reason)s). Regular classes were cleared.") % {
-                    'day': day_label,
-                    'reason': reason,
-                },
-                'type': 'warning',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_unmark_day_holiday(self):
         """Restore holiday lines on selected day back to regular class slots."""
@@ -514,17 +550,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 'room': default_room,
             }))
         self.write({'line_ids': day_lines})
-        day_label = dict(DAY_SELECTION).get(self.holiday_day, self.holiday_day)
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Holiday Cleared'),
-                'message': _("%s is now restored for regular class scheduling.") % day_label,
-                'type': 'info',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_copy_from_week_1(self):
         """Clone Week 1's schedule into the currently selected week with 1 click."""
@@ -532,11 +558,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id or not self.term_id:
             raise UserError(_("Please select Class and Term first."))
 
-        w1_sessions = self.env['school.timetable'].search([\
-            ('term_id', '=', self.term_id.id),\
-            ('class_id', '=', self.class_id.id),\
-            ('week_number', '=', 1),\
-            ('active', '=', True),\
+        w1_sessions = self.env['school.timetable'].search([
+            ('term_id', '=', self.term_id.id),
+            ('class_id', '=', self.class_id.id),
+            ('week_number', '=', 1),
+            ('active', '=', True),
         ], order='day_of_week, start_time')
 
         if not w1_sessions:
@@ -556,18 +582,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 'notes': s.notes or '',
             }))
         self.line_ids = [(5, 0, 0)] + lines
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Week 1 Cloned'),
-                'message': _('Copied %d sessions from Week 1 into Week %s.') % (
-                    len(lines), self.target_week
-                ),
-                'type': 'success',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_copy_monday_to_all_weekdays(self):
         """Duplicate Monday's subjects and teachers across Tuesday, Wednesday, Thursday, Friday."""
@@ -593,16 +608,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         # Keep Monday and replace others
         self.line_ids = [(6, 0, monday_lines.ids)] + new_lines
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Monday Schedule Replicated'),
-                'message': _("Monday's timetable was successfully copied to Tuesday through Friday."),
-                'type': 'success',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_prefill_from_class_curriculum(self):
         """Intelligently pre-populate the Monday - Friday grid using the Class's teaching assignments."""
@@ -610,23 +616,12 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id:
             raise UserError(_("Please select a Class first."))
 
-        assignments = self.env['school.teaching.assignment'].search([\
-            ('class_id', '=', self.class_id.id),\
-            ('active', '=', True),\
-        ], order='weekly_hours desc, id asc')
-
-        if not assignments:
-            raise UserError(_("No active Teaching Assignments found for Class '%s'.") % self.class_id.name)
+        pool = self._get_class_curriculum_pool()
+        if not pool:
+            raise UserError(_("No subjects or teaching assignments found for Class '%s'.") % self.class_id.name)
 
         if not self.line_ids:
-            self.action_populate_empty_mon_fri()
-
-        # Build list of (subject_id, teacher_id) repeated by their required slots
-        pool = []
-        for asg in assignments:
-            slots_needed = max(1, int(round(asg.weekly_hours or 2.0)))
-            for _slot_idx in range(slots_needed):
-                pool.append((asg.subject_id.id, asg.teacher_id.id if asg.teacher_id else False))
+            self.line_ids = [(5, 0, 0)] + self._build_empty_mon_fri_lines(self.class_id)
 
         pool_idx = 0
         pool_len = len(pool)
@@ -640,16 +635,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 })
                 pool_idx += 1
 
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Curriculum Distributed'),
-                'message': _('Successfully mapped %d curriculum assignments across the weekly schedule.') % len(assignments),
-                'type': 'success',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     def action_load_source_term_sessions(self):
         """Load timetable sessions from the selected source term into the lines grid."""
@@ -659,15 +645,15 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if not self.class_id:
             raise UserError(_("Please select a Class first."))
 
-        source_sessions = self.env['school.timetable'].search([\
-            ('term_id', '=', self.source_term_id.id),\
-            ('class_id', '=', self.class_id.id),\
-            ('active', '=', True),\
+        source_sessions = self.env['school.timetable'].search([
+            ('term_id', '=', self.source_term_id.id),
+            ('class_id', '=', self.class_id.id),
+            ('active', '=', True),
         ], order='day_of_week, start_time')
 
         if not source_sessions:
-            raise UserError(_("No active timetable sessions found in source term '%s' for class '%s'.") % (\
-                self.source_term_id.name, self.class_id.name\
+            raise UserError(_("No active timetable sessions found in source term '%s' for class '%s'.") % (
+                self.source_term_id.name, self.class_id.name
             ))
 
         lines = []
@@ -686,18 +672,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         self.mode = 'create_slots'
         self.line_ids = [(5, 0, 0)] + lines
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Source Schedule Loaded'),
-                'message': _('Loaded %d sessions from %s.') % (
-                    len(lines), self.source_term_id.name
-                ),
-                'type': 'info',
-                'sticky': False,
-            }
-        }
+        return self._reopen_wizard()
 
     # -------------------------------------------------------------------------
     # MAIN APPLY ACTION
@@ -727,9 +702,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         # Check existing sessions for this class, term, and target weeks
         if self.overwrite_existing:
-            existing = Timetable.search([\
-                ('term_id', '=', self.term_id.id),\
-                ('class_id', '=', self.class_id.id),\
+            existing = Timetable.search([
+                ('term_id', '=', self.term_id.id),
+                ('class_id', '=', self.class_id.id),
             ])
             if existing:
                 existing.unlink()
@@ -741,10 +716,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
         target_students = [(6, 0, self.class_id.student_ids.ids)] if self.class_id.student_ids else False
 
         # Query all existing active holidays (school-wide or class-specific)
-        existing_holidays = Timetable.search([\
-            ('is_holiday', '=', True),\
-            ('active', '=', True),\
-            '|', ('class_id', '=', False), ('class_id', '=', self.class_id.id),\
+        existing_holidays = Timetable.search([
+            ('is_holiday', '=', True),
+            ('active', '=', True),
+            '|', ('class_id', '=', False), ('class_id', '=', self.class_id.id),
         ])
         existing_holiday_dates = set()
         for h in existing_holidays:
@@ -758,10 +733,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
         if self.mode == 'copy_term':
             if not self.source_term_id:
                 raise UserError(_("Please select a Source Term."))
-            source_sessions = Timetable.search([\
-                ('term_id', '=', self.source_term_id.id),\
-                ('class_id', '=', self.class_id.id),\
-                ('active', '=', True),\
+            source_sessions = Timetable.search([
+                ('term_id', '=', self.source_term_id.id),
+                ('class_id', '=', self.class_id.id),
+                ('active', '=', True),
             ])
             if not source_sessions:
                 raise UserError(_("No active timetable sessions found in '%s'.") % self.source_term_id.name)

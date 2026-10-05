@@ -161,9 +161,25 @@ class SchoolTimetable(models.Model):
         tracking=True,
         help="e.g. Khmer New Year, Water Festival, Public Holiday, Teacher Day, National Break"
     )
+    is_exam = fields.Boolean(
+        string='Examination Session',
+        default=False,
+        tracking=True,
+        index=True,
+        help="Mark this session as an examination or assessment session."
+    )
+    exam_id = fields.Many2one(
+        'school.exam',
+        string='Examination',
+        tracking=True,
+        index=True,
+        ondelete='cascade',
+        help="Related examination record."
+    )
     schedule_status = fields.Selection([
         ('regular', 'Class Session'),
         ('holiday', 'Holiday / No Study'),
+        ('exam', 'Examination'),
     ], string='Status', compute='_compute_schedule_status', store=True, index=True)
 
     class_id = fields.Many2one(
@@ -437,10 +453,15 @@ class SchoolTimetable(models.Model):
         for rec in self:
             rec.week_name = f"Week {rec.week_number}" if rec.week_number else False
 
-    @api.depends('is_holiday')
+    @api.depends('is_holiday', 'is_exam', 'exam_id')
     def _compute_schedule_status(self):
         for rec in self:
-            rec.schedule_status = 'holiday' if rec.is_holiday else 'regular'
+            if rec.is_holiday:
+                rec.schedule_status = 'holiday'
+            elif rec.is_exam or rec.exam_id:
+                rec.schedule_status = 'exam'
+            else:
+                rec.schedule_status = 'regular'
 
     @api.depends('period')
     def _compute_period_short(self):
@@ -518,7 +539,7 @@ class SchoolTimetable(models.Model):
             elif not rec.student_ids:
                 rec.student_ids = False
 
-    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name', 'is_holiday', 'holiday_name')
+    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name', 'is_holiday', 'holiday_name', 'is_exam', 'exam_id.name')
     def _compute_display_name(self):
         days = dict(DAY_SELECTION)
         for rec in self:
@@ -531,6 +552,11 @@ class SchoolTimetable(models.Model):
                 scope_str = f" - {target_name}" if rec.class_id or rec.student_id else " - School-Wide"
                 rec.display_name = f"[HOLIDAY] {h_title}{scope_str} ({day_str} {start_str}-{end_str})"
                 continue
+            if rec.is_exam or rec.exam_id:
+                e_title = rec.exam_id.name or rec.name or _("Exam")
+                room_str = f" [{rec.room}]" if rec.room else ""
+                rec.display_name = f"[EXAM] {e_title} - {target_name} ({day_str} {start_str}-{end_str}){room_str}"
+                continue
             subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
             subject_name = ', '.join(subs.mapped('name')) if subs else (rec.subject_id.name or _("Subject"))
             room_str = f" [{rec.room}]" if rec.room else ""
@@ -539,11 +565,13 @@ class SchoolTimetable(models.Model):
             else:
                 rec.display_name = f"[{target_name}] {subject_name} ({day_str} {start_str}-{end_str}){room_str}"
 
-    @api.depends('subject_id', 'class_id', 'teacher_id', 'is_holiday')
+    @api.depends('subject_id', 'class_id', 'teacher_id', 'is_holiday', 'is_exam', 'exam_id')
     def _compute_color(self):
         for rec in self:
             if rec.is_holiday:
                 rec.color = 2
+            elif rec.is_exam or rec.exam_id:
+                rec.color = 9
             elif rec.teacher_id:
                 rec.color = (rec.teacher_id.id * 3 + 1) % 11 + 1
             elif rec.subject_id:
@@ -1196,22 +1224,22 @@ class SchoolTimetable(models.Model):
                     'holiday': h_name,
                 })
 
-    @api.constrains('teacher_id', 'is_holiday')
+    @api.constrains('teacher_id', 'is_holiday', 'is_exam')
     def _check_teacher_required(self):
         for rec in self:
-            if not rec.is_holiday and not rec.teacher_id:
+            if not rec.is_holiday and not rec.is_exam and not rec.teacher_id:
                 raise ValidationError(_("Teacher is required for regular class sessions."))
 
-    @api.constrains('subject_id', 'subject_ids', 'is_holiday')
+    @api.constrains('subject_id', 'subject_ids', 'is_holiday', 'is_exam')
     def _check_subjects_present(self):
         for rec in self:
-            if not rec.is_holiday and not rec.subject_ids and not rec.subject_id:
+            if not rec.is_holiday and not rec.is_exam and not rec.subject_ids and not rec.subject_id:
                 raise ValidationError(_("Please select at least one Subject for this timetable session."))
 
-    @api.constrains('class_id', 'student_id', 'student_ids', 'is_holiday')
+    @api.constrains('class_id', 'student_id', 'student_ids', 'is_holiday', 'is_exam')
     def _check_class_or_student(self):
         for rec in self:
-            if rec.is_holiday:
+            if rec.is_holiday or rec.is_exam:
                 continue
             if not rec.class_id and not rec.student_id and not rec.student_ids:
                 raise ValidationError(_("Please select either a Class or at least one Student for this timetable session."))
@@ -1384,11 +1412,15 @@ class SchoolTimetable(models.Model):
 
     def _check_subject_conflict_single(self, rec, overlapping, days):
         """Check if any session has overlapping subjects for the same audience or class."""
+        if rec.is_exam:
+            return
         rec_subjects = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
         if not rec_subjects:
             return
 
         for other in overlapping:
+            if other.is_exam:
+                continue
             other_subjects = other.subject_ids or (other.subject_id if other.subject_id else self.env['school.subject'])
             common_subjects = rec_subjects & other_subjects
             if not common_subjects:
@@ -1434,3 +1466,16 @@ class SchoolTimetable(models.Model):
 
     def _check_subject_conflict(self):
         self._check_schedule_conflicts()
+
+    def action_open_exam(self):
+        self.ensure_one()
+        if not self.exam_id:
+            return False
+        return {
+            'name': self.exam_id.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.exam',
+            'res_id': self.exam_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }

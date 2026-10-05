@@ -187,12 +187,6 @@
                         </page>
 
                         <page string="Affected Teaching Schedule" name="teaching_schedule" invisible="applicant_type != 'teacher'">
-                            <div class="alert alert-info d-flex align-items-center mb-3" role="status">
-                                <i class="fa fa-info-circle me-2 fs-5" title="Teaching Notice"/>
-                                <div>
-                                    Teaching sessions scheduled during this leave period. Administrators should review these sessions to arrange substitute coverage if necessary.
-                                </div>
-                            </div>
                             <field name="affected_timetable_ids" nolabel="1" readonly="1">
                                 <list decoration-info="day_of_week in ('0', '1', '2', '3', '4')"
                                       decoration-warning="day_of_week in ('5', '6')">

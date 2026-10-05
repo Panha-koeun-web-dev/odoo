@@ -35,10 +35,14 @@
         <field name="model">school.timetable</field>
         <field name="arch" type="xml">
             <list string="Class &amp; Student Timetable" sample="1" multi_edit="1" default_order="day_of_week, start_time, class_id"
-                  decoration-warning="is_holiday">
+                  decoration-warning="is_holiday"
+                  decoration-danger="schedule_status == 'exam'">
                 <field name="schedule_status" widget="badge"
                        decoration-warning="schedule_status == 'holiday'"
+                       decoration-danger="schedule_status == 'exam'"
                        decoration-success="schedule_status == 'regular'"/>
+                <field name="is_exam" widget="boolean_toggle" optional="hide" string="Exam"/>
+                <field name="exam_id" optional="show" invisible="not is_exam"/>
                 <field name="is_holiday" widget="boolean_toggle" optional="hide" string="Holiday"/>
                 <field name="holiday_name" optional="show" invisible="not is_holiday"/>
                 <field name="term_id" widget="badge" optional="show"/>
@@ -97,8 +101,13 @@
                     <t t-name="card" class="o_timetable_card flex-column">
                         <!-- Holiday Banner if Holiday -->
                         <div t-if="record.is_holiday.raw_value" role="status" class="alert alert-warning py-1 px-2 mb-2 d-flex align-items-center justify-content-between rounded">
-                            <span class="fw-bold">HOLIDAY / NO CLASS</span>
+                            <span class="fw-bold"><i class="fa fa-sun-o me-1"/>HOLIDAY / NO CLASS</span>
                             <span class="badge bg-warning text-dark"><field name="holiday_name"/></span>
+                        </div>
+                        <!-- Exam Banner if Examination -->
+                        <div t-if="record.schedule_status.raw_value == 'exam'" role="status" class="alert alert-danger py-1 px-2 mb-2 d-flex align-items-center justify-content-between rounded">
+                            <span class="fw-bold"><i class="fa fa-graduation-cap me-1"/>EXAMINATION</span>
+                            <span class="badge bg-danger text-white"><field name="name"/></span>
                         </div>
 
                         <!-- Top Header: Period Pill & Time Range -->
@@ -172,6 +181,9 @@
         <field name="arch" type="xml">
             <form string="Timetable Session" class="o_school_form">
                 <header>
+                    <button name="action_open_exam" type="object"
+                            string="View Examination" class="btn-primary" icon="fa-graduation-cap"
+                            invisible="not exam_id" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_toggle_holiday" type="object"
                             string="Toggle Holiday" class="btn-warning" icon="fa-star"
                             groups="school_management.group_school_admin"/>
@@ -197,9 +209,12 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Session Type &amp; Holiday Status">
+                        <group string="Session Type &amp; Status">
                             <field name="is_holiday" widget="boolean_toggle"/>
                             <field name="holiday_name" placeholder="e.g. Khmer New Year, Water Festival" invisible="not is_holiday" required="is_holiday"/>
+                            <field name="is_exam" widget="boolean_toggle" readonly="exam_id"/>
+                            <field name="exam_id" readonly="1" invisible="not is_exam"/>
+                            <field name="schedule_status" widget="badge"/>
                         </group>
                         <group string="Academic Assignment &amp; Term" invisible="is_holiday">
                             <field name="term_id" options="{'no_create': True}"/>
@@ -293,7 +308,8 @@
                         domain="[('is_holiday', '=', True), ('class_id', '=', False)]"/>
                 <filter name="filter_class_holidays" string="Class-specific Holidays"
                         domain="[('is_holiday', '=', True), ('class_id', '!=', False)]"/>
-                <filter name="filter_regular_classes" string="Regular Class Sessions" domain="[('is_holiday', '=', False)]"/>
+                <filter name="filter_exams" string="Examinations &amp; Assessments" domain="[('schedule_status', '=', 'exam')]"/>
+                <filter name="filter_regular_classes" string="Regular Class Sessions" domain="[('schedule_status', '=', 'regular')]"/>
                 <separator/>
                 <filter name="filter_week_1" string="Week 1" domain="[('week_number', '=', 1)]"/>
                 <filter name="filter_week_2" string="Week 2" domain="[('week_number', '=', 2)]"/>

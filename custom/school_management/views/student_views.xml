@@ -308,6 +308,12 @@
                                 <span class="o_stat_text">Attendance (<field name="attendance_count"/>)</span>
                             </div>
                         </button>
+                        <button name="action_view_student_exams" type="object" class="oe_stat_button" icon="fa-pencil-square-o">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="exam_count"/></span>
+                                <span class="o_stat_text">Exam Schedule</span>
+                            </div>
+                        </button>
                         <button name="open_grades" type="object" class="oe_stat_button" icon="fa-graduation-cap">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="average_score"/>% (GPA <field name="gpa"/>)</span>
@@ -785,6 +791,14 @@
                                         <list>
                                             <field name="exam_id" string="Exam"/>
                                             <field name="subject_id" string="Subject"/>
+                                            <field name="teacher_id" string="Supervisor" optional="show"/>
+                                            <field name="exam_datetime" string="Scheduled Date &amp; Time" optional="show"/>
+                                            <field name="room" string="Room / Hall" optional="show"/>
+                                            <field name="attendance_status" widget="badge" optional="show"
+                                                   decoration-info="attendance_status == 'scheduled'"
+                                                   decoration-success="attendance_status == 'present'"
+                                                   decoration-danger="attendance_status == 'absent'"
+                                                   decoration-warning="attendance_status == 'excused'"/>
                                             <field name="marks_obtained" string="Marks Obtained"/>
                                             <field name="total_marks" string="Total Marks"/>
                                             <field name="percentage" string="Percentage (%)" widget="badge"

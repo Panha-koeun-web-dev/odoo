@@ -61,6 +61,8 @@ class SchoolTeacher(models.Model):
     class_count = fields.Integer(string='Class Count', compute='_compute_teacher_stats')
     student_count = fields.Integer(string='Student Count', compute='_compute_teacher_stats')
     subject_count = fields.Integer(string='Subject Count', compute='_compute_teacher_stats')
+    exam_ids = fields.One2many('school.exam', 'teacher_id', string='Supervised Exams')
+    exam_count = fields.Integer(string='Exam Invigilations', compute='_compute_teacher_exam_stats')
 
     # Permission & Leave Integration
     permission_ids = fields.One2many(
@@ -210,6 +212,23 @@ class SchoolTeacher(models.Model):
                 ('class_id', 'in', class_ids or [False]),
             ]
             teacher.holiday_count = Timetable.search_count(holiday_domain)
+
+    def _compute_teacher_exam_stats(self):
+        for teacher in self:
+            teacher.exam_count = len(teacher.exam_ids)
+
+    def action_view_supervised_exams(self):
+        self.ensure_one()
+        return {
+            'name': _('Supervised Exams - %s') % (self.name or ''),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.exam',
+            'view_mode': 'list,calendar,kanban,form',
+            'domain': [('teacher_id', '=', self.id)],
+            'context': {
+                'default_teacher_id': self.id,
+            },
+        }
 
     def _compute_timetable_count(self):
         return self._compute_timetable_ids()

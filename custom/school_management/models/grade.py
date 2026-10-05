@@ -12,6 +12,7 @@ class SchoolGrade(models.Model):
     exam_id = fields.Many2one('school.exam', string='Exam', required=True, ondelete='cascade')
     subject_id = fields.Many2one(related='exam_id.subject_id', string='Subject', store=True)
     class_id = fields.Many2one(related='exam_id.class_id', string='Class', store=True)
+    teacher_id = fields.Many2one(related='exam_id.teacher_id', string='Supervisor / Invigilator', store=True, readonly=True)
 
     # Date & Time Scheduling for this student
     exam_datetime = fields.Datetime(
