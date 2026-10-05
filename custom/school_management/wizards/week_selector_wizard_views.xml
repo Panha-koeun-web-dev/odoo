@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================= WEEK SELECTOR WIZARD FORM ======================= -->
+    <record id="view_school_timetable_week_selector_form" model="ir.ui.view">
+        <field name="name">school.timetable.week.selector.wizard.form</field>
+        <field name="model">school.timetable.week.selector.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select &amp; View Specific Week Schedule">
+                <sheet>
+                    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
+                        <div>
+                            <i class="fa fa-calendar-check-o me-2 text-primary" title="Calendar"/>
+                            <field name="week_date_info" readonly="1" class="fw-bold text-dark oe_inline"/>
+                        </div>
+                        <span class="badge text-bg-primary">
+                            <i class="fa fa-clock-o me-1"/>5 Weekdays (Mon - Fri)
+                        </span>
+                    </div>
+
+                    <!-- Session count notice -->
+                    <div invisible="session_count == 0" class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
+                        <div>
+                            <i class="fa fa-check-circle me-2 text-success" title="Success"/>
+                            <span>Integrated <strong><field name="session_count" readonly="1" class="oe_inline"/></strong> scheduled sessions for this week.</span>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="fa fa-check me-1"/>Schedule Active
+                        </span>
+                    </div>
+
+                    <div invisible="session_count &gt; 0" class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
+                        <div>
+                            <i class="fa fa-info-circle me-2 text-warning" title="Warning"/>
+                            <span>No timetable sessions are scheduled for this week yet.</span>
+                        </div>
+                        <button name="action_auto_integrate_week_schedule" string="Auto-Integrate Schedule for this Week" type="object" class="btn btn-sm btn-warning fw-bold shadow-sm" icon="fa-bolt" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    </div>
+
+                    <group>
+                        <group string="Academic Week &amp; Auto-Related Term">
+                            <field name="week_number" widget="selection" class="fw-bold"/>
+                            <field name="term_id" options="{'no_create': True}" required="1"/>
+                            <field name="academic_year"/>
+                            <field name="term_number" widget="badge"/>
+                        </group>
+                        <group string="Class, Teacher &amp; View Format">
+                            <field name="class_id" options="{'no_create': True}" placeholder="All Classes (or select specific class)"/>
+                            <field name="teacher_id" options="{'no_create': True}" placeholder="All Teachers (or select specific teacher)"/>
+                            <field name="view_mode" widget="radio"/>
+                        </group>
+                    </group>
+
+                    <!-- Embedded Schedule Preview -->
+                    <notebook invisible="session_count == 0">
+                        <page string="Weekly Schedule Sessions" name="weekly_schedule">
+                            <field name="session_ids" readonly="1">
+                                <list no_open="1">
+                                    <field name="day_of_week" widget="badge"
+                                           decoration-info="day_of_week in ('0', '1', '2')"
+                                           decoration-primary="day_of_week in ('3', '4')"
+                                           decoration-warning="day_of_week in ('5', '6')"/>
+                                    <field name="period_short" widget="badge"/>
+                                    <field name="time_display" decoration-bf="1"/>
+                                    <field name="subject_ids" widget="many2many_tags" invisible="is_holiday"/>
+                                    <field name="teacher_id" invisible="is_holiday"/>
+                                    <field name="class_id"/>
+                                    <field name="room"/>
+                                    <field name="schedule_status" widget="badge"
+                                           decoration-success="schedule_status == 'regular'"
+                                           decoration-warning="schedule_status == 'holiday'"
+                                           decoration-danger="schedule_status == 'exam'"/>
+                                    <field name="is_holiday" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_view_week_schedule" string="Open Week Schedule" type="object" class="btn-primary" icon="fa-calendar"/>
+                    <button name="action_plan_for_this_week" string="Plan / Edit Week Schedule" type="object" class="btn-outline-primary ms-1" icon="fa-magic" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================= WIZARD ACTION & BINDING ======================= -->
+    <record id="action_school_timetable_week_selector" model="ir.actions.act_window">
+        <field name="name">Select / Jump to Week</field>
+        <field name="res_model">school.timetable.week.selector.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_school_timetable"/>
+        <field name="binding_view_types">calendar,list,kanban,form</field>
+    </record>
+
+</odoo>

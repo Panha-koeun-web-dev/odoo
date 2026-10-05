@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="web.CalendarController" t-inherit-mode="extension">
+        <xpath expr="//button[contains(@class, 'o_calendar_button_today')]" position="after">
+            <button t-if="isSchoolTimetable"
+                    class="btn btn-outline-primary btn-sm o_calendar_button_select_week d-print-none ms-1 px-2 py-1 shadow-sm"
+                    t-on-click.stop="onCalendarTitleClick"
+                    title="Choose a specific academic or calendar week (Week 40, Week 41, etc.)">
+                <i class="fa fa-calendar-check-o me-1"/>Choose Week
+            </button>
+        </xpath>
+        <xpath expr="//h5[contains(@class, 'd-inline-flex')]" position="replace">
+            <h5 class="d-inline-flex ps-lg-2 ps-print-0 mb-0 align-items-center"
+                t-att-class="isSchoolTimetable ? 'o_school_calendar_title_wrap' : ''">
+                <t t-if="model.meta.scale === 'year'">
+                    <span t-att-class="isSchoolTimetable ? 'o_clickable_calendar_title' : ''"
+                          t-on-click="onCalendarTitleClick"
+                          t-att-title="isSchoolTimetable ? 'Click to choose week or date...' : ''">
+                        <t t-esc="currentYear"/>
+                    </span>
+                </t>
+                <t t-elif="model.meta.scale === 'month'">
+                    <span t-att-class="isSchoolTimetable ? 'o_clickable_calendar_title' : ''"
+                          t-on-click="onCalendarTitleClick"
+                          t-att-title="isSchoolTimetable ? 'Click to choose week or date...' : ''">
+                        <t t-esc="currentMonth"/>
+                    </span>
+                </t>
+                <t t-elif="model.meta.scale === 'week'">
+                    <span t-att-class="isSchoolTimetable ? 'o_clickable_calendar_title me-1' : ''"
+                          t-on-click="onCalendarTitleClick"
+                          t-att-title="isSchoolTimetable ? 'Click to choose specific week (Week 40, Week 41, etc.)...' : ''">
+                        <t t-esc="weekHeader"/>
+                    </span>
+                    <span t-if="model.meta.scale === 'week'"
+                          class="o_current_week badge bg-100 rounded px-2 py-1 ms-1 border"
+                          t-att-class="isSchoolTimetable ? 'o_clickable_week_badge text-primary shadow-sm' : ''"
+                          t-on-click="onCalendarTitleClick"
+                          t-att-title="isSchoolTimetable ? 'Click to choose specific week (Week 40, Week 41, etc.)...' : ''"
+                          role="button">
+                        <i t-if="isSchoolTimetable" class="fa fa-calendar-check-o me-1 text-primary"/>Week <t t-esc="currentWeek"/><i t-if="isSchoolTimetable" class="fa fa-caret-down ms-1 text-primary"/>
+                    </span>
+                </t>
+                <t t-else="">
+                    <span t-att-class="isSchoolTimetable ? 'o_clickable_calendar_title' : ''"
+                          t-on-click="onCalendarTitleClick"
+                          t-att-title="isSchoolTimetable ? 'Click to choose week or date...' : ''">
+                        <t t-esc="dayHeader" />
+                    </span>
+                </t>
+            </h5>
+        </xpath>
+    </t>
+</templates>

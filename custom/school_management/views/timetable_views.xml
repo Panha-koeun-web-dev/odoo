@@ -17,6 +17,8 @@
                       event_open_popup="1">
                 <field name="display_name"/>
                 <field name="room"/>
+                <field name="term_id" filters="1"/>
+                <field name="week_name" filters="1"/>
                 <field name="teacher_id" filters="1"/>
                 <field name="class_id" filters="1"/>
                 <field name="schedule_status" filters="1"/>
@@ -201,6 +203,9 @@
                     <button name="action_anchor_to_current_week" type="object"
                             string="Re-anchor to Current Week" class="btn-secondary" icon="fa-calendar-check-o"
                             groups="school_management.group_school_admin"/>
+                    <button name="action_open_week_selector" type="object"
+                            string="Select / Jump to Week" class="btn-outline-primary" icon="fa-calendar"
+                            groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
@@ -280,6 +285,8 @@
             <search>
                 <field name="name"/>
                 <field name="term_id"/>
+                <field name="week_number"/>
+                <field name="week_name"/>
                 <field name="teacher_id"/>
                 <field name="student_id"/>
                 <field name="student_ids"/>
@@ -313,19 +320,37 @@
                 <filter name="filter_exams" string="Examinations &amp; Assessments" domain="[('schedule_status', '=', 'exam')]"/>
                 <filter name="filter_regular_classes" string="Regular Class Sessions" domain="[('schedule_status', '=', 'regular')]"/>
                 <separator/>
-                <filter name="filter_week_1" string="Week 1" domain="[('week_number', '=', 1)]"/>
-                <filter name="filter_week_2" string="Week 2" domain="[('week_number', '=', 2)]"/>
-                <filter name="filter_week_3" string="Week 3" domain="[('week_number', '=', 3)]"/>
-                <filter name="filter_week_4" string="Week 4" domain="[('week_number', '=', 4)]"/>
-                <filter name="filter_week_5" string="Week 5" domain="[('week_number', '=', 5)]"/>
-                <filter name="filter_week_6" string="Week 6" domain="[('week_number', '=', 6)]"/>
-                <filter name="filter_week_7" string="Week 7" domain="[('week_number', '=', 7)]"/>
-                <filter name="filter_week_8" string="Week 8" domain="[('week_number', '=', 8)]"/>
-                <filter name="filter_week_9" string="Week 9" domain="[('week_number', '=', 9)]"/>
-                <filter name="filter_week_10" string="Week 10" domain="[('week_number', '=', 10)]"/>
-                <filter name="filter_week_11" string="Week 11" domain="[('week_number', '=', 11)]"/>
-                <filter name="filter_week_12" string="Week 12" domain="[('week_number', '=', 12)]"/>
-                <filter name="filter_week_13" string="Week 13" domain="[('week_number', '=', 13)]"/>
+                <filter name="filter_week_1" string="Week 1" domain="['|', ('week_number', '=', 1), ('iso_week_number', '=', 1)]"/>
+                <filter name="filter_week_2" string="Week 2" domain="['|', ('week_number', '=', 2), ('iso_week_number', '=', 2)]"/>
+                <filter name="filter_week_3" string="Week 3" domain="['|', ('week_number', '=', 3), ('iso_week_number', '=', 3)]"/>
+                <filter name="filter_week_4" string="Week 4" domain="['|', ('week_number', '=', 4), ('iso_week_number', '=', 4)]"/>
+                <filter name="filter_week_5" string="Week 5" domain="['|', ('week_number', '=', 5), ('iso_week_number', '=', 5)]"/>
+                <filter name="filter_week_6" string="Week 6" domain="['|', ('week_number', '=', 6), ('iso_week_number', '=', 6)]"/>
+                <filter name="filter_week_7" string="Week 7" domain="['|', ('week_number', '=', 7), ('iso_week_number', '=', 7)]"/>
+                <filter name="filter_week_8" string="Week 8" domain="['|', ('week_number', '=', 8), ('iso_week_number', '=', 8)]"/>
+                <filter name="filter_week_9" string="Week 9" domain="['|', ('week_number', '=', 9), ('iso_week_number', '=', 9)]"/>
+                <filter name="filter_week_10" string="Week 10" domain="['|', ('week_number', '=', 10), ('iso_week_number', '=', 10)]"/>
+                <filter name="filter_week_11" string="Week 11" domain="['|', ('week_number', '=', 11), ('iso_week_number', '=', 11)]"/>
+                <filter name="filter_week_12" string="Week 12" domain="['|', ('week_number', '=', 12), ('iso_week_number', '=', 12)]"/>
+                <filter name="filter_week_13" string="Week 13" domain="['|', ('week_number', '=', 13), ('iso_week_number', '=', 13)]"/>
+                <filter name="filter_week_35" string="Week 35" domain="['|', ('week_number', '=', 35), ('iso_week_number', '=', 35)]"/>
+                <filter name="filter_week_36" string="Week 36" domain="['|', ('week_number', '=', 36), ('iso_week_number', '=', 36)]"/>
+                <filter name="filter_week_37" string="Week 37" domain="['|', ('week_number', '=', 37), ('iso_week_number', '=', 37)]"/>
+                <filter name="filter_week_38" string="Week 38" domain="['|', ('week_number', '=', 38), ('iso_week_number', '=', 38)]"/>
+                <filter name="filter_week_39" string="Week 39" domain="['|', ('week_number', '=', 39), ('iso_week_number', '=', 39)]"/>
+                <filter name="filter_week_40" string="Week 40" domain="['|', ('week_number', '=', 40), ('iso_week_number', '=', 40)]"/>
+                <filter name="filter_week_41" string="Week 41 (Current)" domain="['|', ('week_number', '=', 41), ('iso_week_number', '=', 41)]"/>
+                <filter name="filter_week_42" string="Week 42" domain="['|', ('week_number', '=', 42), ('iso_week_number', '=', 42)]"/>
+                <filter name="filter_week_43" string="Week 43" domain="['|', ('week_number', '=', 43), ('iso_week_number', '=', 43)]"/>
+                <filter name="filter_week_44" string="Week 44" domain="['|', ('week_number', '=', 44), ('iso_week_number', '=', 44)]"/>
+                <filter name="filter_week_45" string="Week 45" domain="['|', ('week_number', '=', 45), ('iso_week_number', '=', 45)]"/>
+                <filter name="filter_week_46" string="Week 46" domain="['|', ('week_number', '=', 46), ('iso_week_number', '=', 46)]"/>
+                <filter name="filter_week_47" string="Week 47" domain="['|', ('week_number', '=', 47), ('iso_week_number', '=', 47)]"/>
+                <filter name="filter_week_48" string="Week 48" domain="['|', ('week_number', '=', 48), ('iso_week_number', '=', 48)]"/>
+                <filter name="filter_week_49" string="Week 49" domain="['|', ('week_number', '=', 49), ('iso_week_number', '=', 49)]"/>
+                <filter name="filter_week_50" string="Week 50" domain="['|', ('week_number', '=', 50), ('iso_week_number', '=', 50)]"/>
+                <filter name="filter_week_51" string="Week 51" domain="['|', ('week_number', '=', 51), ('iso_week_number', '=', 51)]"/>
+                <filter name="filter_week_52" string="Week 52" domain="['|', ('week_number', '=', 52), ('iso_week_number', '=', 52)]"/>
                 <filter name="filter_monday" string="Monday" domain="[('day_of_week', '=', '0')]"/>
                 <filter name="filter_tuesday" string="Tuesday" domain="[('day_of_week', '=', '1')]"/>
                 <filter name="filter_wednesday" string="Wednesday" domain="[('day_of_week', '=', '2')]"/>

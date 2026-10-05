@@ -4,20 +4,7 @@ from odoo.exceptions import UserError, ValidationError
 
 from ..models.timetable import DAY_SELECTION, PERIOD_SELECTION, PERIOD_PRESETS, START_TIME_SELECTION
 
-WEEK_SELECTION = [
-    ('1', 'Week 1'),
-    ('2', 'Week 2'),
-    ('3', 'Week 3'),
-    ('4', 'Week 4'),
-    ('5', 'Week 5'),
-    ('6', 'Week 6'),
-    ('7', 'Week 7'),
-    ('8', 'Week 8'),
-    ('9', 'Week 9'),
-    ('10', 'Week 10'),
-    ('11', 'Week 11'),
-    ('12', 'Week 12'),
-]
+WEEK_SELECTION = [(str(w), f'Week {w}') for w in range(1, 54)]
 
 
 class SchoolTermScheduleWizard(models.TransientModel):
@@ -60,10 +47,15 @@ class SchoolTermScheduleWizard(models.TransientModel):
     )
     week_apply_mode = fields.Selection([
         ('all_weeks', 'All Weeks of the Term (Week 1 to 12)'),
-        ('this_week', 'Current Week Only'),
-        ('selected_weeks', 'Select Specific Weeks...'),
+        ('this_week', 'Current / Selected Week Only'),
+        ('custom_weeks', 'Specific Weeks List (e.g. 40, 41...)'),
+        ('selected_weeks', 'Select Specific Weeks (1-12)...'),
     ], string='Apply Schedule To', default='all_weeks', required=True,
     help="Choose whether this schedule applies only to the selected week or is replicated across the full term.")
+    custom_weeks_input = fields.Char(
+        string='Specific Weeks List',
+        help="Enter specific weeks separated by commas or ranges, e.g. 40, 41 or 40-45"
+    )
 
     schedule_scope = fields.Selection([
         ('full_term', 'All Weeks of the Term (Week 1 to 12)'),
@@ -206,25 +198,71 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 }))
         return lines
 
-    @api.depends('term_id', 'target_week', 'week_apply_mode')
+    def _parse_custom_weeks(self, input_str):
+        """Parse string like '40, 41', '40,41,42', '40-43, 45' into sorted list of unique ints [1..53]."""
+        if not input_str:
+            return []
+        import re
+        weeks = set()
+        parts = [p.strip() for p in re.split(r'[,; ]+', str(input_str).strip()) if p.strip()]
+        for part in parts:
+            range_match = re.match(r'^(\d+)\s*[-~to]+\s*(\d+)$', part, re.IGNORECASE)
+            if range_match:
+                start_w, end_w = int(range_match.group(1)), int(range_match.group(2))
+                if start_w > end_w:
+                    start_w, end_w = end_w, start_w
+                for w in range(start_w, end_w + 1):
+                    if 1 <= w <= 53:
+                        weeks.add(w)
+            else:
+                clean_digits = re.sub(r'[^\d]', '', part)
+                if clean_digits:
+                    w = int(clean_digits)
+                    if 1 <= w <= 53:
+                        weeks.add(w)
+        return sorted(list(weeks))
+
+    @api.depends('term_id', 'target_week', 'week_apply_mode', 'custom_weeks_input')
     def _compute_week_date_info(self):
+        from datetime import date
         for rec in self:
             if not rec.term_id:
                 rec.week_date_info = ''
                 continue
             term_start = rec.term_id.date_start or fields.Date.context_today(rec)
+            target_year = term_start.year
             first_monday = term_start - timedelta(days=term_start.weekday())
-            w_num = int(rec.target_week or '1')
-            w_monday = first_monday + timedelta(weeks=w_num - 1)
-            w_friday = w_monday + timedelta(days=4)
-            mon_str = w_monday.strftime('%d %b %Y')
-            fri_str = w_friday.strftime('%d %b %Y')
+
+            def _get_week_bounds(w):
+                if w > 20:
+                    try:
+                        mon = date.fromisocalendar(target_year, w, 1)
+                        fri = date.fromisocalendar(target_year, w, 5)
+                        return mon, fri
+                    except Exception:
+                        pass
+                mon = first_monday + timedelta(weeks=w - 1)
+                fri = mon + timedelta(days=4)
+                return mon, fri
+
             if rec.week_apply_mode == 'all_weeks':
                 total_w = rec.term_id.duration_weeks or 12
-                last_fri = first_monday + timedelta(weeks=total_w - 1, days=4)
-                rec.week_date_info = f"All {total_w} Weeks ({mon_str} to {last_fri.strftime('%d %b %Y')}) — Monday to Friday"
+                start_mon, _ = _get_week_bounds(1)
+                _, end_fri = _get_week_bounds(total_w)
+                rec.week_date_info = f"All {total_w} Weeks ({start_mon.strftime('%d %b %Y')} to {end_fri.strftime('%d %b %Y')}) — Monday to Friday"
+            elif rec.week_apply_mode == 'custom_weeks':
+                weeks = rec._parse_custom_weeks(rec.custom_weeks_input)
+                if weeks:
+                    w_labels = ', '.join([f"W{w}" for w in weeks])
+                    first_w_mon, _ = _get_week_bounds(weeks[0])
+                    _, last_w_fri = _get_week_bounds(weeks[-1])
+                    rec.week_date_info = f"Custom Weeks ({w_labels}): {first_w_mon.strftime('%d %b %Y')} to {last_w_fri.strftime('%d %b %Y')}"
+                else:
+                    rec.week_date_info = "Please enter specific weeks (e.g. 40, 41)"
             else:
-                rec.week_date_info = f"Week {w_num}: {mon_str} to {fri_str} (Monday to Friday)"
+                w_num = int(rec.target_week or '1')
+                w_mon, w_fri = _get_week_bounds(w_num)
+                rec.week_date_info = f"Week {w_num}: {w_mon.strftime('%d %b %Y')} to {w_fri.strftime('%d %b %Y')} (Monday to Friday)"
 
     @api.depends('source_term_id', 'class_id')
     def _compute_source_session_count(self):
@@ -690,6 +728,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
         target_weeks = []
         if self.week_apply_mode == 'this_week':
             target_weeks = [int(self.target_week)]
+        elif self.week_apply_mode == 'custom_weeks':
+            target_weeks = self._parse_custom_weeks(self.custom_weeks_input)
+            if not target_weeks:
+                raise UserError(_("Please enter at least one valid week number (e.g. 40, 41) in the Specific Weeks input."))
         elif self.week_apply_mode == 'all_weeks':
             total_weeks = self.term_id.duration_weeks or 12
             target_weeks = list(range(1, total_weeks + 1))
@@ -702,15 +744,28 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         # Check existing sessions for this class, term, and target weeks
         if self.overwrite_existing:
-            existing = Timetable.search([
+            domain = [
                 ('term_id', '=', self.term_id.id),
                 ('class_id', '=', self.class_id.id),
-            ])
+            ]
+            if self.week_apply_mode != 'all_weeks':
+                domain.append(('week_number', 'in', target_weeks))
+            existing = Timetable.search(domain)
             if existing:
                 existing.unlink()
 
+        from datetime import date
         term_start = self.term_id.date_start or fields.Date.context_today(self)
+        target_year = term_start.year
         first_monday = term_start - timedelta(days=term_start.weekday())
+
+        def _get_target_date(w_num, day_idx):
+            if w_num > 20:
+                try:
+                    return date.fromisocalendar(target_year, w_num, day_idx + 1)
+                except Exception:
+                    pass
+            return first_monday + timedelta(weeks=w_num - 1, days=day_idx)
 
         target_name = self.class_id.name or ""
         target_students = [(6, 0, self.class_id.student_ids.ids)] if self.class_id.student_ids else False
@@ -751,8 +806,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 custom_title = f"{s.notes} - {target_name}" if s.notes else (f"{sub_name} - {target_name}" if target_name else sub_name)
 
                 for w_num in target_weeks:
-                    week_monday = first_monday + timedelta(weeks=w_num - 1)
-                    t_date = week_monday + timedelta(days=int(s.day_of_week))
+                    t_date = _get_target_date(w_num, int(s.day_of_week))
                     if not s.is_holiday and t_date in existing_holiday_dates:
                         continue
                     s_dt = Timetable._local_to_utc(t_date, s.start_time)
@@ -838,10 +892,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
             holiday_created_weeks = set()  # (w_num, day_idx) to ensure only 1 holiday session per day
 
             for w_num in target_weeks:
-                week_monday = first_monday + timedelta(weeks=w_num - 1)
                 for line in active_lines:
                     day_idx = int(line.day_of_week)
-                    target_date = week_monday + timedelta(days=day_idx)
+                    target_date = _get_target_date(w_num, day_idx)
 
                     # If this date already has an existing holiday (school-wide or class-specific),
                     # NEVER create regular classes on top of it!
@@ -915,8 +968,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
             custom_title = f"{self.single_notes} - {target_name}" if self.single_notes else (f"{sub_name} - {target_name}" if target_name else sub_name)
 
             for w_num in target_weeks:
-                week_monday = first_monday + timedelta(weeks=w_num - 1)
-                t_date = week_monday + timedelta(days=int(self.single_day_of_week))
+                t_date = _get_target_date(w_num, int(self.single_day_of_week))
                 if t_date in existing_holiday_dates:
                     continue
                 s_dt = Timetable._local_to_utc(t_date, self.single_start_time)
@@ -958,7 +1010,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
             'default_class_id': self.class_id.id,
             'search_default_filter_mon_fri': 1,
         }
-        if self.term_id.date_start:
+        if target_weeks:
+            initial_target_date = _get_target_date(target_weeks[0], 0)
+            ctx['initial_date'] = initial_target_date.isoformat()
+        elif self.term_id.date_start:
             ctx['initial_date'] = self.term_id.date_start.isoformat()
 
         return {

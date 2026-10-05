@@ -49,6 +49,18 @@
         <field name="sequence">25</field>
         <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
     </record>
+    <menuitem id="menu_school_student_timetable"
+              name="My Timetable &amp; Schedule"
+              parent="menu_school_student_parent"
+              action="action_school_my_timetable"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="28"/>
+    <menuitem id="menu_school_student_jump_week"
+              name="Select / View Week Calendar"
+              parent="menu_school_student_parent"
+              action="action_school_timetable_week_selector"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="29"/>
     <menuitem id="menu_school_student_export_xlsx"
               name="Export Students (XLSX)"
               parent="menu_school_student_parent"
@@ -86,6 +98,18 @@
               action="action_school_teaching_assignment"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
+    <menuitem id="menu_school_teacher_timetable"
+              name="My Teaching Schedule"
+              parent="menu_school_teacher_parent"
+              action="action_timetable_my_teaching"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="22"/>
+    <menuitem id="menu_school_teacher_jump_week"
+              name="Select / View Week Calendar"
+              parent="menu_school_teacher_parent"
+              action="action_school_timetable_week_selector"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="23"/>
     <menuitem id="menu_school_teacher_permissions"
               name="Teacher Permissions &amp; Leaves"
               parent="menu_school_teacher_parent"
@@ -107,6 +131,21 @@
               action="action_server_master_timetable"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="5"/>
+
+    <menuitem id="menu_school_sched_my_class"
+              name="My Class Timetable &amp; Schedule"
+              parent="menu_school_schedule_root"
+              action="action_timetable_my_class"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="6"/>
+
+    <!-- 4B. Select / Jump to Specific Week Calendar -->
+    <menuitem id="menu_school_sched_jump_week"
+              name="Select / View Week Calendar"
+              parent="menu_school_schedule_root"
+              action="action_school_timetable_week_selector"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="8"/>
 
     <!-- 4B. Schedule Planning Wizards -->
     <menuitem id="menu_school_sched_term_schedule_wizard"

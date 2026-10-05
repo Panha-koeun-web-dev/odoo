@@ -26,16 +26,16 @@
                     </group>
                 </group>
 
-                <!-- SECTION 1: WEEK SELECTION & TARGET CARD (Active for create_slots mode) -->
-                <div invisible="mode != 'create_slots'" class="border rounded p-3 mb-3 bg-light shadow-sm">
+                <!-- SECTION 1: WEEK SELECTION & TARGET CARD (Active for create_slots and quick_slot modes) -->
+                <div invisible="mode == 'copy_term'" class="border rounded p-3 mb-3 bg-light shadow-sm">
                     <div class="row align-items-center mb-2">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="target_week" class="fw-bold text-primary mb-1">
                                 <i class="fa fa-calendar me-1" title="Calendar"/>Select Week:
                             </label>
                             <field name="target_week" widget="selection" class="form-select fw-bold"/>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <label for="week_apply_mode" class="fw-bold text-primary mb-1">
                                 <i class="fa fa-sliders me-1" title="Options"/>Apply Schedule To:
                             </label>
@@ -49,8 +49,19 @@
                         </div>
                     </div>
 
+                    <!-- Custom Weeks Input (shown when week_apply_mode == 'custom_weeks') -->
+                    <div invisible="week_apply_mode != 'custom_weeks'" class="mt-2 pt-2 border-top">
+                        <label for="custom_weeks_input" class="fw-bold text-primary small mb-1">
+                            <i class="fa fa-pencil-square-o me-1" title="Input"/>Specific Weeks List (e.g. 40, 41 or 40-44):
+                        </label>
+                        <div class="d-flex align-items-center gap-2">
+                            <field name="custom_weeks_input" placeholder="e.g. 40, 41 or 40-45" class="form-control fw-bold"/>
+                            <span class="text-muted small">Enter specific week numbers separated by commas or ranges</span>
+                        </div>
+                    </div>
+
                     <!-- Week Date Info Alert -->
-                    <div class="alert alert-secondary py-2 px-3 mt-1 mb-0 d-flex align-items-center justify-content-between" role="status">
+                    <div class="alert alert-secondary py-2 px-3 mt-2 mb-0 d-flex align-items-center justify-content-between" role="status">
                         <div>
                             <i class="fa fa-info-circle me-2 text-primary" title="Info"/>
                             <field name="week_date_info" readonly="1" class="fw-bold oe_inline text-dark"/>

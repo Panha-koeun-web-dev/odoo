@@ -149,6 +149,13 @@ class SchoolTimetable(models.Model):
         store=True,
         help="Display label for the academic week (e.g. Week 1)."
     )
+    iso_week_number = fields.Integer(
+        string='Calendar Week (ISO)',
+        compute='_compute_iso_week_number',
+        store=True,
+        index=True,
+        help="ISO 8601 calendar week number (1-53)"
+    )
     is_holiday = fields.Boolean(
         string='Holiday / No Study',
         default=False,
@@ -397,7 +404,13 @@ class SchoolTimetable(models.Model):
         w_num = int(week_number or 1)
         day_idx = int(day_of_week) if day_of_week else 0
 
-        if term and term.date_start:
+        if w_num > 20:
+            target_year = term.date_start.year if (term and term.date_start) else fields.Date.context_today(self).year
+            try:
+                target_date = date.fromisocalendar(target_year, w_num, day_idx + 1)
+            except Exception:
+                target_date = self._get_current_week_monday() + timedelta(days=day_idx)
+        elif term and term.date_start:
             first_monday = term.date_start - timedelta(days=term.date_start.weekday())
             target_date = first_monday + timedelta(weeks=w_num - 1, days=day_idx)
         else:
@@ -467,6 +480,21 @@ class SchoolTimetable(models.Model):
     def _compute_week_name(self):
         for rec in self:
             rec.week_name = f"Week {rec.week_number}" if rec.week_number else False
+
+    @api.depends('start_datetime', 'week_number', 'term_id')
+    def _compute_iso_week_number(self):
+        for rec in self:
+            if rec.start_datetime:
+                local_dt = rec._utc_to_local(rec.start_datetime)
+                rec.iso_week_number = local_dt.date().isocalendar()[1] if local_dt else (rec.week_number or 1)
+            elif rec.week_number and rec.week_number > 20:
+                rec.iso_week_number = rec.week_number
+            elif rec.term_id and rec.term_id.date_start and rec.week_number:
+                first_mon = rec.term_id.date_start - timedelta(days=rec.term_id.date_start.weekday())
+                target_mon = first_mon + timedelta(weeks=rec.week_number - 1)
+                rec.iso_week_number = target_mon.isocalendar()[1]
+            else:
+                rec.iso_week_number = rec.week_number or 1
 
     @api.depends('is_holiday', 'is_exam', 'exam_id')
     def _compute_schedule_status(self):
@@ -659,7 +687,7 @@ class SchoolTimetable(models.Model):
                 self.start_datetime = s_dt
                 self.end_datetime = e_dt
 
-    @api.onchange('day_of_week', 'start_time', 'end_time')
+    @api.onchange('day_of_week', 'start_time', 'end_time', 'week_number', 'term_id')
     def _onchange_timing(self):
         if self.start_time is not None and self.end_time is not None:
             self.period = self._match_period(self.start_time, self.end_time)
@@ -767,12 +795,17 @@ class SchoolTimetable(models.Model):
         if vals.get('term_id'):
             term = self.env['school.term'].browse(vals['term_id'])
 
-        if not vals.get('week_number') and vals.get('start_datetime') and term and term.date_start:
+        if not vals.get('week_number') and vals.get('start_datetime'):
             s_dt = fields.Datetime.to_datetime(vals['start_datetime'])
-            first_mon = term.date_start - timedelta(days=term.date_start.weekday())
-            w_diff = (s_dt.date() - first_mon).days // 7 + 1
-            if 1 <= w_diff <= (term.duration_weeks or 12):
-                vals['week_number'] = w_diff
+            if term and term.date_start:
+                first_mon = term.date_start - timedelta(days=term.date_start.weekday())
+                w_diff = (s_dt.date() - first_mon).days // 7 + 1
+                if 1 <= w_diff <= (term.duration_weeks or 12):
+                    vals['week_number'] = w_diff
+                else:
+                    vals['week_number'] = s_dt.date().isocalendar()[1]
+            else:
+                vals['week_number'] = s_dt.date().isocalendar()[1]
 
         if 'start_datetime' in vals and 'end_datetime' in vals and ('day_of_week' not in vals or 'start_time' not in vals):
             local_start = self._utc_to_local(vals['start_datetime'])
@@ -879,7 +912,7 @@ class SchoolTimetable(models.Model):
         res = super().write(vals)
 
         # Resync timing if day or start/end datetimes changed
-        if any(k in vals for k in ('start_datetime', 'end_datetime', 'day_of_week', 'start_time', 'end_time', 'period', 'is_holiday')):
+        if any(k in vals for k in ('start_datetime', 'end_datetime', 'day_of_week', 'start_time', 'end_time', 'period', 'is_holiday', 'week_number', 'term_id')):
             for rec in self:
                 sync_vals = {}
                 if 'start_datetime' in vals or 'end_datetime' in vals:
@@ -890,7 +923,7 @@ class SchoolTimetable(models.Model):
                         sync_vals['start_time'] = round(local_s.hour + local_s.minute / 60.0, 2)
                         sync_vals['end_time'] = round(local_e.hour + local_e.minute / 60.0, 2)
                         sync_vals['period'] = rec._match_period(sync_vals['start_time'], sync_vals['end_time'])
-                elif 'day_of_week' in vals or 'start_time' in vals or 'end_time' in vals or 'period' in vals:
+                elif any(k in vals for k in ('day_of_week', 'start_time', 'end_time', 'period', 'week_number', 'term_id')):
                     term = rec.term_id
                     w_num = rec.week_number
                     s_dt, e_dt = rec._calculate_datetimes(rec.day_of_week, rec.start_time, rec.end_time, term=term, week_number=w_num)
@@ -992,9 +1025,17 @@ class SchoolTimetable(models.Model):
         self.ensure_one()
         if self.start_datetime:
             return self._utc_to_local(self.start_datetime).date()
-        if self.term_id and self.term_id.date_start and self.week_number and self.day_of_week:
+        w_num = int(self.week_number or 1)
+        day_offset = int(self.day_of_week) if self.day_of_week else 0
+        if w_num > 20:
+            target_year = self.term_id.date_start.year if (self.term_id and self.term_id.date_start) else fields.Date.context_today(self).year
+            try:
+                return date.fromisocalendar(target_year, w_num, day_offset + 1)
+            except Exception:
+                pass
+        if self.term_id and self.term_id.date_start:
             first_mon = self.term_id.date_start - timedelta(days=self.term_id.date_start.weekday())
-            return first_mon + timedelta(weeks=self.week_number - 1, days=int(self.day_of_week))
+            return first_mon + timedelta(weeks=w_num - 1, days=day_offset)
         return False
 
     def _is_holiday_applicable(self, regular_rec, holiday_rec):
@@ -1150,7 +1191,13 @@ class SchoolTimetable(models.Model):
         for rec in self:
             day_offset = int(rec.day_of_week) if rec.day_of_week else 0
             w_num = int(rec.week_number or 1)
-            if rec.term_id and rec.term_id.date_start:
+            if w_num > 20:
+                target_year = rec.term_id.date_start.year if (rec.term_id and rec.term_id.date_start) else today.year
+                try:
+                    session_date = date.fromisocalendar(target_year, w_num, day_offset + 1)
+                except Exception:
+                    session_date = monday_this_week + timedelta(days=day_offset)
+            elif rec.term_id and rec.term_id.date_start:
                 first_monday = rec.term_id.date_start - timedelta(days=rec.term_id.date_start.weekday())
                 session_date = first_monday + timedelta(weeks=w_num - 1, days=day_offset)
             else:
@@ -1161,6 +1208,23 @@ class SchoolTimetable(models.Model):
                 'start_datetime': start_dt,
                 'end_datetime': end_dt,
             })
+
+    def action_open_week_selector(self):
+        """Open the Select / Jump to Week wizard pre-filled with this session's week and class."""
+        self.ensure_one()
+        return {
+            'name': _('Select / Jump to Week'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.timetable.week.selector.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_term_id': self.term_id.id if self.term_id else False,
+                'default_class_id': self.class_id.id if self.class_id else False,
+                'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
+                'default_week_number': str(self.week_number) if self.week_number else '41',
+            },
+        }
 
     def action_teacher_request_permission(self):
         """Allow a teacher or admin to submit a leave / absence request for this specific session."""
@@ -1507,20 +1571,39 @@ class SchoolTimetable(models.Model):
     @api.model
     def action_open_master_timetable(self):
         """Open master timetable calendar dynamically anchored to the active term's start date."""
+        today = fields.Date.context_today(self)
         active_term = self.env['school.term'].search([('state', '=', 'active')], limit=1)
         if not active_term:
+            active_term = self.env['school.term'].search([
+                ('date_start', '<=', today),
+                ('date_end', '>=', today),
+            ], limit=1)
+        if not active_term:
             active_term = self.env['school.term'].search([], order='date_start desc', limit=1)
+
         ctx = {
-            'search_default_filter_active_term': 1,
             'search_default_filter_mon_fri': 1,
         }
+        if active_term and active_term.state == 'active':
+            ctx['search_default_filter_active_term'] = 1
+
         if active_term and active_term.date_start:
             ctx['default_term_id'] = active_term.id
-            today = fields.Date.context_today(self)
             if active_term.date_end and (today < active_term.date_start or today > active_term.date_end):
                 ctx['initial_date'] = active_term.date_start.isoformat()
             else:
                 ctx['initial_date'] = today.isoformat()
+        else:
+            ctx['initial_date'] = today.isoformat()
+
+        user = self.env.user
+        is_admin = user.has_group('school_management.group_school_admin')
+        is_teacher = user.has_group('school_management.group_school_teacher')
+        is_student = user.has_group('school_management.group_school_student')
+        if is_student and not is_admin:
+            ctx['search_default_filter_my_timetable'] = 1
+        elif is_teacher and not is_admin:
+            ctx['search_default_filter_my_teaching'] = 1
 
         action = self.env.ref('school_management.action_timetable').read()[0]
         action['context'] = ctx
