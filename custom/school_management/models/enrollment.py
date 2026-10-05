@@ -33,6 +33,7 @@ class SchoolEnrollment(models.Model):
     student_subject_count = fields.Integer(
         string='Weekly Subjects Count',
         compute='_compute_student_subjects',
+        search='_search_student_subject_count',
     )
     total_weekly_hours = fields.Float(
         string='Target Weekly Hours',
@@ -76,6 +77,20 @@ class SchoolEnrollment(models.Model):
                 rec.student_subject_count = 0
                 rec.total_weekly_hours = 0.0
                 rec.scheduled_weekly_hours = 0.0
+
+    def _search_student_subject_count(self, operator, value):
+        self.env.cr.execute("""
+            SELECT DISTINCT e.id
+            FROM school_enrollment e
+            JOIN school_student_subject ss ON (ss.student_id = e.student_id)
+            WHERE ss.active = true
+        """)
+        res = [r[0] for r in self.env.cr.fetchall()]
+        if (operator in ('>', '!=') and value == 0) or (operator == '=' and value > 0):
+            return [('id', 'in', res)]
+        elif (operator == '=' and value == 0):
+            return [('id', 'not in', res)]
+        return [('id', 'in', res)]
 
     @api.onchange('class_id')
     def _onchange_class_id(self):

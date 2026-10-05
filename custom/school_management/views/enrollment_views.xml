@@ -74,10 +74,10 @@
                             </div>
                             <div class="oe_kanban_footer d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                                 <span class="badge rounded-pill bg-light text-dark border">
-                                    <i class="fa fa-list me-1"/> <field name="student_subject_count"/> Weekly Subjects
+                                    <i class="fa fa-list me-1" title="Weekly Subjects"/> <field name="student_subject_count"/> Weekly Subjects
                                 </span>
                                 <span class="text-muted small">
-                                    <i class="fa fa-clock-o me-1"/> <field name="total_weekly_hours" widget="float_time"/>/wk
+                                    <i class="fa fa-clock-o me-1" title="Weekly Hours"/> <field name="total_weekly_hours" widget="float_time"/>/wk
                                 </span>
                             </div>
                         </div>
@@ -143,7 +143,7 @@
                         <page string="Weekly Study Plan &amp; Subjects" name="weekly_subjects">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="text-muted">
-                                    <i class="fa fa-info-circle me-1"/>
+                                    <i class="fa fa-info-circle me-1" title="Information"/>
                                     Active weekly study subjects, teachers, and timetable scheduling status for this student:
                                 </span>
                                 <div>
@@ -203,8 +203,8 @@
                 <field name="semester"/>
 
                 <separator/>
-                <filter name="filter_with_weekly" string="With Weekly Subjects" domain="[('student_subject_count', '&gt;', 0)]"/>
-                <filter name="filter_no_weekly" string="Needs Weekly Subjects" domain="[('student_subject_count', '=', 0)]"/>
+                <filter name="filter_with_subjects" string="With Subjects" domain="[('subject_ids', '!=', False)]"/>
+                <filter name="filter_no_subjects" string="Without Subjects" domain="[('subject_ids', '=', False)]"/>
                 <separator/>
                 <filter name="filter_s1" string="Semester 1" domain="[('semester','=','1')]"/>
                 <filter name="filter_s2" string="Semester 2" domain="[('semester','=','2')]"/>
