@@ -376,7 +376,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
             val = float(self.single_specific_start_time)
             dur = (self.single_end_time - self.single_start_time) if (self.single_end_time and self.single_end_time > self.single_start_time) else 1.0
             self.single_start_time = val
-            self.end_time = min(24.0, round(val + dur, 2))
+            self.single_end_time = min(24.0, round(val + dur, 2))
             matched_p = 'custom'
             for p_key, (ps, pe) in PERIOD_PRESETS.items():
                 if abs(self.single_start_time - ps) < 0.02 and abs(self.single_end_time - pe) < 0.02:

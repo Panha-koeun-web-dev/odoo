@@ -180,8 +180,8 @@ class SchoolPermission(models.Model):
     )
     start_time = fields.Float(string='Start Time', default=8.0)
     end_time = fields.Float(string='End Time', default=12.0)
-    custom_start_time = fields.Float(related='start_time', readonly=False)
-    custom_end_time = fields.Float(related='end_time', readonly=False)
+    custom_start_time = fields.Float(string='Custom Start Time', related='start_time', readonly=False)
+    custom_end_time = fields.Float(string='Custom End Time', related='end_time', readonly=False)
 
     duration_days = fields.Float(
         string='Duration (Days)',
