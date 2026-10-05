@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 import psycopg2
 
 db_name = os.environ.get('DB_NAME')
@@ -7,6 +8,7 @@ db_host = os.environ.get('DB_HOST')
 db_port = os.environ.get('DB_PORT', '5432')
 db_user = os.environ.get('DB_USER')
 db_password = os.environ.get('DB_PASSWORD')
+port = os.environ.get('PORT', '8069')
 
 print(f"Connecting to database {db_name} at {db_host}...")
 
@@ -92,11 +94,52 @@ try:
 except Exception as e:
     print(f"Database check notice: {e}")
 
-cmd = [
+# Base initialization if database is brand new
+if not is_initialized:
+    print("Database tables not found. Initializing base module (-i base)...")
+    init_cmd = [
+        sys.executable,
+        'odoo-bin',
+        '-c', 'odoo-render.conf',
+        '--stop-after-init',
+        f'--db_host={db_host}',
+        f'--db_port={db_port}',
+        f'--db_user={db_user}',
+        f'--db_password={db_password}',
+        '-d', db_name,
+        '-i', 'base'
+    ]
+    subprocess.run(init_cmd, check=True)
+elif school_installed:
+    # Auto-upgrade school_management cleanly before opening HTTP port
+    auto_upgrade = os.environ.get('AUTO_UPGRADE', 'true').lower() in ('true', '1', 'yes')
+    if auto_upgrade:
+        print("Pre-compiling and upgrading school_management cleanly before starting HTTP server...")
+        upgrade_cmd = [
+            sys.executable,
+            'odoo-bin',
+            '-c', 'odoo-render.conf',
+            '--stop-after-init',
+            f'--db_host={db_host}',
+            f'--db_port={db_port}',
+            f'--db_user={db_user}',
+            f'--db_password={db_password}',
+            '-d', db_name,
+            '-u', 'school_management'
+        ]
+        try:
+            subprocess.run(upgrade_cmd, check=True)
+            print("Module upgrade completed successfully.")
+        except Exception as e:
+            print(f"Warning during pre-compile upgrade: {e}. Starting server anyway...")
+
+# Launch the live Odoo HTTP server
+server_cmd = [
     sys.executable,
     'odoo-bin',
     '-c', 'odoo-render.conf',
-    '--http-port=8069',
+    f'--http-port={port}',
+    '--http-interface=0.0.0.0',
     f'--db_host={db_host}',
     f'--db_port={db_port}',
     f'--db_user={db_user}',
@@ -104,15 +147,7 @@ cmd = [
     '-d', db_name
 ]
 
-if not is_initialized:
-    print("Database tables not found. Initializing base module (-i base)...")
-    cmd.extend(['-i', 'base'])
-else:
-    if school_installed:
-        print("Auto-upgrading school_management module to apply latest schema migrations (-u school_management)...")
-        cmd.extend(['-u', 'school_management'])
-    else:
-        print("Database already initialized. Starting Odoo server...")
-
-# Replace process with Odoo
-os.execvp(cmd[0], cmd)
+print(f"Starting Odoo HTTP service on 0.0.0.0:{port}...")
+sys.stdout.flush()
+sys.stderr.flush()
+os.execvp(server_cmd[0], server_cmd)
