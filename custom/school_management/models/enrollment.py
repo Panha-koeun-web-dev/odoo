@@ -9,18 +9,18 @@ class SchoolEnrollment(models.Model):
     _rec_name = 'display_name'
 
     display_name = fields.Char(string='Name', compute='_compute_display_name', store=True)
-    student_id = fields.Many2one('school.student', string='Student', required=True, ondelete='cascade', tracking=True)
+    student_id = fields.Many2one('school.student', string='Student', required=True, ondelete='cascade')
     student_code = fields.Char(string='Student ID', related='student_id.student_id', readonly=True)
     student_email = fields.Char(string='Student Email', related='student_id.email', readonly=True)
     student_phone = fields.Char(string='Student Phone', related='student_id.phone', readonly=True)
-    class_id = fields.Many2one('school.class', string='Class', required=True, ondelete='cascade', tracking=True)
-    academic_year = fields.Char(string='Academic Year', required=True, default='2025-2026', tracking=True)
+    class_id = fields.Many2one('school.class', string='Class', required=True, ondelete='cascade')
+    academic_year = fields.Char(string='Academic Year', required=True, default='2025-2026')
     semester = fields.Selection([
         ('1', 'Semester 1'),
         ('2', 'Semester 2'),
         ('full', 'Full Year'),
-    ], string='Semester', required=True, default='1', tracking=True)
-    enrollment_date = fields.Date(string='Enrollment Date', required=True, default=fields.Date.today, tracking=True)
+    ], string='Semester', required=True, default='1')
+    enrollment_date = fields.Date(string='Enrollment Date', required=True, default=fields.Date.today)
     subject_ids = fields.Many2many('school.subject', string='Enrolled Curriculum Subjects')
 
     # Weekly Study Subjects Integration

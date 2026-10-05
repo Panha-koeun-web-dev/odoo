@@ -59,6 +59,13 @@ try:
             """)
             print("Ensured school_permission.timetable_id column exists in database.")
 
+                # 4B. Fix missing not-null constraints on res_partner boolean columns if present
+        for col in ('group_rfq', 'group_on'):
+            cur.execute(f"SELECT is_nullable FROM information_schema.columns WHERE table_name='res_partner' AND column_name='{col}'")
+            row = cur.fetchone()
+            if row and row[0] == 'YES':
+                cur.execute(f"UPDATE res_partner SET {col} = FALSE WHERE {col} IS NULL; ALTER TABLE res_partner ALTER COLUMN {col} SET DEFAULT FALSE; ALTER TABLE res_partner ALTER COLUMN {col} SET NOT NULL;")
+
         # 5. Fix legacy string values in school_certificate.class_rank before integer conversion
         cur.execute("""
             SELECT data_type FROM information_schema.columns 
