@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST VIEW -->
+
+    <record id="view_school_public_holiday_list" model="ir.ui.view">
+        <field name="name">school.public.holiday.list</field>
+        <field name="model">school.public.holiday</field>
+        <field name="arch" type="xml">
+
+            <list string="Public Holidays">
+
+                <field name="name"/>
+
+                <field name="date"/>
+
+                <field name="end_date"/>
+
+                <field name="duration"/>
+
+                <field name="year"/>
+
+                <field name="holiday_type"/>
+
+                <field name="company_id"/>
+
+                <field name="active"/>
+
+            </list>
+
+        </field>
+    </record>
+
+
+    <!-- FORM VIEW -->
+
+    <record id="view_school_public_holiday_form" model="ir.ui.view">
+        <field name="name">school.public.holiday.form</field>
+        <field name="model">school.public.holiday</field>
+        <field name="arch" type="xml">
+
+            <form string="Public Holiday">
+
+                <header>
+
+                    <button
+                        name="action_archive"
+                        string="Archive"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not active"
+                        groups="school_holiday.group_school_holiday_manager"
+                    />
+
+                    <button
+                        name="action_unarchive"
+                        string="Restore"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="active"
+                        groups="school_holiday.group_school_holiday_manager"
+                    />
+
+                    <field
+                        name="active"
+                        widget="boolean_button"
+                        invisible="1"
+                    />
+
+                </header>
+
+                <sheet>
+
+                    <div class="oe_title">
+
+                        <label for="name"/>
+
+                        <h1>
+                            <field
+                                name="name"
+                                placeholder="Example: Khmer New Year"
+                            />
+                        </h1>
+
+                    </div>
+
+                    <group>
+
+                        <group>
+
+                            <field name="date"/>
+
+                            <field name="end_date"/>
+
+                            <field name="duration"
+                                   readonly="1"/>
+
+                            <field name="year"
+                                   readonly="1"/>
+
+                        </group>
+
+                        <group>
+
+                            <field name="holiday_type"/>
+
+                            <field name="company_id"/>
+
+                            <field name="active"/>
+
+                        </group>
+
+                    </group>
+
+                    <notebook>
+
+                        <page string="Description">
+
+                            <field
+                                name="description"
+                                placeholder="Describe this holiday..."
+                            />
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+
+            </form>
+
+        </field>
+    </record>
+
+
+    <!-- SEARCH VIEW -->
+
+    <record id="view_school_public_holiday_search" model="ir.ui.view">
+        <field name="name">school.public.holiday.search</field>
+        <field name="model">school.public.holiday</field>
+        <field name="arch" type="xml">
+
+            <search string="Search Public Holidays">
+
+                <field name="name"/>
+
+                <field name="date"/>
+
+                <field name="year"/>
+
+                <field name="holiday_type"/>
+
+                <field name="company_id"/>
+
+                <separator/>
+
+                <filter
+                    name="filter_current_year"
+                    string="Current Year"
+                    domain="[('year', '=', context_today().year)]"
+                />
+
+                <filter
+                    name="filter_national"
+                    string="National"
+                    domain="[('holiday_type', '=', 'national')]"
+                />
+
+                <filter
+                    name="filter_religious"
+                    string="Religious"
+                    domain="[('holiday_type', '=', 'religious')]"
+                />
+
+                <filter
+                    name="filter_school"
+                    string="School"
+                    domain="[('holiday_type', '=', 'school')]"
+                />
+
+                <separator/>
+
+                <filter
+                    name="filter_archived"
+                    string="Archived"
+                    domain="[('active', '=', False)]"
+                />
+
+                <group>
+
+                    <filter
+                        name="group_year"
+                        string="Year"
+                        context="{'group_by': 'year'}"
+                    />
+
+                    <filter
+                        name="group_type"
+                        string="Holiday Type"
+                        context="{'group_by': 'holiday_type'}"
+                    />
+
+                    <filter
+                        name="group_company"
+                        string="Company"
+                        context="{'group_by': 'company_id'}"
+                    />
+
+                </group>
+
+            </search>
+
+        </field>
+    </record>
+
+
+    <!-- CALENDAR VIEW -->
+
+    <record id="view_school_public_holiday_calendar" model="ir.ui.view">
+        <field name="name">school.public.holiday.calendar</field>
+        <field name="model">school.public.holiday</field>
+        <field name="arch" type="xml">
+
+            <calendar
+                string="Public Holiday Calendar"
+                date_start="date"
+                date_stop="end_date"
+                color="holiday_type"
+            >
+
+                <field name="name"/>
+
+                <field name="holiday_type"/>
+
+                <field name="description"/>
+
+            </calendar>
+
+        </field>
+    </record>
+
+
+    <!-- ACTION -->
+
+    <record id="action_school_public_holiday" model="ir.actions.act_window">
+
+        <field name="name">Public Holidays</field>
+
+        <field name="res_model">school.public.holiday</field>
+
+        <field name="view_mode">list,form,calendar</field>
+
+        <field name="search_view_id"
+               ref="view_school_public_holiday_search"/>
+
+        <field name="help" type="html">
+
+            <p class="o_view_nocontent_smiling_face">
+                Create your first public holiday
+            </p>
+
+            <p>
+                Manage national, religious and school holidays here.
+            </p>
+
+        </field>
+
+    </record>
+
+</odoo>

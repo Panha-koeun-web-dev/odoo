@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_school_holiday_root"
+        name="School Holidays"
+        sequence="20"
+        groups="school_holiday.group_school_holiday_user"
+    />
+
+    <menuitem
+        id="menu_school_public_holiday"
+        name="Public Holidays"
+        parent="menu_school_holiday_root"
+        action="action_school_public_holiday"
+        sequence="10"
+        groups="school_holiday.group_school_holiday_user"
+    />
+
+    <menuitem
+        id="menu_import_school_holiday"
+        name="Import Public Holidays"
+        parent="menu_school_holiday_root"
+        action="action_import_school_holiday_wizard"
+        sequence="20"
+        groups="school_holiday.group_school_holiday_manager"
+    />
+
+</odoo>

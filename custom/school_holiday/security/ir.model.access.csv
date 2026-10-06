@@ -1,0 +1,4 @@
+
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_school_public_holiday_user,school.public.holiday.user,model_school_public_holiday,school_holiday.group_school_holiday_user,1,1,1,0
+access_school_public_holiday_manager,school.public.holiday.manager,model_school_public_holiday,school_holiday.group_school_holiday_manager,1,1,1,1

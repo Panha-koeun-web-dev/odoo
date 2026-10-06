@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="group_school_holiday_user" model="res.groups">
+        <field name="name">School Holiday User</field>
+        <field name="category_id" ref="base.module_category_education"/>
+    </record>
+
+    <record id="group_school_holiday_manager" model="res.groups">
+        <field name="name">School Holiday Manager</field>
+        <field name="category_id" ref="base.module_category_education"/>
+        <field name="implied_ids"
+               eval="[(4, ref('school_holiday.group_school_holiday_user'))]"/>
+    </record>
+
+</odoo>
