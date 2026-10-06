@@ -2,15 +2,14 @@
 <odoo>
 
     <record id="group_school_holiday_user" model="res.groups">
-        <field name="name">School Holiday User</field>
-        <field name="category_id" ref="base.module_category_education"/>
+        <field name="name">School Holiday / User</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
     <record id="group_school_holiday_manager" model="res.groups">
-        <field name="name">School Holiday Manager</field>
-        <field name="category_id" ref="base.module_category_education"/>
-        <field name="implied_ids"
-               eval="[(4, ref('school_holiday.group_school_holiday_user'))]"/>
+        <field name="name">School Holiday / Manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_school_holiday_user')), (4, ref('school_management.group_school_admin'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
 </odoo>

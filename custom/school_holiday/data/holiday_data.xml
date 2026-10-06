@@ -2,40 +2,17 @@
 <odoo noupdate="1">
 
     <record id="holiday_new_year_2026" model="school.public.holiday">
-
-        <field name="name">
-            International New Year
-        </field>
-
-        <field name="date">
-            2026-01-01
-        </field>
-
-        <field name="holiday_type">
-            national
-        </field>
-
-        <field name="description">
-            International New Year holiday.
-        </field>
-
+        <field name="name">International New Year</field>
+        <field name="date">2026-01-01</field>
+        <field name="holiday_type">national</field>
+        <field name="description">International New Year holiday.</field>
     </record>
 
-
     <record id="holiday_victory_day_2026" model="school.public.holiday">
-
-        <field name="name">
-            Victory over Genocide Day
-        </field>
-
-        <field name="date">
-            2026-01-07
-        </field>
-
-        <field name="holiday_type">
-            national
-        </field>
-
+        <field name="name">Victory over Genocide Day</field>
+        <field name="date">2026-01-07</field>
+        <field name="holiday_type">national</field>
+        <field name="description">Victory over Genocide Day holiday.</field>
     </record>
 
 </odoo>
