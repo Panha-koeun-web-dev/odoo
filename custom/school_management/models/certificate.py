@@ -196,24 +196,27 @@ class SchoolCertificate(models.Model):
             student = rec.student_id
             rec.average_score = student.average_score or 0.0
 
-            # Compute scale 4.0 GPA
-            scores = student.grade_ids.mapped('percentage')
-            if scores:
-                gpa_points = []
-                for s in scores:
-                    if s >= 90:
-                        gpa_points.append(4.0)
-                    elif s >= 80:
-                        gpa_points.append(3.0 + (s - 80) * 0.1)
-                    elif s >= 70:
-                        gpa_points.append(2.0 + (s - 70) * 0.1)
-                    elif s >= 60:
-                        gpa_points.append(1.0 + (s - 60) * 0.1)
-                    else:
-                        gpa_points.append(0.0)
-                rec.gpa = round(sum(gpa_points) / len(gpa_points), 2)
+            # Compute scale 4.0 GPA (prioritizing student's official weighted GPA)
+            if student.gpa is not False and student.gpa is not None and student.grade_ids:
+                rec.gpa = student.gpa
             else:
-                rec.gpa = student.gpa or 0.0
+                scores = student.grade_ids.mapped('percentage')
+                if scores:
+                    gpa_points = []
+                    for s in scores:
+                        if s >= 90:
+                            gpa_points.append(4.0)
+                        elif s >= 80:
+                            gpa_points.append(3.0 + (s - 80) * 0.1)
+                        elif s >= 70:
+                            gpa_points.append(2.0 + (s - 70) * 0.1)
+                        elif s >= 60:
+                            gpa_points.append(1.0 + (s - 60) * 0.1)
+                        else:
+                            gpa_points.append(0.0)
+                    rec.gpa = round(sum(gpa_points) / len(gpa_points), 2)
+                else:
+                    rec.gpa = student.gpa or 0.0
 
             rec.cumulative_gpa = rec.gpa
 

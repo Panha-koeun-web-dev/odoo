@@ -18,8 +18,9 @@
                                decoration-success="term_state == 'active'"
                                decoration-muted="term_state == 'finished'"/>
                     </group>
-                    <group string="Class &amp; Plan Mode">
-                        <field name="class_id" options="{'no_create': True}" required="1"/>
+                    <group string="Target Class(es) &amp; Plan Mode">
+                        <field name="class_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select one or multiple classes to schedule together..."/>
+                        <field name="class_id" options="{'no_create': True}" placeholder="Primary Class (auto-filled if multi-class selected)"/>
                         <field name="class_room"/>
                         <field name="mode" widget="radio"/>
                         <field name="activate_target_term"/>
@@ -119,12 +120,14 @@
                     <!-- Fast Action Toolbar -->
                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 p-2 bg-light border rounded">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-bold text-primary"><i class="fa fa-clock-o me-1"/>Study Day Preset:</span>
+                            <field name="mon_fri_periods" class="oe_inline fw-bold" style="min-width: 250px;"/>
                             <button name="action_populate_empty_mon_fri"
                                     string="Auto-Fill Monday to Friday Slots"
                                     type="object"
                                     class="btn btn-sm btn-primary"
                                     icon="fa-th"
-                                    help="Instantly prepares 20 Monday to Friday slots so you can assign subjects and teachers."/>
+                                    help="Instantly prepares Monday to Friday slots (e.g. 8-hour day: Morning 1:30h + 1h break + 1:30h, Afternoon 1:30h + 1h break + 1:30h) so you can assign subjects and teachers."/>
                             <button name="action_copy_from_week_1"
                                     string="Copy from Week 1"
                                     type="object"

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError, UserError
 from odoo import fields
@@ -84,7 +84,8 @@ class TestExamScheduleTimetable(TransactionCase):
 
     def test_01_auto_assignment_and_timetable_sync(self):
         """Test auto assignment of supervisor/room/term and automatic master timetable sync."""
-        start = fields.Datetime.now() + timedelta(days=5, hours=9)
+        target_day = fields.Date.today() + timedelta(days=5)
+        start = datetime.combine(target_day, time(2, 0))
         end = start + timedelta(hours=2)
 
         # Create exam without explicit teacher, room, term
@@ -114,8 +115,9 @@ class TestExamScheduleTimetable(TransactionCase):
 
     def test_02_timetable_sync_lifecycle(self):
         """Test that updating exam time/room updates the timetable and cancelling removes it."""
-        start = fields.Datetime.now() + timedelta(days=6, hours=10)
-        end = start + timedelta(hours=3)
+        target_day = fields.Date.today() + timedelta(days=6)
+        start = datetime.combine(target_day, time(2, 0))
+        end = start + timedelta(hours=2)
 
         exam = self.Exam.create({
             'name': 'Final Strategy Exam',
@@ -132,7 +134,7 @@ class TestExamScheduleTimetable(TransactionCase):
         self.assertEqual(timetable.room, 'Main Auditorium')
 
         # Update room and duration
-        new_end = start + timedelta(hours=4)
+        new_end = start + timedelta(hours=3)
         exam.write({
             'room': 'Simulation Room B',
             'end_datetime': new_end,
@@ -151,7 +153,8 @@ class TestExamScheduleTimetable(TransactionCase):
 
     def test_03_conflict_prevention(self):
         """Test validation constraints preventing room, teacher, and class conflicts."""
-        start1 = fields.Datetime.now() + timedelta(days=7, hours=13)
+        target_day = fields.Date.today() + timedelta(days=7)
+        start1 = datetime.combine(target_day, time(2, 0))
         end1 = start1 + timedelta(hours=2)
 
         # Create base exam
@@ -224,7 +227,8 @@ class TestExamScheduleTimetable(TransactionCase):
 
     def test_04_student_population_and_custom_slots(self):
         """Test populating students and applying specific custom time slots."""
-        start = fields.Datetime.now() + timedelta(days=8, hours=8)
+        target_day = fields.Date.today() + timedelta(days=8)
+        start = datetime.combine(target_day, time(1, 0))
         end = start + timedelta(hours=2)
 
         exam = self.Exam.create({
@@ -275,7 +279,8 @@ class TestExamScheduleTimetable(TransactionCase):
 
     def test_05_teacher_and_student_perspectives(self):
         """Test supervisor duties count on teacher and scheduled exam count on student."""
-        start = fields.Datetime.now() + timedelta(days=9, hours=14)
+        target_day = fields.Date.today() + timedelta(days=9)
+        start = datetime.combine(target_day, time(2, 0))
         end = start + timedelta(hours=2)
 
         exam = self.Exam.create({

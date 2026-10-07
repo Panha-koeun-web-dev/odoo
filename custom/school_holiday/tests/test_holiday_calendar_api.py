@@ -104,7 +104,7 @@ class TestHolidayApi(TransactionCase):
         """Test Holiday Timetable Service shift days computation and session creation."""
         base_date = fields.Date.from_string('2032-05-10')
         shift = self.TimetableService.get_non_holiday_shift_days(base_date, company_id=self.main_company.id)
-        self.assertEqual(shift, 7)
+        self.assertEqual(shift, 1)
 
         # Test ensuring holiday timetable session
         test_dates = [base_date]

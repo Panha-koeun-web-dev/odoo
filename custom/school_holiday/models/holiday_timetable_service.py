@@ -15,24 +15,27 @@ class SchoolHolidayTimetableService(models.AbstractModel):
     @api.model
     def get_non_holiday_shift_days(self, original_date, company_id=None):
         """
-        Find the number of days forward (+7, +14, etc.) to the next week's matching day
-        that does not fall on an active public holiday.
+        Find the number of days forward to the next school day (Monday to Friday)
+        after the holiday finishes that does not fall on an active public holiday.
         """
         PublicHoliday = self.env['school.public.holiday']
-        shift = 7
-        for _ in range(52):
-            target = original_date + timedelta(days=shift)
-            if not PublicHoliday.is_holiday(target, company_id=company_id):
-                return shift
-            shift += 7
-        return 7
+        curr = original_date + timedelta(days=1)
+        for _ in range(365):
+            # Skip weekends (Saturday=5, Sunday=6)
+            if curr.weekday() >= 5:
+                curr += timedelta(days=1)
+                continue
+            if not PublicHoliday.is_holiday(curr, company_id=company_id):
+                return (curr - original_date).days
+            curr += timedelta(days=1)
+        return 1
 
     @api.model
     def move_timetable_sessions_for_dates(self, dates, holiday_name=None, company_id=None):
         """
         Compare study schedule sessions (school.timetable) with the given holiday dates.
-        For any regular session scheduled on a holiday date, move it to the next week
-        (+7 days or next non-holiday week).
+        For any regular session scheduled on a holiday date, move it to the next school day
+        after the holiday finishes (skipping weekends and any subsequent holidays).
         Cascades subsequent sessions in the same slot/term to prevent overlapping collisions.
         Also creates or updates a holiday session in school.timetable for calendar visibility.
         """
@@ -107,10 +110,14 @@ class SchoolHolidayTimetableService(models.AbstractModel):
                     continue
                 new_start = old_start + timedelta(days=shift_days)
                 new_end = old_end + timedelta(days=shift_days)
+                old_cal_date = item._get_session_calendar_date()
+                new_cal_date = old_cal_date + timedelta(days=shift_days) if old_cal_date else False
+                new_day_of_week = str(new_cal_date.weekday()) if new_cal_date else item.day_of_week
                 new_week = item.week_number + (shift_days // 7) if item.week_number else False
                 item.write({
                     'start_datetime': new_start,
                     'end_datetime': new_end,
+                    'day_of_week': new_day_of_week,
                     'week_number': new_week,
                 })
                 moved_count += 1
@@ -121,10 +128,24 @@ class SchoolHolidayTimetableService(models.AbstractModel):
         return moved_count
 
     @api.model
+    def _get_tz(self, company_id=None):
+        company = self.env['res.company'].browse(company_id) if company_id else self.env.company
+        tz_name = (
+            self.env.context.get('tz')
+            or (self.env.user.tz if self.env.user and self.env.user.tz else False)
+            or (company.partner_id.tz if company and company.partner_id.tz else False)
+            or 'Asia/Phnom_Penh'
+        )
+        try:
+            return pytz.timezone(tz_name)
+        except Exception:
+            return pytz.timezone('Asia/Phnom_Penh')
+
+    @api.model
     def ensure_holiday_timetable_sessions(self, dates, holiday_name=None, company_id=None):
         """Create or ensure school.timetable records with is_holiday=True exist for the calendar."""
         Timetable = self.env['school.timetable']
-        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+        user_tz = self._get_tz(company_id=company_id)
 
         for d in dates:
             # Check if holiday session already exists on this date

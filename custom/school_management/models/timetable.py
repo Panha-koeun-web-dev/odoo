@@ -89,6 +89,10 @@ PERIOD_SELECTION = [
     ('h21', '09:00 PM - 10:00 PM (Late Night 1)'),
     ('h22', '10:00 PM - 11:00 PM (Late Night 2)'),
     ('h23', '11:00 PM - 12:00 AM (Night Final)'),
+    ('p_m1', 'Morning 1 (08:00 - 09:30)'),
+    ('p_m2', 'Morning 2 (10:30 - 12:00)'),
+    ('p_a1', 'Afternoon 1 (13:30 - 15:00)'),
+    ('p_a2', 'Afternoon 2 (16:00 - 17:30)'),
     ('custom', 'Custom Time Window'),
 ]
 
@@ -116,6 +120,10 @@ PERIOD_PRESETS = {
     'h21': (21.0, 22.0),
     'h22': (22.0, 23.0),
     'h23': (23.0, 24.0),
+    'p_m1': (8.0, 9.5),
+    'p_m2': (10.5, 12.0),
+    'p_a1': (13.5, 15.0),
+    'p_a2': (16.0, 17.5),
 }
 
 
@@ -326,7 +334,17 @@ class SchoolTimetable(models.Model):
     # TIME & TIMEZONE HELPERS
     # -------------------------------------------------------------------------
     def _get_user_tz(self):
-        return pytz.timezone(self.env.user.tz or 'UTC')
+        tz_name = (
+            self.env.context.get('tz')
+            or (self.env.user.tz if self.env.user and self.env.user.tz else False)
+            or (self.company_id.partner_id.tz if hasattr(self, 'company_id') and self.company_id and self.company_id.partner_id.tz else False)
+            or (self.env.company.partner_id.tz if hasattr(self.env, 'company') and self.env.company and self.env.company.partner_id.tz else False)
+            or 'Asia/Phnom_Penh'
+        )
+        try:
+            return pytz.timezone(tz_name)
+        except Exception:
+            return pytz.timezone('Asia/Phnom_Penh')
 
     def _get_current_week_monday(self):
         today = fields.Date.context_today(self)
