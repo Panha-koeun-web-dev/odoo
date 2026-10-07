@@ -88,6 +88,29 @@ try:
             """)
             print("Successfully migrated school_certificate.class_rank to integer.")
 
+        # 5C. Defensive migration: Map existing school_term records to ir_model_data to prevent unique constraint crash
+        cur.execute("""
+            SELECT 1 FROM information_schema.tables WHERE table_name='school_term'
+        """)
+        if cur.fetchone():
+            cur.execute("""
+                INSERT INTO ir_model_data (name, module, model, res_id, noupdate)
+                SELECT 
+                    'term_' || replace(st.academic_year, '-', '_') || '_' || st.term_number,
+                    'school_management',
+                    'school.term',
+                    st.id,
+                    true
+                FROM school_term st
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM ir_model_data imd
+                    WHERE imd.module = 'school_management' 
+                      AND imd.name = 'term_' || replace(st.academic_year, '-', '_') || '_' || st.term_number
+                );
+            """)
+            conn.commit()
+            print("Ensured existing school_term records are mapped in ir_model_data.")
+
         conn.commit()
 
         # 6. Check if school_management module is installed

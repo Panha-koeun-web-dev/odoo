@@ -123,6 +123,39 @@ class SchoolTerm(models.Model):
         'An academic term with this term number already exists for this academic year!',
     )
 
+    @api.model
+    def _load_records(self, data_list, update=False):
+        """Pre-emptively bind existing school.term records to external IDs during XML import/upgrade.
+
+        If a term record with the same (academic_year, term_number) already exists in the database
+        without an ir.model.data entry, register it so Odoo reuses it rather than throwing
+        a duplicate unique constraint error.
+        """
+        imd = self.env['ir.model.data'].sudo()
+        for data in data_list:
+            xml_id = data.get('xml_id')
+            values = data.get('values') or {}
+            acad_year = values.get('academic_year')
+            term_num = values.get('term_number')
+            if xml_id and acad_year and term_num:
+                module, sep, name = xml_id.partition('.')
+                if sep:
+                    existing_xml = imd.search([('module', '=', module), ('name', '=', name)], limit=1)
+                    if not existing_xml:
+                        existing_term = self.sudo().search([
+                            ('academic_year', '=', acad_year),
+                            ('term_number', '=', term_num),
+                        ], limit=1)
+                        if existing_term:
+                            imd.create({
+                                'name': name,
+                                'module': module,
+                                'model': self._name,
+                                'res_id': existing_term.id,
+                                'noupdate': bool(data.get('noupdate', True)),
+                            })
+        return super()._load_records(data_list, update=update)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
