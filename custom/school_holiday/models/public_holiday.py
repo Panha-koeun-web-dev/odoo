@@ -40,6 +40,7 @@ class SchoolPublicHoliday(models.Model):
             ('religious', 'Religious Holiday'),
             ('school', 'School Holiday'),
             ('other', 'Other'),
+            ('public', 'Public Holiday'),
         ],
         string='Holiday Type',
         required=True,
@@ -102,10 +103,10 @@ class SchoolPublicHoliday(models.Model):
                     _('The end date cannot be earlier than the start date.')
                 )
 
-    @api.constrains('date', 'end_date')
+    @api.constrains('name', 'date', 'end_date')
     def _check_overlap(self):
         for record in self:
-            if not record.date:
+            if not record.date or not record.name:
                 continue
 
             record_start = record.date
@@ -115,6 +116,7 @@ class SchoolPublicHoliday(models.Model):
                 ('id', '!=', record.id),
                 ('active', '=', True),
                 ('company_id', '=', record.company_id.id),
+                ('name', '=ilike', record.name.strip()),
                 ('date', '<=', record_end),
                 '|',
                 '&', ('end_date', '=', False), ('date', '>=', record_start),
@@ -123,8 +125,11 @@ class SchoolPublicHoliday(models.Model):
 
             if overlapping:
                 raise ValidationError(
-                    _('This holiday overlaps with another public holiday:\n%s')
-                    % '\n'.join(overlapping.mapped('name'))
+                    _('A holiday with the name "%(name)s" already exists covering this date period:\n%(overlap)s')
+                    % {
+                        'name': record.name,
+                        'overlap': '\n'.join(overlapping.mapped('name')),
+                    }
                 )
 
     @api.model
@@ -297,6 +302,7 @@ class SchoolPublicHoliday(models.Model):
                 week_num = (d - first_mon).days // 7 + 1
 
             h_name = holiday_name or self.name or _("School Public Holiday")
+
             Timetable.create({
                 'name': h_name,
                 'holiday_name': h_name,

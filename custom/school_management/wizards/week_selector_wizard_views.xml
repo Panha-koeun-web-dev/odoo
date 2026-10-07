@@ -8,26 +8,7 @@
         <field name="arch" type="xml">
             <form string="Select &amp; View Specific Week Schedule">
                 <sheet>
-                    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
-                        <div>
-                            <i class="fa fa-calendar-check-o me-2 text-primary" title="Calendar"/>
-                            <field name="week_date_info" readonly="1" class="fw-bold text-dark oe_inline"/>
-                        </div>
-                        <span class="badge text-bg-primary">
-                            <i class="fa fa-clock-o me-1"/>5 Weekdays (Mon - Fri)
-                        </span>
-                    </div>
-
-                    <!-- Session count notice -->
-                    <div invisible="session_count == 0" class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
-                        <div>
-                            <i class="fa fa-check-circle me-2 text-success" title="Success"/>
-                            <span>Integrated <strong><field name="session_count" readonly="1" class="oe_inline"/></strong> scheduled sessions for this week.</span>
-                        </div>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">
-                            <i class="fa fa-check me-1"/>Schedule Active
-                        </span>
-                    </div>
+                    <field name="session_count" invisible="1"/>
 
                     <div invisible="session_count &gt; 0" class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center justify-content-between" role="status">
                         <div>

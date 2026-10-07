@@ -1,0 +1,5 @@
+name,date,end_date,holiday_type,description
+"International New Year",2024-01-01,2024-01-01,national,"International New Year holiday"
+"Victory Day",01 Jan,,national,"Victory Day holiday"
+"Independence Day",04 July,,national,"Independence Day holiday"
+"Christmas",25 Dec,,religious,"Christmas holiday"

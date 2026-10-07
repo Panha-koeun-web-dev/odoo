@@ -22,10 +22,11 @@
                     <div class="alert alert-info" role="alert">
                         <p class="mb-1"><strong>Supported formats:</strong> CSV (.csv) and Excel (.xlsx)</p>
                         <p class="mb-1"><strong>Required columns:</strong> <code>name</code>, <code>date</code></p>
-                        <p class="mb-1"><strong>Optional columns:</strong> <code>end_date</code>, <code>holiday_type</code> (national/religious/school/other), <code>description</code></p>
+                        <p class="mb-1"><strong>Optional columns:</strong> <code>end_date</code>, <code>holiday_type</code> (national/religious/school/other/public), <code>description</code></p>
                         <p class="mb-0"><strong>Example:</strong></p>
                         <code>name,date,end_date,holiday_type,description</code><br/>
-                        <code>Khmer New Year,2026-04-14,2026-04-16,national,Khmer New Year Break</code>
+                        <code>Khmer New Year,2026-04-14,2026-04-16,national,Khmer New Year Break</code><br/>
+                        <code>Teacher Training,2026-10-01,,public,In-service Training Day</code>
                     </div>
 
                     <div class="alert alert-warning" role="alert" invisible="not auto_reschedule">

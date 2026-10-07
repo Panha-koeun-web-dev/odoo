@@ -1,7 +1,7 @@
 {
     'name': 'School Public Holiday',
     'version': '19.0.1.0.0',
-    'category': 'Education',
+    'category': 'School',
     'summary': 'Manage public holidays and integrate with school study schedules',
     'description': """
 School Public Holiday
@@ -29,7 +29,6 @@ Features:
         'wizard/import_holiday_wizard_views.xml',
         'views/public_holiday_views.xml',
         'views/menu.xml',
-        'data/holiday_data.xml',
     ],
     'installable': True,
     'application': True,

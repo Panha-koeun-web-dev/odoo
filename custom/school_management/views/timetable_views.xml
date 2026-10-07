@@ -188,10 +188,7 @@
                     <button name="action_open_exam" type="object"
                             string="View Examination" class="btn-primary" icon="fa-graduation-cap"
                             invisible="not exam_id" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
-                    <button name="action_toggle_holiday" type="object"
-                            string="Toggle Holiday" class="btn-warning" icon="fa-star"
-                            groups="school_management.group_school_admin"/>
-                    <button name="action_view_class_students" type="object"
+<button name="action_view_class_students" type="object"
                             string="View Assigned Students" class="btn-outline-primary" icon="fa-users" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_view_teaching_assignments" type="object"
                             string="Teaching Assignments &amp; Load" class="btn-outline-secondary" icon="fa-book"

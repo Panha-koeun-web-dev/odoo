@@ -51,9 +51,16 @@ class ImportSchoolHolidayWizard(models.TransientModel):
             return False
 
         # Try common date formats
-        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%Y/%m/%d',
+                     '%b %d', '%B %d', '%d %b', '%d %B'):
             try:
-                return datetime.strptime(val_str, fmt).date()
+                parsed = datetime.strptime(val_str, fmt).date()
+                # If year is 1900 (default when not specified), use current year
+                if parsed.year == 1900:
+                    parsed = fields.Date.from_string(
+                        f"{fields.Date.today().year}-{parsed.month}-{parsed.day}"
+                    )
+                return parsed
             except ValueError:
                 pass
 
@@ -65,7 +72,7 @@ class ImportSchoolHolidayWizard(models.TransientModel):
             pass
 
         raise ValidationError(
-            _("Invalid date format: '%s'. Please use YYYY-MM-DD.") % val_str
+            _("Invalid date format: '%s'. Please use YYYY-MM-DD or DD Mon YYYY (e.g., 01 Jan 2024).") % val_str
         )
 
     def _read_rows(self, file_content, filename):
@@ -143,7 +150,7 @@ class ImportSchoolHolidayWizard(models.TransientModel):
         errors = []
         affected_holidays = self.env['school.public.holiday']
 
-        allowed_types = {'national', 'religious', 'school', 'other'}
+        allowed_types = {'national', 'religious', 'school', 'other', 'public'}
 
         for row_number, row in enumerate(rows, start=2):
             try:
