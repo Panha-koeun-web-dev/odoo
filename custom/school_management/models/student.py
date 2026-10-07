@@ -277,6 +277,7 @@ class SchoolStudent(models.Model):
             'default_student_id': self.id,
             'default_class_id': self.class_id.id if self.class_id else False,
             'search_default_filter_mon_fri': 1,
+            'create': False,
         }
         if self.class_id and self.class_id.current_term_id and self.class_id.current_term_id.date_start:
             ctx['initial_date'] = self.class_id.current_term_id.date_start.isoformat()
@@ -1264,7 +1265,10 @@ class SchoolStudent(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'context': {'search_default_filter_mon_fri': 1},
+            'context': {
+                'search_default_filter_mon_fri': 1,
+                'create': False,
+            },
         }
 
     def action_view_holidays(self):

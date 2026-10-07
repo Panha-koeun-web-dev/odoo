@@ -582,7 +582,7 @@
                                 </div>
                             </div>
                             <field name="timetable_ids" readonly="1">
-                                <list default_order="day_of_week, start_time"
+                                <list default_order="day_of_week, start_time" create="0" delete="0" edit="0"
                                       decoration-warning="is_holiday"
                                       decoration-info="not is_holiday and day_of_week in ('0', '1', '2')"
                                       decoration-primary="not is_holiday and day_of_week in ('3', '4')">

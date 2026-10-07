@@ -28,23 +28,4 @@
         groups="school_holiday.group_school_holiday_manager"
     />
 
-    <!-- Integration: Submenus inside School Management -> Schedules & Timetable -->
-    <menuitem
-        id="menu_school_sched_public_holiday"
-        name="Public Holidays"
-        parent="school_management.menu_school_schedule_root"
-        action="action_school_public_holiday"
-        sequence="20"
-        groups="school_holiday.group_school_holiday_user"
-    />
-
-    <menuitem
-        id="menu_school_sched_import_holiday"
-        name="Import Public Holidays"
-        parent="school_management.menu_school_schedule_root"
-        action="action_import_school_holiday_wizard"
-        sequence="25"
-        groups="school_holiday.group_school_holiday_manager"
-    />
-
 </odoo>

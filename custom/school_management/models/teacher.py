@@ -255,6 +255,7 @@ class SchoolTeacher(models.Model):
             'context': {
                 'default_teacher_id': self.id,
                 'search_default_filter_mon_fri': 1,
+                'create': False,
             },
         }
 
@@ -265,7 +266,10 @@ class SchoolTeacher(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,list,kanban,form',
-            'context': {'search_default_filter_mon_fri': 1},
+            'context': {
+                'search_default_filter_mon_fri': 1,
+                'create': False,
+            },
         }
 
     def action_view_holidays(self):

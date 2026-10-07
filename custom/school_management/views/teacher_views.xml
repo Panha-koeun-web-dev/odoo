@@ -442,7 +442,7 @@
                                 </div>
                             </div>
                             <field name="timetable_ids" readonly="1">
-                                <list default_order="day_of_week, start_time"
+                                <list default_order="day_of_week, start_time" create="0" delete="0" edit="0"
                                       decoration-warning="is_holiday">
                                     <field name="schedule_status" widget="badge" optional="show"
                                            decoration-warning="schedule_status == 'holiday'"
