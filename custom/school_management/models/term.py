@@ -127,9 +127,8 @@ class SchoolTerm(models.Model):
     def _load_records(self, data_list, update=False):
         """Pre-emptively bind existing school.term records to external IDs during XML import/upgrade.
 
-        If a term record with the same (academic_year, term_number) already exists in the database
-        without an ir.model.data entry, register it so Odoo reuses it rather than throwing
-        a duplicate unique constraint error.
+        If a term record with the same (academic_year, term_number) already exists in the database,
+        make sure ir.model.data points to it so Odoo reuses it rather than throwing a duplicate error.
         """
         imd = self.env['ir.model.data'].sudo()
         for data in data_list:
@@ -140,13 +139,16 @@ class SchoolTerm(models.Model):
             if xml_id and acad_year and term_num:
                 module, sep, name = xml_id.partition('.')
                 if sep:
-                    existing_xml = imd.search([('module', '=', module), ('name', '=', name)], limit=1)
-                    if not existing_xml:
-                        existing_term = self.sudo().search([
-                            ('academic_year', '=', acad_year),
-                            ('term_number', '=', term_num),
-                        ], limit=1)
-                        if existing_term:
+                    existing_term = self.sudo().search([
+                        ('academic_year', '=', acad_year),
+                        ('term_number', '=', term_num),
+                    ], limit=1)
+                    if existing_term:
+                        existing_xml = imd.search([('module', '=', module), ('name', '=', name)], limit=1)
+                        if existing_xml:
+                            if existing_xml.res_id != existing_term.id or existing_xml.model != self._name:
+                                existing_xml.write({'res_id': existing_term.id, 'model': self._name})
+                        else:
                             imd.create({
                                 'name': name,
                                 'module': module,
@@ -155,6 +157,32 @@ class SchoolTerm(models.Model):
                                 'noupdate': bool(data.get('noupdate', True)),
                             })
         return super()._load_records(data_list, update=update)
+
+    @api.model
+    def _load_records_create(self, vals_list):
+        """Prevent UniqueViolation during XML data loading.
+
+        If a term with (academic_year, term_number) already exists in the database,
+        reuse/update it instead of calling create() which violates PostgreSQL unique constraints.
+        """
+        records = self.browse()
+        for vals in vals_list:
+            acad_year = vals.get('academic_year')
+            term_num = vals.get('term_number')
+            existing = False
+            if acad_year and term_num:
+                existing = self.search([
+                    ('academic_year', '=', acad_year),
+                    ('term_number', '=', term_num),
+                ], limit=1)
+            if existing:
+                write_vals = {k: v for k, v in vals.items() if k not in ('academic_year', 'term_number')}
+                if write_vals:
+                    existing.write(write_vals)
+                records |= existing
+            else:
+                records |= super()._load_records_create([vals])
+        return records
 
     @api.model_create_multi
     def create(self, vals_list):

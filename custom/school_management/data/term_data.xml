@@ -7,7 +7,7 @@
     <!-- ================================================================= -->
 
     <!-- Term 1 (Past / Finished) -->
-    <record id="term_2026_2027_term_1" model="school.term">
+    <record id="term_2026_2027_term_1" model="school.term" forcecreate="false">
         <field name="name">Academic Year 2026-2027 - Term 1</field>
         <field name="academic_year">2026-2027</field>
         <field name="term_number">term_1</field>
@@ -20,7 +20,7 @@
     </record>
 
     <!-- Term 2 (Currently Active) -->
-    <record id="term_2026_2027_term_2" model="school.term">
+    <record id="term_2026_2027_term_2" model="school.term" forcecreate="false">
         <field name="name">Academic Year 2026-2027 - Term 2</field>
         <field name="academic_year">2026-2027</field>
         <field name="term_number">term_2</field>
@@ -34,7 +34,7 @@
     </record>
 
     <!-- Term 3 (Upcoming / Next Term) -->
-    <record id="term_2026_2027_term_3" model="school.term">
+    <record id="term_2026_2027_term_3" model="school.term" forcecreate="false">
         <field name="name">Academic Year 2026-2027 - Term 3</field>
         <field name="academic_year">2026-2027</field>
         <field name="term_number">term_3</field>
@@ -48,11 +48,11 @@
     </record>
 
     <!-- Update Forward Links -->
-    <record id="term_2026_2027_term_1" model="school.term">
+    <record id="term_2026_2027_term_1" model="school.term" forcecreate="false">
         <field name="next_term_id" ref="term_2026_2027_term_2"/>
     </record>
 
-    <record id="term_2026_2027_term_2" model="school.term">
+    <record id="term_2026_2027_term_2" model="school.term" forcecreate="false">
         <field name="next_term_id" ref="term_2026_2027_term_3"/>
     </record>
 

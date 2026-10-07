@@ -102,11 +102,9 @@ try:
                     st.id,
                     true
                 FROM school_term st
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM ir_model_data imd
-                    WHERE imd.module = 'school_management' 
-                      AND imd.name = 'term_' || replace(st.academic_year, '-', '_') || '_' || st.term_number
-                );
+                WHERE st.academic_year IS NOT NULL AND st.term_number IS NOT NULL
+                ON CONFLICT (module, name)
+                DO UPDATE SET res_id = EXCLUDED.res_id, model = EXCLUDED.model;
             """)
             conn.commit()
             print("Ensured existing school_term records are mapped in ir_model_data.")
