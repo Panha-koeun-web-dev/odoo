@@ -1,3 +1,4 @@
+from datetime import timedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from ..models.timetable import DAY_SELECTION, PERIOD_SELECTION, PERIOD_PRESETS, START_TIME_SELECTION

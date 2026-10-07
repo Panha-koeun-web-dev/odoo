@@ -8,13 +8,14 @@ School Public Holiday
 =====================
 
 Features:
-- Manage public holidays
+- Manage public holidays (multi-company support)
 - Create, update, archive holidays
 - Import holidays from CSV and Excel (.xlsx)
-- Validate against school study timetable schedule
-- Automatically reschedule conflicting class sessions to the next week
-- Display public holidays directly on the timetable calendar
-- Prevent scheduling new classes on public holidays
+- Decoupled Holiday Timetable Service:
+  * Reschedule conflicting class sessions to the next week
+  * Display public holidays on calendar views
+  * Prevent scheduling new classes on public holidays
+- REST API for Public Holidays (/api/holidays)
     """,
     'author': 'Panha Koeun',
     'license': 'LGPL-3',
@@ -26,6 +27,7 @@ Features:
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
+        'data/holiday_data.xml',
         'wizard/import_holiday_wizard_views.xml',
         'views/public_holiday_views.xml',
         'views/menu.xml',

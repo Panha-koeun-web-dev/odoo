@@ -3,5 +3,6 @@ access_school_public_holiday_user,school.public.holiday.user,model_school_public
 access_school_public_holiday_manager,school.public.holiday.manager,model_school_public_holiday,group_school_holiday_manager,1,1,1,1
 access_school_public_holiday_admin,school.public.holiday.admin,model_school_public_holiday,school_management.group_school_admin,1,1,1,1
 access_school_public_holiday_teacher,school.public.holiday.teacher,model_school_public_holiday,school_management.group_school_teacher,1,0,0,0
+access_school_public_holiday_student,school.public.holiday.student,model_school_public_holiday,school_management.group_school_student,1,0,0,0
 access_school_import_holiday_wizard,school.import.holiday.wizard.manager,model_school_import_holiday_wizard,group_school_holiday_manager,1,1,1,1
 access_school_import_holiday_wizard_admin,school.import.holiday.wizard.admin,model_school_import_holiday_wizard,school_management.group_school_admin,1,1,1,1

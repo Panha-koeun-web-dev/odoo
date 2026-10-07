@@ -17,23 +17,6 @@
                             <field name="auto_reschedule"/>
                         </group>
                     </group>
-
-                    <separator string="File Format Guidelines (CSV or Excel)"/>
-                    <div class="alert alert-info" role="alert">
-                        <p class="mb-1"><strong>Supported formats:</strong> CSV (.csv) and Excel (.xlsx)</p>
-                        <p class="mb-1"><strong>Required columns:</strong> <code>name</code>, <code>date</code></p>
-                        <p class="mb-1"><strong>Optional columns:</strong> <code>end_date</code>, <code>holiday_type</code> (national/religious/school/other/public), <code>description</code></p>
-                        <p class="mb-0"><strong>Example:</strong></p>
-                        <code>name,date,end_date,holiday_type,description</code><br/>
-                        <code>Khmer New Year,2026-04-14,2026-04-16,national,Khmer New Year Break</code><br/>
-                        <code>Teacher Training,2026-10-01,,public,In-service Training Day</code>
-                    </div>
-
-                    <div class="alert alert-warning" role="alert" invisible="not auto_reschedule">
-                        <i class="fa fa-info-circle me-1" title="Calendar Integration Info"/>
-                        <strong>Calendar Integration:</strong>
-                        When importing, any existing study schedules on holiday dates will be compared and automatically moved to the next week (+7 days), cascading any subsequent sessions to prevent conflicts. A holiday banner will be placed on the timetable calendar.
-                    </div>
                 </sheet>
 
                 <footer>

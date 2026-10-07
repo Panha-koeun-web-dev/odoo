@@ -15,7 +15,6 @@ class TestSchoolTimetable(TransactionCase):
         cls.Subject = cls.env['school.subject']
         cls.Student = cls.env['school.student']
         cls.Timetable = cls.env['school.timetable']
-
         cls.class_a = cls.SchoolClass.create({
             'name': 'Grade 10-A',
             'code': 'G10-A',
@@ -173,7 +172,7 @@ class TestSchoolTimetable(TransactionCase):
             'class_id': self.class_a.id,
             'subject_id': self.subject_math.id,
             'teacher_id': self.teacher_1.id,
-            'day_of_week': '5',  # Saturday
+            'day_of_week': '2',  # Wednesday
             'period': 'p1',
             'room': 'Room 101',
         })
@@ -367,7 +366,7 @@ class TestSchoolTimetable(TransactionCase):
             'class_id': self.class_b.id,
             'subject_id': self.subject_math.id,
             'teacher_id': self.teacher_1.id,
-            'day_of_week': '4',
+            'day_of_week': '2',
             'specific_start_time': '22.0',
             'start_time': 22.0,
             'end_time': 23.0,
@@ -375,7 +374,7 @@ class TestSchoolTimetable(TransactionCase):
         wizard.action_apply()
         created_slot = self.Timetable.search([
             ('class_id', '=', self.class_b.id),
-            ('day_of_week', '=', '4'),
+            ('day_of_week', '=', '2'),
             ('start_time', '=', 22.0),
         ], limit=1)
         self.assertTrue(created_slot)

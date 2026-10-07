@@ -65,6 +65,7 @@ class SchoolCertificate(models.Model):
 
     # Academic & Transcript Metrics
     average_score = fields.Float(string='Final Percentage', compute='_compute_academic_performance', store=True, compute_sudo=True)
+    average_grade = fields.Float(string='Average Grade', related='average_score')
     gpa = fields.Float(string='Cumulative Term GPA', compute='_compute_academic_performance', store=True, compute_sudo=True)
     cumulative_gpa = fields.Float(string='Overall Career GPA', compute='_compute_academic_performance', store=True, compute_sudo=True)
     academic_standing = fields.Selection([

@@ -599,7 +599,7 @@ class SchoolTimetable(models.Model):
                 continue
             if rec.is_exam or rec.exam_id:
                 e_title = rec.exam_id.name or rec.name or _("Exam")
-                rec.display_name = f"Exam: {e_title}{target_str}{room_str}"
+                rec.display_name = f"[EXAM] {e_title}{target_str}{room_str}"
                 continue
             subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
             subject_name = ', '.join(subs.mapped('name')) if subs else (rec.subject_id.name or _("Subject"))
@@ -794,6 +794,11 @@ class SchoolTimetable(models.Model):
         term = None
         if vals.get('term_id'):
             term = self.env['school.term'].browse(vals['term_id'])
+        elif vals.get('class_id'):
+            cls_obj = self.env['school.class'].browse(vals['class_id'])
+            if cls_obj.current_term_id:
+                vals['term_id'] = cls_obj.current_term_id.id
+                term = cls_obj.current_term_id
 
         if not vals.get('week_number') and vals.get('start_datetime'):
             s_dt = fields.Datetime.to_datetime(vals['start_datetime'])

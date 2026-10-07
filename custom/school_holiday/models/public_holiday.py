@@ -1,5 +1,5 @@
-from datetime import datetime, date, time, timedelta
-import pytz
+# -*- coding: utf-8 -*-
+from datetime import datetime, date, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 
@@ -103,7 +103,7 @@ class SchoolPublicHoliday(models.Model):
                     _('The end date cannot be earlier than the start date.')
                 )
 
-    @api.constrains('name', 'date', 'end_date')
+    @api.constrains('name', 'date', 'end_date', 'company_id')
     def _check_overlap(self):
         for record in self:
             if not record.date or not record.name:
@@ -179,154 +179,20 @@ class SchoolPublicHoliday(models.Model):
         day_count = (end_d - start_d).days + 1
         return [start_d + timedelta(days=i) for i in range(day_count)]
 
-    def _get_non_holiday_shift_days(self, original_date):
-        """
-        Find the number of days forward (+7, +14, etc.) to the next week's matching day
-        that does not fall on an active public holiday.
-        """
-        shift = 7
-        for _ in range(52):
-            target = original_date + timedelta(days=shift)
-            if not self.is_holiday(target, self.company_id.id if self.company_id else None):
-                return shift
-            shift += 7
-        return 7
-
-    def _move_timetable_sessions_for_dates(self, dates, holiday_name=None):
-        """
-        Compare study schedule sessions (school.timetable) with the given holiday dates.
-        For any regular session scheduled on a holiday date, move it to the next week
-        (+7 days or next non-holiday week).
-        Cascades subsequent sessions in the same slot/term to prevent overlapping collisions.
-        Also creates or updates a holiday session in school.timetable for calendar visibility.
-        """
-        Timetable = self.env['school.timetable']
-        if not dates:
-            return 0
-
-        # 1. Find all active regular sessions on these holiday dates
-        all_active_regular = Timetable.search([
-            ('is_holiday', '=', False),
-            ('active', '=', True),
-        ])
-        sessions_on_holiday = [
-            s for s in all_active_regular
-            if s._get_session_calendar_date() in dates
-        ]
-
-        moved_count = 0
-
-        # Group sessions by slot to cascade cleanly:
-        # Slot: (class_id, student_id, day_of_week, start_time, term_id)
-        processed_slots = set()
-        for s in sessions_on_holiday:
-            slot_key = (
-                s.class_id.id if s.class_id else False,
-                s.student_id.id if s.student_id else False,
-                s.day_of_week,
-                s.start_time,
-                s.term_id.id if s.term_id else False,
-            )
-            if slot_key in processed_slots:
-                continue
-            processed_slots.add(slot_key)
-
-            # Find all sessions in this slot on or after the holiday session, sorted descending (latest first)
-            series = Timetable.search([
-                ('active', '=', True),
-                ('is_holiday', '=', False),
-                ('class_id', '=', s.class_id.id if s.class_id else False),
-                ('student_id', '=', s.student_id.id if s.student_id else False),
-                ('day_of_week', '=', s.day_of_week),
-                ('start_time', '=', s.start_time),
-                ('term_id', '=', s.term_id.id if s.term_id else False),
-                ('start_datetime', '>=', s.start_datetime),
-            ], order='start_datetime desc')
-
-            session_date = s._get_session_calendar_date()
-            shift_days = self._get_non_holiday_shift_days(session_date)
-
-            for item in series:
-                old_start = item.start_datetime
-                old_end = item.end_datetime
-                if not old_start or not old_end:
-                    continue
-                new_start = old_start + timedelta(days=shift_days)
-                new_end = old_end + timedelta(days=shift_days)
-                new_week = item.week_number + (shift_days // 7) if item.week_number else False
-                item.write({
-                    'start_datetime': new_start,
-                    'end_datetime': new_end,
-                    'week_number': new_week,
-                })
-                moved_count += 1
-
-        # 2. Ensure holiday timetable sessions are displayed on calendar for the holiday dates
-        self._ensure_holiday_timetable_sessions(dates, holiday_name)
-
-        return moved_count
-
-    def _ensure_holiday_timetable_sessions(self, dates, holiday_name=None):
-        """Create or ensure school.timetable records with is_holiday=True exist for the calendar."""
-        Timetable = self.env['school.timetable']
-        user_tz = pytz.timezone(self.env.user.tz or 'UTC')
-
-        for d in dates:
-            # Check if holiday session already exists on this date
-            existing = [
-                t for t in Timetable.search([('is_holiday', '=', True), ('active', '=', True)])
-                if t._get_session_calendar_date() == d
-            ]
-            if existing:
-                continue
-
-            # Determine UTC start and end for 07:30 to 17:00 local time
-            naive_start = datetime.combine(d, time(7, 30, 0))
-            naive_end = datetime.combine(d, time(17, 0, 0))
-            try:
-                start_dt = user_tz.localize(naive_start).astimezone(pytz.utc).replace(tzinfo=None)
-                end_dt = user_tz.localize(naive_end).astimezone(pytz.utc).replace(tzinfo=None)
-            except Exception:
-                start_dt = naive_start
-                end_dt = naive_end
-
-            # Find active term if any
-            term = self.env['school.term'].search([
-                ('date_start', '<=', d),
-                ('date_end', '>=', d),
-                ('state', '=', 'active'),
-            ], limit=1)
-            week_num = False
-            if term and term.date_start:
-                first_mon = term.date_start - timedelta(days=term.date_start.weekday())
-                week_num = (d - first_mon).days // 7 + 1
-
-            h_name = holiday_name or self.name or _("School Public Holiday")
-
-            Timetable.create({
-                'name': h_name,
-                'holiday_name': h_name,
-                'is_holiday': True,
-                'schedule_status': 'holiday',
-                'start_datetime': start_dt,
-                'end_datetime': end_dt,
-                'start_time': 7.5,
-                'end_time': 17.0,
-                'period': 'custom',
-                'day_of_week': str(d.weekday()),
-                'week_number': week_num or d.isocalendar()[1],
-                'term_id': term.id if term else False,
-            })
-
     def action_validate_and_reschedule(self):
         """
         Validate all timetable schedules against this holiday (or selected holidays)
-        and move any conflicting class sessions to the next week.
+        and move any conflicting class sessions to the next week via the dedicated service.
         """
+        service = self.env['school.holiday.timetable.service']
         total_moved = 0
         for record in self:
             dates = record.get_holiday_dates()
-            moved = record._move_timetable_sessions_for_dates(dates, holiday_name=record.name)
+            moved = service.move_timetable_sessions_for_dates(
+                dates,
+                holiday_name=record.name,
+                company_id=record.company_id.id,
+            )
             total_moved += moved
 
         message = (
@@ -351,20 +217,30 @@ class SchoolPublicHoliday(models.Model):
     def create(self, vals_list):
         records = super().create(vals_list)
         if not self.env.context.get('skip_auto_reschedule'):
+            service = self.env['school.holiday.timetable.service']
             for record in records:
                 if record.active and record.date:
                     dates = record.get_holiday_dates()
-                    record._move_timetable_sessions_for_dates(dates, holiday_name=record.name)
+                    service.move_timetable_sessions_for_dates(
+                        dates,
+                        holiday_name=record.name,
+                        company_id=record.company_id.id,
+                    )
         return records
 
     def write(self, vals):
         res = super().write(vals)
         if ('date' in vals or 'end_date' in vals or 'active' in vals) and vals.get('active', True):
             if not self.env.context.get('skip_auto_reschedule'):
+                service = self.env['school.holiday.timetable.service']
                 for record in self:
                     if record.active and record.date:
                         dates = record.get_holiday_dates()
-                        record._move_timetable_sessions_for_dates(dates, holiday_name=record.name)
+                        service.move_timetable_sessions_for_dates(
+                            dates,
+                            holiday_name=record.name,
+                            company_id=record.company_id.id,
+                        )
         return res
 
     def action_archive(self):

@@ -284,7 +284,7 @@ class SchoolStudent(models.Model):
             'name': _('Study Schedule - %s') % (self.name or ''),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
-            'view_mode': 'calendar,kanban,list,form',
+            'view_mode': 'calendar,list,kanban,form',
             'domain': domain,
             'context': ctx,
         }
