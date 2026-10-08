@@ -282,10 +282,6 @@
                                 </div>
                             </div>
 
-                            <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" role="status">
-                                <i class="fa fa-info-circle fa-lg me-2 text-primary" title="Information"/>
-                                <span>Configure payment for this class below. Every student enrolled in this class will automatically follow this payment schedule unless a specific custom deadline schedule is set for them.</span>
-                            </div>
 
                             <group string="Class Tuition &amp; Installments Configuration">
                                 <group string="Academic Year &amp; Total Tuition">
