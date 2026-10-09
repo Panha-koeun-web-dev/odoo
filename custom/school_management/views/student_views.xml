@@ -821,7 +821,7 @@
                             </div>
                         </page>
 
-                        <page name="payments" string="Year Payments &amp; Fees">
+                        <page name="payments" string="Year Payments &amp; Fees" groups="school_management.group_school_admin,school_management.group_school_student">
                             <!-- Top KPI Summary Cards -->
                             <div class="row g-3 mb-4">
                                 <div class="col-12 col-sm-6 col-xl-3">
@@ -1267,7 +1267,7 @@
                             </field>
                         </page>
 
-                        <page name="teaching_reports" string="Teaching Evaluations Filed">
+                        <page name="teaching_reports" string="Teaching Evaluations Filed" groups="school_management.group_school_admin,school_management.group_school_student">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-pencil-square-o me-2" title="Evaluations"/>Teaching Quality Reports Submitted to Administration</h6>
                                 <button name="action_view_teaching_reports" type="object" string="Submit New Evaluation" class="btn btn-sm btn-outline-primary" icon="fa-plus"/>

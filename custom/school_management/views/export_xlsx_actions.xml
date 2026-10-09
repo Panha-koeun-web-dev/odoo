@@ -10,6 +10,7 @@
         <field name="model_id" ref="model_school_fee"/>
         <field name="binding_model_id" ref="model_school_fee"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()
@@ -22,6 +23,7 @@ action = records.action_export_xlsx()
         <field name="model_id" ref="model_school_student_year_payment"/>
         <field name="binding_model_id" ref="model_school_student_year_payment"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()
@@ -34,6 +36,7 @@ action = records.action_export_xlsx()
         <field name="model_id" ref="model_school_attendance"/>
         <field name="binding_model_id" ref="model_school_attendance"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()
@@ -46,6 +49,7 @@ action = records.action_export_xlsx()
         <field name="model_id" ref="model_school_grade"/>
         <field name="binding_model_id" ref="model_school_grade"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()
@@ -58,6 +62,7 @@ action = records.action_export_xlsx()
         <field name="model_id" ref="model_school_student"/>
         <field name="binding_model_id" ref="model_school_student"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()
@@ -70,6 +75,7 @@ action = records.action_export_xlsx()
         <field name="model_id" ref="model_school_class"/>
         <field name="binding_model_id" ref="model_school_class"/>
         <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_admin')), (4, ref('school_management.group_school_teacher'))]"/>
         <field name="state">code</field>
         <field name="code">
 action = records.action_export_xlsx()

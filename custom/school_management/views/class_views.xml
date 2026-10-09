@@ -125,7 +125,7 @@
                                 <span class="o_stat_text">Teacher Leaves</span>
                             </div>
                         </button>
-                        <button name="action_view_year_payments" type="object" class="oe_stat_button" icon="fa-money">
+                        <button name="action_view_year_payments" type="object" class="oe_stat_button" icon="fa-money" groups="school_management.group_school_admin">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="year_payment_count"/></span>
                                 <span class="o_stat_text">Year Payments</span>
@@ -241,7 +241,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Payment / Tuition" name="payments">
+                        <page string="Payment / Tuition" name="payments" groups="school_management.group_school_admin">
                             <!-- Financial Summary KPI Cards -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-3 col-6">
@@ -347,7 +347,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Enrollments" name="enrollments">
+                        <page string="Enrollments" name="enrollments" groups="school_management.group_school_admin,school_management.group_school_teacher">
                             <field name="enrollment_ids"/>
                         </page>
                         <page string="Curriculum &amp; Teaching Staff" name="subjects">

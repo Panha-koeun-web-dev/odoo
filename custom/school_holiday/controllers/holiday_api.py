@@ -50,8 +50,8 @@ class HolidayApiController(http.Controller):
             'holiday_type': holiday.holiday_type,
             'description': holiday.description or '',
             'active': holiday.active,
-            'duration': holiday.duration,
             'company': {
+            'duration': holiday.duration,
                 'id': holiday.company_id.id,
                 'name': holiday.company_id.name,
             } if holiday.company_id else None,

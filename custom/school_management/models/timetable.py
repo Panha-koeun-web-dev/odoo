@@ -1628,6 +1628,6 @@ class SchoolTimetable(models.Model):
         elif is_teacher and not is_admin:
             ctx['search_default_filter_my_teaching'] = 1
 
-        action = self.env.ref('school_management.action_timetable').read()[0]
+        action = self.env.ref('school_management.action_timetable').sudo().read()[0]
         action['context'] = ctx
         return action
