@@ -210,7 +210,7 @@
               name="All Requests"
               parent="menu_school_permission_root"
               action="action_school_permission"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="10"/>
     <menuitem id="menu_school_permission_student"
               name="Student Requests"

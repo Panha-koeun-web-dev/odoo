@@ -307,7 +307,7 @@ class SchoolExam(models.Model):
 
     def action_view_in_timetable(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_timetable')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_timetable')
         if self.timetable_id:
             action['domain'] = [('id', '=', self.timetable_id.id)]
             action['views'] = [(False, 'calendar'), (False, 'list'), (False, 'form')]

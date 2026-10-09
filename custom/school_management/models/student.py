@@ -3,7 +3,7 @@ from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 
 def _open_records(self, model_name, domain):
-    action = self.env['ir.actions.act_window']._for_xml_id(f'school_management.action_{model_name}')
+    action = self.env['ir.actions.act_window'].sudo()._for_xml_id(f'school_management.action_{model_name}')
     action['domain'] = domain
     return action
 

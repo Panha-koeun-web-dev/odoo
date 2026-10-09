@@ -319,21 +319,21 @@ class SchoolTeacher(models.Model):
 
     def action_view_classes(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_class')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_class')
         action['domain'] = [('teacher_id', '=', self.id)]
         action['context'] = {'default_teacher_id': self.id}
         return action
 
     def action_view_students(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_student')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_student')
         student_ids = self.class_ids.mapped('student_ids').ids
         action['domain'] = [('id', 'in', student_ids)]
         return action
 
     def action_view_subjects(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_subject')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_subject')
         action['domain'] = [('id', 'in', self.subject_ids.ids)]
         return action
 

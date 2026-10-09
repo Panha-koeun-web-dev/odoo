@@ -68,6 +68,6 @@ class SchoolEnrollStudentsWizard(models.TransientModel):
         created = enrollment_model.create(vals_list)
 
 
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_enrollment')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_enrollment')
         action['domain'] = [('id', 'in', created.ids)]
         return action

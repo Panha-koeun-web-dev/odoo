@@ -283,8 +283,19 @@ class SchoolCertificate(models.Model):
             elif not rec.homeroom_teacher_id:
                 rec.homeroom_teacher_id = False
 
+    def init(self):
+        super().init()
+        self.env.cr.execute("""
+            UPDATE school_certificate
+            SET template = 'classic'
+            WHERE template = 'elegant' OR template IS NULL;
+        """)
+
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('template') == 'elegant':
+                vals['template'] = 'classic' 
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 cert_type = vals.get('certificate_type', 'transcript')
@@ -337,6 +348,8 @@ class SchoolCertificate(models.Model):
         return records
 
     def write(self, vals):
+        if vals.get('template') == 'elegant':
+            vals['template'] = 'classic' 
         if self._is_restricted_student():
             # Allow students to only initiate a print request via action_request_print
             allowed_fields = {'print_state', 'print_requested_date', 'print_rejection_reason'}

@@ -66,20 +66,20 @@ class SchoolSubject(models.Model):
 
     def action_view_teachers(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_teacher')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_teacher')
         action['domain'] = [('id', 'in', self.teacher_ids.ids)]
         action['context'] = {'default_subject_ids': [(4, self.id)]}
         return action
 
     def action_view_classes(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_class')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_class')
         action['domain'] = [('id', 'in', self.class_ids.ids)]
         return action
 
     def action_view_exams(self):
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_exam')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_exam')
         action['domain'] = [('subject_id', '=', self.id)]
         action['context'] = {'default_subject_id': self.id}
         return action

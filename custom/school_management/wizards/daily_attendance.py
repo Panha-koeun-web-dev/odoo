@@ -133,7 +133,7 @@ class SchoolDailyAttendanceWizard(models.TransientModel):
                     'notes': line.notes or '',
                 })
 
-        action = self.env['ir.actions.act_window']._for_xml_id('school_management.action_attendance')
+        action = self.env['ir.actions.act_window'].sudo()._for_xml_id('school_management.action_attendance')
         action['domain'] = [('date', '=', self.date)]
         return {
             'type': 'ir.actions.client',
