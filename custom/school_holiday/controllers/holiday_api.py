@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from odoo import http, fields
+from odoo import http
 from odoo.http import request, Response
 from odoo.exceptions import ValidationError, UserError, AccessError
 
@@ -23,7 +23,8 @@ class HolidayApiController(http.Controller):
     def env(self):
         return request.env
 
-    def _json_response(self, data, status=200):
+    @staticmethod
+    def _json_response(data, status=200):
         return Response(
             json.dumps(data, default=str),
             status=status,
@@ -39,7 +40,8 @@ class HolidayApiController(http.Controller):
             payload['details'] = details
         return self._json_response(payload, status=status)
 
-    def _serialize_holiday(self, holiday):
+    @staticmethod
+    def _serialize_holiday(holiday):
         """Serialize a school.public.holiday record to a clean dictionary."""
         return {
             'id': holiday.id,
@@ -47,11 +49,11 @@ class HolidayApiController(http.Controller):
             'date': holiday.date.isoformat() if holiday.date else None,
             'end_date': holiday.end_date.isoformat() if holiday.end_date else None,
             'year': holiday.year,
+            'duration': holiday.duration,
             'holiday_type': holiday.holiday_type,
             'description': holiday.description or '',
             'active': holiday.active,
             'company': {
-            'duration': holiday.duration,
                 'id': holiday.company_id.id,
                 'name': holiday.company_id.name,
             } if holiday.company_id else None,
@@ -63,16 +65,16 @@ class HolidayApiController(http.Controller):
     @http.route('/api/holidays', type='http', auth='user', methods=['GET'], csrf=False)
     def get_holidays(self, **kwargs):
         try:
-            PublicHoliday = request.env['school.public.holiday']
+            holiday_model = request.env['school.public.holiday']
 
             domain = []
 
             # Filter: year
             year = kwargs.get('year')
-            if year:
+            if isinstance(year, (str, int)):
                 try:
                     domain.append(('year', '=', int(year)))
-                except ValueError:
+                except (ValueError, TypeError):
                     return self._error_response("Query parameter 'year' must be an integer.", 400)
 
             # Filter: holiday_type
@@ -82,24 +84,26 @@ class HolidayApiController(http.Controller):
 
             # Filter: active
             active = kwargs.get('active')
-            if active is not None:
+            if isinstance(active, (str, bool, int)):
                 is_active = str(active).strip().lower() in ('true', '1', 'yes')
                 domain.append(('active', '=', is_active))
 
             # Pagination
             try:
-                page = max(1, int(kwargs.get('page', 1)))
-            except ValueError:
+                page_val = kwargs.get('page', 1)
+                page = max(1, int(page_val)) if isinstance(page_val, (str, int)) else 1
+            except (ValueError, TypeError):
                 page = 1
 
             try:
-                limit = max(1, min(100, int(kwargs.get('limit', 10))))
-            except ValueError:
+                limit_val = kwargs.get('limit', 10)
+                limit = max(1, min(100, int(limit_val))) if isinstance(limit_val, (str, int)) else 10
+            except (ValueError, TypeError):
                 limit = 10
 
             offset = (page - 1) * limit
-            total = PublicHoliday.search_count(domain)
-            records = PublicHoliday.search(domain, offset=offset, limit=limit, order='date asc, id asc')
+            total = holiday_model.search_count(domain)
+            records = holiday_model.search(domain, offset=offset, limit=limit, order='date asc, id asc')
 
             total_pages = (total + limit - 1) // limit if limit else 1
 
@@ -126,7 +130,7 @@ class HolidayApiController(http.Controller):
     # GET /api/holidays/<int:holiday_id> (Detail)
     # -------------------------------------------------------------------------
     @http.route('/api/holidays/<int:holiday_id>', type='http', auth='user', methods=['GET'], csrf=False)
-    def get_holiday_detail(self, holiday_id, **kwargs):
+    def get_holiday_detail(self, holiday_id, **_kwargs):
         try:
             holiday = request.env['school.public.holiday'].browse(holiday_id)
             if not holiday.exists():
@@ -147,11 +151,11 @@ class HolidayApiController(http.Controller):
     # POST /api/holidays (Create)
     # -------------------------------------------------------------------------
     @http.route('/api/holidays', type='http', auth='user', methods=['POST'], csrf=False)
-    def create_holiday(self, **kwargs):
+    def create_holiday(self, **_kwargs):
         try:
             try:
                 body = json.loads(request.httprequest.data or '{}')
-            except Exception:
+            except (json.JSONDecodeError, ValueError):
                 return self._error_response("Invalid JSON payload", 400)
 
             name = body.get('name')
@@ -174,7 +178,10 @@ class HolidayApiController(http.Controller):
             if 'active' in body:
                 vals['active'] = bool(body['active'])
             if 'company_id' in body and body['company_id']:
-                vals['company_id'] = int(body['company_id'])
+                try:
+                    vals['company_id'] = int(body['company_id'])
+                except (ValueError, TypeError):
+                    return self._error_response("Field 'company_id' must be an integer.", 400)
 
             holiday = request.env['school.public.holiday'].create(vals)
 
@@ -195,7 +202,7 @@ class HolidayApiController(http.Controller):
     # PUT /api/holidays/<int:holiday_id> (Update)
     # -------------------------------------------------------------------------
     @http.route('/api/holidays/<int:holiday_id>', type='http', auth='user', methods=['PUT'], csrf=False)
-    def update_holiday(self, holiday_id, **kwargs):
+    def update_holiday(self, holiday_id, **_kwargs):
         try:
             holiday = request.env['school.public.holiday'].browse(holiday_id)
             if not holiday.exists():
@@ -203,7 +210,7 @@ class HolidayApiController(http.Controller):
 
             try:
                 body = json.loads(request.httprequest.data or '{}')
-            except Exception:
+            except (json.JSONDecodeError, ValueError):
                 return self._error_response("Invalid JSON payload", 400)
 
             allowed_fields = {'name', 'date', 'end_date', 'holiday_type', 'description', 'active', 'company_id'}
@@ -234,7 +241,7 @@ class HolidayApiController(http.Controller):
     # DELETE /api/holidays/<int:holiday_id> (Delete)
     # -------------------------------------------------------------------------
     @http.route('/api/holidays/<int:holiday_id>', type='http', auth='user', methods=['DELETE'], csrf=False)
-    def delete_holiday(self, holiday_id, **kwargs):
+    def delete_holiday(self, holiday_id, **_kwargs):
         try:
             holiday = request.env['school.public.holiday'].browse(holiday_id)
             if not holiday.exists():
