@@ -1132,6 +1132,15 @@ class SchoolTimetable(models.Model):
                 to_remove.unlink()
 
     @api.model
+    def action_cleanup_finished_class_schedules(self):
+        """Purge / archive active timetable sessions belonging to finished terms or finished classes."""
+        sessions = self.search([('active', '=', True)])
+        finished = sessions.filtered(lambda s: s._is_session_finished())
+        if finished:
+            finished.write({'active': False})
+        return len(finished)
+
+    @api.model
     def action_cleanup_holiday_conflicts(self):
         """Purge any regular classes that exist concurrently with holidays across the system."""
         holidays = self.search([('is_holiday', '=', True), ('active', '=', True)])
@@ -1288,11 +1297,40 @@ class SchoolTimetable(models.Model):
     # -------------------------------------------------------------------------
     # CONSTRAINTS & CONFLICT CHECKING (SCOPED BY ACADEMIC TERM)
     # -------------------------------------------------------------------------
+    def _is_session_finished(self):
+        """Check if this timetable session belongs to an ended/finished class or term."""
+        self.ensure_one()
+        if not self.active:
+            return True
+        if self.term_id and self.term_id.state == 'finished':
+            return True
+        if self.class_id:
+            if not self.class_id.active:
+                return True
+            if getattr(self.class_id, 'state', False) == 'finished':
+                return True
+            if getattr(self.class_id, 'is_finished', False):
+                return True
+            if self.class_id.year_end and self.class_id.year_end < fields.Date.today():
+                return True
+            if self.start_datetime and self.class_id.year_end:
+                s_date = self._utc_to_local(self.start_datetime).date()
+                if s_date and s_date > self.class_id.year_end:
+                    return True
+        return False
+
     def _is_term_conflict(self, other):
         """Returns True if self and other belong to the same term or overlapping terms,
         AND are scheduled on the same calendar date (if exact dates are specified)."""
         self.ensure_one()
         if self.is_holiday or other.is_holiday:
+            return False
+        # Sessions belonging to finished classes or finished terms never conflict with active sessions
+        if self._is_session_finished() or other._is_session_finished():
+            return False
+        if self.term_id and self.term_id.state == 'finished':
+            return False
+        if other.term_id and other.term_id.state == 'finished':
             return False
         if self.start_datetime and other.start_datetime:
             if self.start_datetime.date() != other.start_datetime.date():
@@ -1319,6 +1357,8 @@ class SchoolTimetable(models.Model):
         ]
         candidate_holidays = self.env['school.timetable'].search(domain)
         for hol in candidate_holidays:
+            if hol._is_session_finished():
+                continue
             if self._is_holiday_applicable(rec, hol):
                 h_name = hol.holiday_name or hol.name or _("School Holiday")
                 day_name = days.get(rec.day_of_week, '')
@@ -1495,7 +1535,7 @@ class SchoolTimetable(models.Model):
         querying overlapping candidates only once for all checks."""
         days = dict(DAY_SELECTION)
         for rec in self:
-            if not rec.active or rec.is_holiday:
+            if not rec.active or rec.is_holiday or rec._is_session_finished():
                 continue
 
             # 1. Holiday collision check
@@ -1510,7 +1550,7 @@ class SchoolTimetable(models.Model):
                 ('start_time', '<', rec.end_time),
                 ('end_time', '>', rec.start_time),
             ])
-            overlapping = [o for o in overlapping_candidates if rec._is_term_conflict(o)]
+            overlapping = [o for o in overlapping_candidates if not o._is_session_finished() and rec._is_term_conflict(o)]
             if not overlapping:
                 continue
 

@@ -27,6 +27,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
     class_id = fields.Many2one(
         'school.class',
         string='Primary Class',
+        domain="[('active', '=', True), ('state', '!=', 'finished')]",
         required=False,
         help="The student class for which the schedule is being planned."
     )
@@ -36,6 +37,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         'wizard_id',
         'class_id',
         string='Target Classes',
+        domain="[('active', '=', True), ('state', '!=', 'finished')]",
         help="Select one or multiple classes to set timetable & schedule for at the same time."
     )
     class_room = fields.Char(related='class_id.room', string='Class Default Room', readonly=True)
@@ -697,6 +699,13 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         Timetable = self.env['school.timetable']
         PublicHoliday = self.env.get('school.public.holiday')
+
+        # Clean up any orphaned timetable sessions belonging to finished terms or finished classes
+        Timetable.action_cleanup_finished_class_schedules()
+
+        finished_cls = target_classes.filtered(lambda c: c.is_finished or c.state == 'finished')
+        if finished_cls:
+            raise UserError(_("Cannot create schedule for finished class(es): %s. Please reactivate the class first.") % ', '.join(finished_cls.mapped('name')))
 
         # Determine target weeks
         target_weeks = []

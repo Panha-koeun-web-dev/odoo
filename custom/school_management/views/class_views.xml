@@ -14,6 +14,11 @@
                 <field name="section"/>
                 <field name="major_id"/>
                 <field name="current_term_id" widget="badge" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-muted="state == 'finished'"
+                       decoration-info="state == 'draft'"
+                       optional="show"/>
                 <field name="room"/>
                 <field name="teacher_id"/>
                 <field name="student_count"/>
@@ -110,6 +115,9 @@
                     <button name="action_request_teacher_permission" string="Request Leave from Class" type="object" class="btn-outline-warning" icon="fa-calendar-minus-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
                     <button name="action_generate_year_payments" string="Apply Class Payment to All Students" type="object" class="btn-primary" icon="fa-refresh" invisible="not total_payment" groups="school_management.group_school_admin"/>
                     <button name="action_export_xlsx" string="Export XLSX" type="object" class="btn-outline-primary" icon="fa-file-excel-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_finish_class" string="Finish Class" type="object" class="btn-warning" icon="fa-check-circle" invisible="state == 'finished'" groups="school_management.group_school_admin" confirm="Are you sure you want to finish this class? All active timetable sessions will be archived."/>
+                    <button name="action_set_active" string="Reactivate Class" type="object" class="btn-outline-success" icon="fa-play" invisible="state != 'finished'" groups="school_management.group_school_admin"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,finished"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -423,6 +431,9 @@
                 <field name="teacher_id"/>
                 <field name="room"/>
                 <separator/>
+                <filter string="Active Classes" name="filter_active_classes" domain="[('state', '=', 'active'), ('active', '=', True)]"/>
+                <filter string="Finished Classes" name="filter_finished_classes" domain="['|', ('state', '=', 'finished'), ('active', '=', False)]"/>
+                <separator/>
                 <filter string="Year 2026-2027" name="filter_year_2026_2027" domain="[('payment_year', '=', '2026-2027')]"/>
                 <filter string="Year 2025-2026" name="filter_year_2025_2026" domain="[('payment_year', '=', '2025-2026')]"/>
                 <filter string="Year 2024-2025" name="filter_year_2024_2025" domain="[('payment_year', '=', '2024-2025')]"/>
@@ -432,6 +443,7 @@
                 <filter string="Major" name="group_major" domain="[]" context="{'group_by':'major_id'}"/>
                 <filter string="Current Term" name="group_term" domain="[]" context="{'group_by':'current_term_id'}"/>
                 <filter string="Academic Year" name="group_year" domain="[]" context="{'group_by':'payment_year'}"/>
+                <filter string="Status" name="group_state" domain="[]" context="{'group_by':'state'}"/>
             </search>
         </field>
     </record>

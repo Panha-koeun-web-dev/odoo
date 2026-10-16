@@ -10,6 +10,7 @@ class TestSchoolTimetable(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env['school.timetable'].search([]).unlink()
         cls.SchoolClass = cls.env['school.class']
         cls.Teacher = cls.env['school.teacher']
         cls.Subject = cls.env['school.subject']
@@ -379,3 +380,83 @@ class TestSchoolTimetable(TransactionCase):
         ], limit=1)
         self.assertTrue(created_slot)
         self.assertEqual(created_slot.period, 'h22')
+
+    def test_12_finished_class_schedule_conflict_bypass(self):
+        """Test that finished classes and finished terms do not trigger schedule conflicts."""
+        # 1. Create a session for Teacher 1 in Class A
+        slot_class_a = self.Timetable.create({
+            'class_id': self.class_a.id,
+            'subject_id': self.subject_math.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '1',  # Tuesday
+            'start_time': 8.0,
+            'end_time': 9.5,
+            'room': 'Lab 101',
+        })
+        self.assertTrue(slot_class_a.active)
+
+        # 2. Mark Class A as finished
+        self.class_a.action_finish_class()
+        self.assertEqual(self.class_a.state, 'finished')
+        self.assertTrue(self.class_a.is_finished)
+        # Class A sessions should be archived
+        self.assertFalse(slot_class_a.active)
+
+        # 3. Teacher 1 and Room 'Lab 101' can now be scheduled for Class B without conflict
+        slot_class_b = self.Timetable.create({
+            'class_id': self.class_b.id,
+            'subject_id': self.subject_physics.id,
+            'teacher_id': self.teacher_1.id,
+            'day_of_week': '1',  # Tuesday
+            'start_time': 8.0,
+            'end_time': 9.5,
+            'room': 'Lab 101',
+        })
+        self.assertTrue(slot_class_b.id)
+
+        # 4. Test term finished conflict bypass
+        term_finished = self.env['school.term'].create({
+            'name': 'Term Past Finished',
+            'academic_year': '2025-2026',
+            'term_number': 'term_1',
+            'date_start': fields.Date.today() - timedelta(days=120),
+            'date_end': fields.Date.today() - timedelta(days=30),
+            'state': 'finished',
+        })
+        term_new = self.env['school.term'].create({
+            'name': 'Term Active Next',
+            'academic_year': '2025-2026',
+            'term_number': 'term_2',
+            'date_start': fields.Date.today(),
+            'date_end': fields.Date.today() + timedelta(days=90),
+            'state': 'active',
+        })
+
+        # Create session in finished term with Teacher 2
+        past_slot = self.Timetable.with_context(tracking_disable=True).create({
+            'class_id': self.class_b.id,
+            'term_id': term_finished.id,
+            'subject_id': self.subject_physics.id,
+            'teacher_id': self.teacher_2.id,
+            'day_of_week': '4',  # Friday
+            'start_time': 10.0,
+            'end_time': 11.5,
+            'room': 'Hall 1',
+        })
+
+        # New slot for Teacher 2 and Hall 1 in new term should succeed without conflict
+        new_slot = self.Timetable.create({
+            'class_id': self.class_b.id,
+            'term_id': term_new.id,
+            'subject_id': self.subject_physics.id,
+            'teacher_id': self.teacher_2.id,
+            'day_of_week': '4',  # Friday
+            'start_time': 10.0,
+            'end_time': 11.5,
+            'room': 'Hall 1',
+        })
+        self.assertTrue(new_slot.id)
+
+        # 5. Test cleanup method
+        cleaned_count = self.Timetable.action_cleanup_finished_class_schedules()
+        self.assertGreaterEqual(cleaned_count, 1)

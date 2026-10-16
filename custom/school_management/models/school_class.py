@@ -22,6 +22,20 @@ class SchoolClass(models.Model):
     active = fields.Boolean(default=True)
     capacity_progress = fields.Float(string='Capacity %', compute='_compute_capacity_progress')
 
+    state = fields.Selection([
+        ('draft', 'Upcoming / Draft'),
+        ('active', 'Active (In Progress)'),
+        ('finished', 'Finished / Completed'),
+    ], string='Status', default='active', index=True)
+
+    is_finished = fields.Boolean(
+        string='Is Class Finished',
+        compute='_compute_is_finished',
+        store=True,
+        index=True,
+        help="True if the class is explicitly finished, archived, or beyond its academic year end."
+    )
+
     # Academic Term Integration (1 Year = 12 Months = 3 Terms, 3 Months per Term)
     current_term_id = fields.Many2one(
         'school.term',
@@ -87,6 +101,16 @@ class SchoolClass(models.Model):
     total_payment_collected = fields.Monetary(string='Total Collected', currency_field='currency_id', compute='_compute_payment_statistics')
     total_payment_balance = fields.Monetary(string='Total Balance', currency_field='currency_id', compute='_compute_payment_statistics')
     payment_collection_rate = fields.Float(string='Collection Rate %', compute='_compute_payment_statistics')
+
+    @api.depends('state', 'active', 'year_end')
+    def _compute_is_finished(self):
+        today = fields.Date.today()
+        for rec in self:
+            rec.is_finished = (
+                rec.state == 'finished'
+                or not rec.active
+                or bool(rec.year_end and rec.year_end < today)
+            )
 
     @api.depends_context('company')
     def _compute_currency_id(self):
@@ -224,6 +248,9 @@ class SchoolClass(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
+        if vals.get('state') == 'finished' or vals.get('active') is False:
+            for rec in self:
+                rec.timetable_ids.filtered(lambda t: t.active).write({'active': False})
         sync_fields = {
             'total_payment', 'installment_1_amount', 'installment_2_amount',
             'installment_1_due_date', 'installment_2_due_date', 'payment_deadline',
@@ -233,6 +260,36 @@ class SchoolClass(models.Model):
             for rec in self:
                 rec._sync_students_class_payment()
         return res
+
+    def action_finish_class(self):
+        """Mark class as finished and automatically archive its timetable sessions so they don't block new schedules."""
+        self.write({'state': 'finished'})
+        for cls in self:
+            cls.timetable_ids.filtered(lambda t: t.active).write({'active': False})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Class Finished'),
+                'message': _("Class has been marked as finished. All timetable sessions have been archived."),
+                'type': 'warning',
+                'sticky': False,
+            }
+        }
+
+    def action_set_active(self):
+        """Reactivate class to active status."""
+        self.write({'state': 'active', 'active': True})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Class Reactivated'),
+                'message': _("Class status is now Active."),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     def action_generate_year_payments(self):
         """Action button to sync or apply class payment to all students enrolled in this class."""
