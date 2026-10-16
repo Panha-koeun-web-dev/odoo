@@ -88,6 +88,10 @@ class SchoolCertificate(models.Model):
     # Credit Calculations
     total_credits = fields.Integer(string='Total Program Credits', default=30)
     earned_credits = fields.Integer(string='Earned Credits', compute='_compute_credit_units', store=True, compute_sudo=True)
+    subject_count = fields.Integer(string='Subject Count', compute='_compute_subject_count', store=True, compute_sudo=True)
+    class_rank = fields.Integer(string='Class Standing / Rank', compute='_compute_cohort_rank', store=True, compute_sudo=True)
+    class_rank_number = fields.Integer(string='Class Rank Number', compute='_compute_class_rank_number', store=True, compute_sudo=True)
+    total_students_in_class = fields.Integer(string='Total Students in Class', compute='_compute_total_students_in_class', store=True, compute_sudo=True)
 
     # Administrative & Faculty Details
     homeroom_teacher_id = fields.Many2one(
@@ -274,6 +278,43 @@ class SchoolCertificate(models.Model):
             # Each subject carries credits (default 3 if undefined)
             credits = sum(s.credits if hasattr(s, 'credits') and s.credits else 3 for s in passed_subjects)
             rec.earned_credits = min(credits, rec.total_credits) if rec.total_credits else credits
+
+    @api.depends('student_id.grade_ids')
+    def _compute_subject_count(self):
+        for rec in self:
+            if rec.student_id:
+                rec.subject_count = len(rec.student_id.grade_ids)
+            else:
+                rec.subject_count = 0
+
+    @api.depends('student_id', 'student_id.class_id')
+    def _compute_class_rank_number(self):
+        for rec in self:
+            if rec.student_id and rec.student_id.class_id:
+                cohort_students = self.env['school.student'].search([
+                    ('class_id', '=', rec.student_id.class_id.id),
+                    ('active', '=', True),
+                ], order='average_score desc, id asc')
+                rec.class_rank_number = cohort_students.search_count([('id', 'in', cohort_students.ids)])
+                ids = cohort_students.ids
+                if rec.student_id.id in ids:
+                    rec.class_rank_number = ids.index(rec.student_id.id) + 1
+                else:
+                    rec.class_rank_number = 1
+            else:
+                rec.class_rank_number = 1
+
+    @api.depends('student_id', 'student_id.class_id')
+    def _compute_total_students_in_class(self):
+        for rec in self:
+            if rec.student_id and rec.student_id.class_id:
+                cohort_students = self.env['school.student'].search([
+                    ('class_id', '=', rec.student_id.class_id.id),
+                    ('active', '=', True),
+                ])
+                rec.total_students_in_class = len(cohort_students)
+            else:
+                rec.total_students_in_class = 0
 
     @api.depends('student_id', 'student_id.class_id', 'student_id.class_id.teacher_id')
     def _compute_teachers(self):
@@ -553,6 +594,25 @@ class SchoolCertificate(models.Model):
         if self.certificate_type == 'transcript':
             return self.action_print_transcript()
         return self.action_print_certificate()
+
+    def _get_transcript_courses(self):
+        """Return list of courses with grades for the transcript report."""
+        self.ensure_one()
+        self_sudo = self.sudo()
+        student = self_sudo.student_id
+        if not student:
+            return []
+        grades = student.grade_ids
+        courses = []
+        for grade in grades:
+            subject = grade.subject_id
+            courses.append({
+                'name': subject.name if subject else _('Unknown Subject'),
+                'grade': grade.grade_letter or _('N/A'),
+                'percentage': grade.percentage or 0.0,
+                'result': grade.result or _('N/A'),
+            })
+        return courses
 
     def action_issue(self):
         """Mark the transcript or certificate as issued."""
