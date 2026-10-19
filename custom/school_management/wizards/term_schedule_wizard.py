@@ -347,6 +347,52 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 if prev:
                     self.source_term_id = prev
 
+            # Auto-calculate and select the correct week based on term dates
+            self._auto_select_week()
+
+    def _auto_select_week(self):
+        """Automatically select the correct week based on the selected academic term's dates.
+
+        Rules:
+        - If term hasn't started yet → select Week 1
+        - If term is currently running → select current week based on term start + today
+        - If term has ended → select the final valid week (duration_weeks)
+        - If term has no start date → leave as default Week 1
+        """
+        if not self.term_id:
+            return
+
+        term = self.term_id
+        today = fields.Date.context_today(self)
+        target_week = False
+
+        if term.date_start:
+            first_monday = term.date_start - timedelta(days=term.date_start.weekday())
+            last_valid_week = term.duration_weeks or 12
+
+            if today < term.date_start:
+                # Term is upcoming, hasn't started yet → select Week 1
+                target_week = '1'
+            elif today > term.date_end:
+                # Term has ended → select the final valid week
+                target_week = str(last_valid_week)
+            else:
+                # Term is currently running → calculate current week
+                # Week number = (today - first_monday).days // 7 + 1
+                current_week = (today - first_monday).days // 7 + 1
+                # Clamp to valid range [1, duration_weeks]
+                if current_week < 1:
+                    current_week = 1
+                elif current_week > last_valid_week:
+                    current_week = last_valid_week
+                target_week = str(current_week)
+        else:
+            # No start date set, keep default Week 1
+            target_week = '1'
+
+        if target_week and int(target_week) != int(self.target_week or '1'):
+            self.target_week = target_week
+
     @api.onchange('source_term_id')
     def _onchange_source_term(self):
         self._compute_source_session_count()
