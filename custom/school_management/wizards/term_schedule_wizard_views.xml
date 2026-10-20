@@ -238,7 +238,8 @@
                 </div>
 
                 <footer>
-                    <button name="action_apply_schedule" string="Generate / Apply Schedule" type="object" class="btn-primary" icon="fa-check"/>
+                    <button name="action_save_schedule_draft" string="Save as Draft" type="object" class="btn-secondary" icon="fa-floppy-o" help="Save the generated timetable for administrator review without changing the live schedule."/>
+                    <button name="action_apply_schedule" string="Publish Schedule" type="object" class="btn-primary" icon="fa-check" help="Replace the selected live schedule, recheck conflicts, and publish it to students and teachers."/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

@@ -196,6 +196,10 @@ class SchoolTimetable(models.Model):
         ('holiday', 'Holiday / No Study'),
         ('exam', 'Examination'),
     ], string='Status', compute='_compute_schedule_status', store=True, index=True)
+    is_published = fields.Boolean(
+        string='Published', default=True, tracking=True, index=True,
+        help='Only published timetable sessions are visible to students and teachers.'
+    )
 
     class_id = fields.Many2one(
         'school.class',
@@ -900,6 +904,10 @@ class SchoolTimetable(models.Model):
             self._sync_timetable_vals(vals)
         records = super().create(vals_list)
         for rec in records:
+            # Draft timetable rows are planning records. They must not mutate
+            # teacher assignments, student subjects, or holiday calendars.
+            if not rec.is_published:
+                continue
             if not rec.is_holiday:
                 subs = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
                 if rec.teacher_id:
@@ -934,7 +942,7 @@ class SchoolTimetable(models.Model):
                                     'weekly_hours': max(1.0, round(rec.end_time - rec.start_time, 2)),
                                 })
 
-        holidays = records.filtered(lambda r: r.is_holiday)
+        holidays = records.filtered(lambda r: r.is_published and r.is_holiday)
         if holidays:
             holidays._cleanup_regular_classes_for_holiday()
 
@@ -1372,6 +1380,7 @@ class SchoolTimetable(models.Model):
             ('id', '!=', rec.id),
             ('is_holiday', '=', True),
             ('active', '=', True),
+            ('is_published', '=', True),
         ]
         candidate_holidays = self.env['school.timetable'].search(domain)
         for hol in candidate_holidays:
@@ -1545,7 +1554,7 @@ class SchoolTimetable(models.Model):
         'teacher_id', 'class_id', 'student_id', 'student_ids', 'room',
         'subject_id', 'subject_ids',
         'day_of_week', 'start_time', 'end_time', 'start_datetime', 'end_datetime',
-        'term_id', 'week_number', 'is_holiday', 'active'
+        'term_id', 'week_number', 'is_holiday', 'active', 'is_published'
     )
     def _check_schedule_conflicts(self):
         """Unified conflict validation pipeline.
@@ -1553,7 +1562,7 @@ class SchoolTimetable(models.Model):
         querying overlapping candidates only once for all checks."""
         days = dict(DAY_SELECTION)
         for rec in self:
-            if not rec.active or rec.is_holiday or rec._is_session_finished():
+            if not rec.is_published or not rec.active or rec.is_holiday or rec._is_session_finished():
                 continue
 
             # 1. Holiday collision check
@@ -1563,6 +1572,7 @@ class SchoolTimetable(models.Model):
             overlapping_candidates = self.search([
                 ('id', '!=', rec.id),
                 ('active', '=', True),
+                ('is_published', '=', True),
                 ('is_holiday', '=', False),
                 ('day_of_week', '=', rec.day_of_week),
                 ('start_time', '<', rec.end_time),
@@ -1578,6 +1588,51 @@ class SchoolTimetable(models.Model):
             self._check_student_conflict_single(rec, overlapping, days)
             self._check_room_conflict_single(rec, overlapping, days)
             self._check_subject_conflict_single(rec, overlapping, days)
+
+    def action_publish_schedule(self):
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise UserError(_('Only a school administrator can publish timetable sessions.'))
+        drafts = self.filtered(lambda session: not session.is_published)
+        if not drafts:
+            raise UserError(_('The selected timetable sessions are already published.'))
+        # Writing the whole batch at once lets the constraint check each newly
+        # published row against both existing live sessions and its batch peers.
+        drafts.write({'is_published': True})
+        for rec in drafts:
+            if rec.is_holiday:
+                continue
+            subjects = rec.subject_ids or (rec.subject_id if rec.subject_id else self.env['school.subject'])
+            if rec.teacher_id:
+                rec.teacher_id.subject_ids |= subjects
+                for subject in subjects:
+                    assignment = self.env['school.teaching.assignment'].search([
+                        ('teacher_id', '=', rec.teacher_id.id),
+                        ('subject_id', '=', subject.id),
+                        ('class_id', '=', rec.class_id.id if rec.class_id else False),
+                        ('active', '=', True),
+                    ], limit=1)
+                    if not assignment and rec.class_id:
+                        self.env['school.teaching.assignment'].create({
+                            'teacher_id': rec.teacher_id.id,
+                            'subject_id': subject.id,
+                            'class_id': rec.class_id.id,
+                            'weekly_hours': max(1.0, round(rec.end_time - rec.start_time, 2)),
+                        })
+            students = rec.student_ids or (rec.student_id if rec.student_id else (rec.class_id and rec.class_id.student_ids))
+            for student in students:
+                for subject in subjects:
+                    student_subject = self.env['school.student.subject'].search([
+                        ('student_id', '=', student.id), ('subject_id', '=', subject.id),
+                    ], limit=1)
+                    if not student_subject:
+                        self.env['school.student.subject'].create({
+                            'student_id': student.id,
+                            'subject_id': subject.id,
+                            'class_id': rec.class_id.id if rec.class_id else (student.class_id.id if student.class_id else False),
+                            'weekly_hours': max(1.0, round(rec.end_time - rec.start_time, 2)),
+                        })
+        drafts.filtered(lambda session: session.is_holiday)._cleanup_regular_classes_for_holiday()
+        return True
 
     def _check_subject_conflict_single(self, rec, overlapping, days):
         """Check if any session has overlapping subjects for the same audience or class."""

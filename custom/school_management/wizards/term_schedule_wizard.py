@@ -632,7 +632,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 check_date, company_id=self.env.company.id
             ))
         recorded_holidays = Timetable.search([
-            ('is_holiday', '=', True), ('active', '=', True),
+            ('is_holiday', '=', True), ('active', '=', True), ('is_published', '=', True),
         ])
         recorded_holiday_dates = {
             holiday_date for holiday in recorded_holidays
@@ -701,7 +701,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                         'active': True,
                     })
                     domain = [
-                        ('active', '=', True), ('is_holiday', '=', False),
+                        ('active', '=', True), ('is_published', '=', True), ('is_holiday', '=', False),
                         ('teacher_id', '=', teacher_id), ('day_of_week', '=', day_code),
                         ('start_time', '<', end_time), ('end_time', '>', start_time),
                     ]
@@ -743,7 +743,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     'active': True,
                 })
                 domain = [
-                    ('active', '=', True), ('is_holiday', '=', False),
+                    ('active', '=', True), ('is_published', '=', True), ('is_holiday', '=', False),
                     ('day_of_week', '=', vals['day_of_week']),
                     ('start_time', '<', vals['end_time']), ('end_time', '>', vals['start_time']),
                 ]
@@ -1040,6 +1040,9 @@ class SchoolTermScheduleWizard(models.TransientModel):
     # -------------------------------------------------------------------------
     def action_apply_schedule(self):
         self.ensure_one()
+        publish_schedule = not self.env.context.get('schedule_as_draft')
+        if publish_schedule and not self.env.user.has_group('school_management.group_school_admin'):
+            raise UserError(_('Only a school administrator can publish a timetable. Save it as a draft for review.'))
         if not self.term_id:
             raise UserError(_("Please select an Academic Term."))
 
@@ -1056,7 +1059,8 @@ class SchoolTermScheduleWizard(models.TransientModel):
             ))
 
         # Clean up any orphaned timetable sessions belonging to finished terms or finished classes
-        Timetable.action_cleanup_finished_class_schedules()
+        if publish_schedule:
+            Timetable.action_cleanup_finished_class_schedules()
 
         finished_cls = target_classes.filtered(lambda c: c.is_finished or c.state == 'finished')
         if finished_cls:
@@ -1085,6 +1089,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
             domain = [
                 ('term_id', '=', self.term_id.id),
                 ('class_id', 'in', target_classes.ids),
+                ('is_published', '=', publish_schedule),
             ]
             existing = Timetable.search(domain)
             if existing:
@@ -1106,6 +1111,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         existing_holidays = Timetable.search([
             ('is_holiday', '=', True),
             ('active', '=', True),
+            ('is_published', '=', True),
         ])
         existing_holiday_dates = set()
         for h in existing_holidays:
@@ -1141,6 +1147,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 ('term_id', '=', self.source_term_id.id),
                 ('class_id', 'in', target_classes.ids),
                 ('active', '=', True),
+                ('is_published', '=', True),
             ])
             if not source_sessions:
                 raise UserError(_("No active timetable sessions found in '%s' for selected class(es).") % self.source_term_id.name)
@@ -1372,24 +1379,27 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         if self.mode == 'create_slots' and not vals_list:
             raise UserError(_("No schedule rows match the selected target classes. Generate a schedule for each class or select the class the rows belong to."))
+        for vals in vals_list:
+            vals['is_published'] = publish_schedule
         created = self._create_timetable_sessions_with_teacher_fallback(vals_list) if vals_list else Timetable.browse()
 
         # Imported public holidays are stored separately from academic terms.
         # Mirror every applicable holiday into the planned term so the timetable
         # calendar shows it even when that term is still in draft.
         HolidayService = self.env.get('school.holiday.timetable.service')
-        if HolidayService:
+        if publish_schedule and HolidayService:
             HolidayService.ensure_public_holidays_for_term(self.term_id)
 
-        for target_class in target_classes:
-            if target_class not in self.term_id.class_ids:
-                self.term_id.class_ids = [(4, target_class.id)]
-            if self.term_id not in target_class.term_ids:
-                target_class.term_ids = [(4, self.term_id.id)]
-            if self.activate_target_term:
-                target_class.current_term_id = self.term_id.id
+        if publish_schedule:
+            for target_class in target_classes:
+                if target_class not in self.term_id.class_ids:
+                    self.term_id.class_ids = [(4, target_class.id)]
+                if self.term_id not in target_class.term_ids:
+                    target_class.term_ids = [(4, self.term_id.id)]
+                if self.activate_target_term:
+                    target_class.current_term_id = self.term_id.id
 
-        if self.activate_target_term and self.term_id.state == 'draft':
+        if publish_schedule and self.activate_target_term and self.term_id.state == 'draft':
             self.term_id.action_start_term()
 
         primary_class = self.class_id or target_classes[0]
@@ -1404,17 +1414,24 @@ class SchoolTermScheduleWizard(models.TransientModel):
         elif self.term_id.date_start:
             ctx['initial_date'] = self.term_id.date_start.isoformat()
 
+        if not publish_schedule:
+            ctx['search_default_filter_drafts'] = 1
+
         return {
-            'name': _('Timetable - %s (%s)') % (primary_class.name, self.term_id.name),
+            'name': (_('Draft Timetable - %s (%s)') if not publish_schedule else _('Timetable - %s (%s)')) % (primary_class.name, self.term_id.name),
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,kanban,list,form',
-            'domain': [
+            'domain': [('id', 'in', created.ids)] if not publish_schedule else [
                 ('term_id', '=', self.term_id.id),
                 '|', ('class_id', 'in', target_classes.ids), ('is_holiday', '=', True),
             ],
             'context': ctx,
         }
+
+    def action_save_schedule_draft(self):
+        self.ensure_one()
+        return self.with_context(schedule_as_draft=True).action_apply_schedule()
 
 
 class SchoolTermScheduleWizardLine(models.TransientModel):

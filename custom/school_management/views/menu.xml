@@ -110,6 +110,12 @@
               action="action_school_term_schedule_wizard"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="10"/>
+    <menuitem id="menu_school_sched_drafts"
+              name="Review Timetable Drafts"
+              parent="menu_school_schedule_root"
+              action="action_timetable_drafts"
+              groups="school_management.group_school_admin"
+              sequence="12"/>
     <menuitem id="menu_school_sched_assign_wizard"
               name="Quick Assign &amp; Schedule Hub"
               parent="menu_school_schedule_root"
