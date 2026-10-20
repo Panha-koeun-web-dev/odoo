@@ -361,11 +361,11 @@
             <field name="perm_unlink" eval="1"/>
         </record>
 
-        <!-- 11. Timetable Record Rules (Allow Student to View Full Master Timetable & Calendar Created by Admin) -->
+        <!-- 11. Timetable Record Rules: users see their own sessions and holidays. -->
         <record id="rule_school_timetable_student" model="ir.rule">
-            <field name="name">Student: Read All Timetables and Master Calendar</field>
+            <field name="name">Student: Read Own Timetable and Holidays</field>
             <field name="model_id" ref="model_school_timetable"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">['|', ('is_holiday', '=', True), '|', ('student_id.user_id', '=', user.id), '|', ('student_ids.user_id', '=', user.id), '&amp;', ('class_id.student_ids.user_id', '=', user.id), ('student_id', '=', False)]</field>
             <field name="groups" eval="[(4, ref('group_school_student'))]"/>
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="0"/>
@@ -374,9 +374,9 @@
         </record>
 
         <record id="rule_school_timetable_teacher" model="ir.rule">
-            <field name="name">Teacher: Manage All Timetables</field>
+            <field name="name">Teacher: Read Own Teaching Timetable and Holidays</field>
             <field name="model_id" ref="model_school_timetable"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">['|', ('is_holiday', '=', True), ('teacher_id.user_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
             <field name="perm_read" eval="1"/>
             <field name="perm_write" eval="1"/>

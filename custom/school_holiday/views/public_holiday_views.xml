@@ -144,6 +144,31 @@
         </field>
     </record>
 
+    <!-- Add a school-wide holiday option to the Master Timetable filters. -->
+    <record id="view_school_timetable_search_public_holidays" model="ir.ui.view">
+        <field name="name">school.timetable.search.public.holidays</field>
+        <field name="model">school.timetable</field>
+        <field name="inherit_id" ref="school_management.view_school_timetable_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_active_term']" position="attributes">
+                <attribute name="string">Current Active Term + Public Holidays</attribute>
+                <attribute name="domain">['|', '&amp;', ('is_holiday', '=', True), ('class_id', '=', False), ('term_id.state', '=', 'active')]</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='filter_mon_fri']" position="attributes">
+                <attribute name="string">Weekdays + School-wide Holidays</attribute>
+                <attribute name="domain">['|', ('day_of_week', 'in', ('0', '1', '2', '3', '4')), '&amp;', ('is_holiday', '=', True), ('class_id', '=', False)]</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='filter_my_teaching']" position="attributes">
+                <attribute name="domain">['|', '&amp;', ('is_holiday', '=', True), ('class_id', '=', False), ('teacher_id.user_id', '=', uid)]</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='filter_holidays']" position="after">
+                <filter name="filter_imported_public_holidays"
+                        string="Public / School-wide Holidays"
+                        domain="[('is_holiday', '=', True), ('class_id', '=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- ACTION -->
     <record id="action_school_public_holiday" model="ir.actions.act_window">
         <field name="name">Public Holidays</field>
@@ -158,6 +183,53 @@
                 Manage public holidays and automatically integrate them with study timetable schedules.
             </p>
         </field>
+    </record>
+
+    <!-- Read-only yearly calendar opened from the standard Time Off app. -->
+    <record id="view_school_public_holiday_timeoff_calendar" model="ir.ui.view">
+        <field name="name">school.public.holiday.timeoff.calendar</field>
+        <field name="model">school.public.holiday</field>
+        <field name="arch" type="xml">
+            <calendar string="Public Holiday Calendar"
+                      date_start="date"
+                      date_stop="end_date"
+                      color="holiday_type"
+                      mode="year"
+                      scales="month,year"
+                      create="false"
+                      edit="false"
+                      delete="false">
+                <field name="name"/>
+                <field name="holiday_type" filters="1"/>
+                <field name="date"/>
+                <field name="end_date"/>
+                <field name="duration"/>
+                <field name="description"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="action_school_public_holiday_timeoff" model="ir.actions.act_window">
+        <field name="name">Public Holidays</field>
+        <field name="res_model">school.public.holiday</field>
+        <field name="view_mode">calendar,list</field>
+        <field name="domain">[('active', '=', True)]</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="search_view_id" ref="view_school_public_holiday_search"/>
+    </record>
+
+    <record id="action_school_public_holiday_timeoff_calendar_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">calendar</field>
+        <field name="view_id" ref="view_school_public_holiday_timeoff_calendar"/>
+        <field name="act_window_id" ref="action_school_public_holiday_timeoff"/>
+    </record>
+
+    <record id="action_school_public_holiday_timeoff_list_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_school_public_holiday_list"/>
+        <field name="act_window_id" ref="action_school_public_holiday_timeoff"/>
     </record>
 
 </odoo>

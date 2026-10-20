@@ -143,62 +143,46 @@ class SchoolHolidayTimetableService(models.AbstractModel):
 
     @api.model
     def ensure_holiday_timetable_sessions(self, dates, holiday_name=None, company_id=None, term_id=None):
-        """Create or ensure school.timetable records with is_holiday=True exist for the calendar."""
+        """Create one multi-day timetable event for each continuous holiday range."""
         Timetable = self.env['school.timetable']
         user_tz = self._get_tz(company_id=company_id)
         requested_term = self.env['school.term'].browse(term_id).exists() if term_id else False
 
-        for d in dates:
-            term = requested_term
-            # Check if holiday session already exists on this date
-            day_min_dt = datetime.combine(d, time.min) - timedelta(days=1)
-            day_max_dt = datetime.combine(d, time.max) + timedelta(days=1)
+        # Public holiday imports sometimes contain one row per day. Collapse
+        # consecutive dates with the same name into one calendar event.
+        unique_dates = sorted(set(dates))
+        date_groups = []
+        for day in unique_dates:
+            if not date_groups or day != date_groups[-1][-1] + timedelta(days=1):
+                date_groups.append([day])
+            else:
+                date_groups[-1].append(day)
+
+        for group in date_groups:
+            first_day, last_day = group[0], group[-1]
+            term = requested_term or self.env['school.term'].search([
+                ('date_start', '<=', first_day), ('date_end', '>=', first_day), ('state', '=', 'active'),
+            ], limit=1)
+            min_dt = datetime.combine(first_day, time.min) - timedelta(days=1)
+            max_dt = datetime.combine(last_day, time.max) + timedelta(days=1)
             search_domain = [
-                ('is_holiday', '=', True),
-                ('active', '=', True),
-                ('start_datetime', '>=', day_min_dt),
-                ('start_datetime', '<=', day_max_dt),
+                ('is_holiday', '=', True), ('active', '=', True),
+                ('start_datetime', '>=', min_dt), ('start_datetime', '<=', max_dt),
             ]
             if company_id and 'company_id' in Timetable._fields:
                 search_domain.append(('company_id', '=', company_id))
-            if term:
-                search_domain.append(('term_id', '=', term.id))
 
-            existing = [
-                t for t in Timetable.search(search_domain)
-                if t._get_session_calendar_date() == d
-            ]
-            if existing:
-                continue
+            title = holiday_name or _('School Public Holiday')
+            existing = Timetable.search(search_domain, order='start_datetime, id')
+            # Imported holiday sources often use slightly different names for
+            # the same date (for example, a country suffix or year). Keep one
+            # calendar event for a date range and update its title on sync.
+            matching = existing.filtered(
+                lambda record: record._get_session_calendar_date() in group
+            )
 
-            # Holiday records created during import may not have been linked
-            # to a draft term. Reuse an otherwise global school-wide holiday
-            # row when it is safe to associate it with this term.
-            if term:
-                unassigned_domain = [
-                    ('is_holiday', '=', True), ('active', '=', True),
-                    ('term_id', '=', False), ('class_id', '=', False),
-                    ('start_datetime', '>=', day_min_dt),
-                    ('start_datetime', '<=', day_max_dt),
-                ]
-                if company_id and 'company_id' in Timetable._fields:
-                    unassigned_domain.append(('company_id', '=', company_id))
-                unassigned = [
-                    t for t in Timetable.search(unassigned_domain)
-                    if t._get_session_calendar_date() == d
-                ]
-                if unassigned:
-                    first_mon = term.date_start - timedelta(days=term.date_start.weekday()) if term.date_start else d - timedelta(days=d.weekday())
-                    unassigned[0].write({
-                        'term_id': term.id,
-                        'week_number': (d - first_mon).days // 7 + 1,
-                        'name': holiday_name or unassigned[0].holiday_name or unassigned[0].name,
-                        'holiday_name': holiday_name or unassigned[0].holiday_name or unassigned[0].name,
-                    })
-                    continue
-
-            naive_start = datetime.combine(d, time(7, 30, 0))
-            naive_end = datetime.combine(d, time(17, 0, 0))
+            naive_start = datetime.combine(first_day, time(7, 30, 0))
+            naive_end = datetime.combine(last_day, time(17, 0, 0))
             try:
                 start_dt = user_tz.localize(naive_start).astimezone(pytz.utc).replace(tzinfo=None)
                 end_dt = user_tz.localize(naive_end).astimezone(pytz.utc).replace(tzinfo=None)
@@ -206,24 +190,14 @@ class SchoolHolidayTimetableService(models.AbstractModel):
                 start_dt = naive_start
                 end_dt = naive_end
 
-            # Use the requested planning term, including draft terms. Without
-            # one, retain the historic behavior of finding the active term.
-            if not term:
-                term = self.env['school.term'].search([
-                    ('date_start', '<=', d),
-                    ('date_end', '>=', d),
-                    ('state', '=', 'active'),
-                ], limit=1)
             week_num = False
             if term and term.date_start:
                 first_mon = term.date_start - timedelta(days=term.date_start.weekday())
-                week_num = (d - first_mon).days // 7 + 1
-
-            h_name = holiday_name or _("School Public Holiday")
+                week_num = (first_day - first_mon).days // 7 + 1
 
             vals = {
-                'name': h_name,
-                'holiday_name': h_name,
+                'name': title,
+                'holiday_name': title,
                 'is_holiday': True,
                 'schedule_status': 'holiday',
                 'class_id': False,
@@ -232,13 +206,19 @@ class SchoolHolidayTimetableService(models.AbstractModel):
                 'start_time': 7.5,
                 'end_time': 17.0,
                 'period': 'custom',
-                'day_of_week': str(d.weekday()),
-                'week_number': week_num or d.isocalendar()[1],
+                'day_of_week': str(first_day.weekday()),
+                'week_number': week_num or first_day.isocalendar()[1],
                 'term_id': term.id if term else False,
             }
             if company_id and 'company_id' in Timetable._fields:
                 vals['company_id'] = company_id
-            Timetable.create(vals)
+
+            if matching:
+                primary = matching[:1]
+                primary.write(vals)
+                (matching - primary).unlink()
+            else:
+                Timetable.create(vals)
 
     @api.model
     def ensure_public_holidays_for_term(self, term):
@@ -251,27 +231,41 @@ class SchoolHolidayTimetableService(models.AbstractModel):
         holidays = self.env['school.public.holiday'].search([
             ('active', '=', True),
             ('company_id', '=', company_id),
-            ('date', '<=', term.date_end),
-            '|',
-            '&', ('end_date', '=', False), ('date', '>=', term.date_start),
-            '&', ('end_date', '!=', False), ('end_date', '>=', term.date_start),
         ])
         before = self.env['school.timetable'].search_count([
             ('term_id', '=', term.id),
             ('is_holiday', '=', True),
             ('active', '=', True),
         ])
+        # Combine all imported holiday rows by date, not just by exact name.
+        # Sources often label the same holiday differently, which previously
+        # produced multiple overlapping all-day timetable events.
+        names_by_date = {}
         for holiday in holidays:
-            dates = [
-                day for day in holiday.get_holiday_dates()
-                if term.date_start <= day <= term.date_end
-            ]
+            for day in holiday.get_holiday_dates():
+                names_by_date.setdefault(day, set()).add(holiday.name.strip())
+
+        # Make a separate calendar event for each continuous run with the same
+        # set of holiday names. This preserves the total duration while joining
+        # duplicate imports into one readable title.
+        groups = []
+        for day in sorted(names_by_date):
+            names = tuple(sorted(name for name in names_by_date[day] if name))
+            if groups and day == groups[-1][-1][0] + timedelta(days=1) and names == groups[-1][0]:
+                groups[-1].append((day, names))
+            else:
+                groups.append([names, (day, names)])
+
+        for group in groups:
+            names = group[0]
+            dates = [entry[0] for entry in group[1:]]
             if dates:
                 self.ensure_holiday_timetable_sessions(
-                    dates,
-                    holiday_name=holiday.name,
+                    dates, holiday_name=' / '.join(names) or _('School Public Holiday'),
+                    # Synchronize the company-wide holiday calendar. Choosing
+                    # the term per date lets duplicates left by older terms be
+                    # consolidated even when the currently open term differs.
                     company_id=company_id,
-                    term_id=term.id,
                 )
         after = self.env['school.timetable'].search_count([
             ('term_id', '=', term.id),

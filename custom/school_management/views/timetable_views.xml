@@ -301,7 +301,8 @@
                         domain="['|', ('class_id.student_ids.user_id', '=', uid), ('class_id.teacher_id.user_id', '=', uid)]"/>
                 <filter name="filter_my_schedule" string="My Schedule &amp; Class"
                         domain="['|', ('is_holiday', '=', True), '|', '|', '|', '|', ('teacher_id.user_id', '=', uid), ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), ('class_id.teacher_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
-                <filter name="filter_my_teaching" string="My Teaching Schedule" domain="[('teacher_id.user_id', '=', uid)]"/>
+                <filter name="filter_my_teaching" string="My Teaching Schedule"
+                        domain="['|', ('is_holiday', '=', True), ('teacher_id.user_id', '=', uid)]"/>
                 <filter name="filter_my_timetable" string="My Study Schedule"
                         domain="['|', ('is_holiday', '=', True), '|', '|', ('student_ids.user_id', '=', uid), ('student_id.user_id', '=', uid), '&amp;', ('class_id.student_ids.user_id', '=', uid), ('student_id', '=', False)]"/>
                 <separator/>

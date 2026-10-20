@@ -601,7 +601,7 @@ class SchoolTimetable(models.Model):
             elif not rec.student_ids:
                 rec.student_ids = False
 
-    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'room', 'name', 'is_holiday', 'holiday_name', 'is_exam', 'exam_id.name')
+    @api.depends('class_id.name', 'student_id.name', 'subject_id.name', 'subject_ids.name', 'day_of_week', 'start_time', 'end_time', 'start_datetime', 'end_datetime', 'room', 'name', 'is_holiday', 'holiday_name', 'is_exam', 'exam_id.name')
     def _compute_display_name(self):
         days = dict(DAY_SELECTION)
         for rec in self:
@@ -613,7 +613,25 @@ class SchoolTimetable(models.Model):
             room_str = f" [{rec.room}]" if rec.room else ""
             if rec.is_holiday:
                 h_title = rec.holiday_name or rec.name or _("Holiday / No Class")
-                rec.display_name = f"Holiday: {h_title}{target_str}"
+                local_start = rec._utc_to_local(rec.start_datetime) if rec.start_datetime else False
+                local_end = rec._utc_to_local(rec.end_datetime) if rec.end_datetime else local_start
+                if local_start and local_end:
+                    start_date = local_start.date()
+                    end_date = local_end.date()
+                    duration = max(1, (end_date - start_date).days + 1)
+                    if duration > 1 and start_date.month == end_date.month and start_date.year == end_date.year:
+                        date_label = f"{start_date.day}–{end_date.day} {end_date.strftime('%b %Y')}"
+                    elif duration > 1 and start_date.year == end_date.year:
+                        date_label = f"{start_date.strftime('%d %b')}–{end_date.strftime('%d %b %Y')}"
+                    elif duration > 1:
+                        date_label = f"{start_date.strftime('%d %b %Y')}–{end_date.strftime('%d %b %Y')}"
+                    else:
+                        date_label = start_date.strftime('%d %b %Y')
+                    duration_label = _("day") if duration == 1 else _("days")
+                    period_label = f"{date_label} · {duration} {duration_label}"
+                    rec.display_name = f"Holiday: {h_title} ({period_label})"
+                else:
+                    rec.display_name = f"Holiday: {h_title}{target_str}"
                 continue
             if rec.is_exam or rec.exam_id:
                 e_title = rec.exam_id.name or rec.name or _("Exam")
@@ -1643,6 +1661,11 @@ class SchoolTimetable(models.Model):
             ], limit=1)
         if not active_term:
             active_term = self.env['school.term'].search([], order='date_start desc', limit=1)
+
+        # Ensure imported public holidays are represented in the active term's
+        # calendar before rendering the current schedule.
+        if active_term and 'school.holiday.timetable.service' in self.env.registry.models:
+            self.env['school.holiday.timetable.service'].sudo().ensure_public_holidays_for_term(active_term)
 
         ctx = {
             'search_default_filter_mon_fri': 1,

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Retire the Time Off app's school-specific menu entries. The records
+         themselves remain in school_management and retain all existing data. -->
+    <record id="school_holiday.menu_time_off_school_permission_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_mine" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_all" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_student" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_teacher" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_pending" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="school_holiday.menu_time_off_school_permission_approved" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <menuitem id="menu_school_permission_root"
+              name="School Permission"
+              sequence="23"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"/>
+
+    <menuitem id="menu_school_permission_mine"
+              name="My Requests"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission_mine"
+              sequence="5"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"/>
+    <menuitem id="menu_school_permission_all"
+              name="All Requests"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission"
+              sequence="10"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+    <menuitem id="menu_school_permission_students"
+              name="Student Requests"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission_student"
+              sequence="15"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"/>
+    <menuitem id="menu_school_permission_teachers"
+              name="Teacher Requests"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission_teacher"
+              sequence="20"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+    <menuitem id="menu_school_permission_pending"
+              name="Pending Approval"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission_pending"
+              sequence="25"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+    <menuitem id="menu_school_permission_approved"
+              name="Approved Permissions"
+              parent="menu_school_permission_root"
+              action="school_management.action_school_permission_approved"
+              sequence="30"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"/>
+</odoo>

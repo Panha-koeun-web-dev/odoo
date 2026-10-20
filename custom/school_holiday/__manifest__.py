@@ -22,6 +22,7 @@ Features:
     'depends': [
         'base',
         'web',
+        'hr_holidays',
         'school_management',
     ],
     'data': [

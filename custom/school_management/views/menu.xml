@@ -2,7 +2,6 @@
     <!-- Root Menu -->
     <menuitem id="menu_school_root"
               name="School"
-              web_icon="school_management,static/description/icon.png"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="20"/>
 
@@ -42,13 +41,6 @@
         <field name="sequence">20</field>
         <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
     </record>
-    <record id="menu_school_student_permission" model="ir.ui.menu">
-        <field name="name">Student Permissions</field>
-        <field name="parent_id" ref="menu_school_student_parent"/>
-        <field name="action" ref="action_school_permission_student"/>
-        <field name="sequence">25</field>
-        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
-    </record>
     <menuitem id="menu_school_student_export_xlsx"
               name="Export Students (XLSX)"
               parent="menu_school_student_parent"
@@ -80,12 +72,6 @@
               action="action_school_teaching_assignment"
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
-    <menuitem id="menu_school_teacher_permissions"
-              name="Teacher Permissions &amp; Leaves"
-              parent="menu_school_teacher_parent"
-              action="action_school_permission_teacher"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="25"/>
 
     <!-- ================= 4. Schedules & Timetable ================= -->
     <menuitem id="menu_school_schedule_root"
@@ -199,44 +185,6 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="30"/>
 
-    <!-- ================= 7. Permission (Primary Function Page) ================= -->
-    <menuitem id="menu_school_permission_root"
-              name="Permission"
-              parent="menu_school_root"
-              action="action_school_permission"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="45"/>
-    <menuitem id="menu_school_permission_all"
-              name="All Requests"
-              parent="menu_school_permission_root"
-              action="action_school_permission"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="10"/>
-    <menuitem id="menu_school_permission_student"
-              name="Student Requests"
-              parent="menu_school_permission_root"
-              action="action_school_permission_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="15"/>
-    <menuitem id="menu_school_permission_teacher"
-              name="Teacher Requests"
-              parent="menu_school_permission_root"
-              action="action_school_permission_teacher"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="20"/>
-    <menuitem id="menu_school_permission_pending"
-              name="Pending Approval"
-              parent="menu_school_permission_root"
-              action="action_school_permission_pending"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="25"/>
-    <menuitem id="menu_school_permission_approved"
-              name="Approved Permissions"
-              parent="menu_school_permission_root"
-              action="action_school_permission_approved"
-              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
-              sequence="30"/>
-
     <!-- ================= 8. Attendance ================= -->
     <menuitem id="menu_school_attendance_parent"
               name="Attendance"
@@ -249,12 +197,6 @@
               action="action_attendance"
               groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
               sequence="10"/>
-    <menuitem id="menu_school_attendance_permission"
-              name="Student Permissions"
-              parent="menu_school_attendance_parent"
-              action="action_school_permission_student"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
-              sequence="15"/>
     <menuitem id="menu_school_attendance_export_xlsx"
               name="Export Attendance (XLSX)"
               parent="menu_school_attendance_parent"

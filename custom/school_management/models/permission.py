@@ -30,18 +30,21 @@ class SchoolPermission(models.Model):
 
     @api.model
     def _default_applicant_type(self):
+        user = self.env.user
+        if user.has_group('school_management.group_school_admin'):
+            return self.env.context.get('default_applicant_type') or 'student'
+        if user.has_group('school_management.group_school_teacher'):
+            return 'teacher'
+        if user.has_group('school_management.group_school_student'):
+            return 'student'
         if self.env.context.get('default_applicant_type'):
             return self.env.context.get('default_applicant_type')
-        user = self.env.user
-        if user.has_group('school_management.group_school_teacher') and not user.has_group('school_management.group_school_admin'):
-            return 'teacher'
         return 'student'
 
     applicant_type = fields.Selection([
         ('student', 'Student'),
         ('teacher', 'Teacher'),
     ], string='Applicant Type', required=True, default=_default_applicant_type, tracking=True)
-
     @api.model
     def _default_student_id(self):
         if self.env.context.get('default_student_id'):
@@ -448,15 +451,15 @@ class SchoolPermission(models.Model):
                 vals['approval_date'] = False
                 vals['rejection_reason'] = False
 
-            # If user is a teacher only creating a teacher request, enforce own teacher_id and draft state
+            # Teachers can only submit requests for themselves as teachers.
             if is_teacher and not is_admin:
-                if vals.get('applicant_type') == 'teacher':
-                    if my_teacher:
-                        vals['teacher_id'] = my_teacher.id
-                    vals['state'] = 'draft'
-                    vals['approved_by'] = False
-                    vals['approval_date'] = False
-                    vals['rejection_reason'] = False
+                vals['applicant_type'] = 'teacher'
+                if my_teacher:
+                    vals['teacher_id'] = my_teacher.id
+                vals['state'] = 'draft'
+                vals['approved_by'] = False
+                vals['approval_date'] = False
+                vals['rejection_reason'] = False
 
         records = super().create(vals_list)
         for rec in records:
@@ -477,6 +480,10 @@ class SchoolPermission(models.Model):
 
         for rec in self:
             if is_student_only:
+                vals['applicant_type'] = 'student'
+                my_student = self.env['school.student'].search([('user_id', '=', self.env.uid)], limit=1)
+                if my_student:
+                    vals['student_id'] = my_student.id
                 if rec.state != 'draft' and 'state' in vals and vals['state'] not in ('draft', 'cancel'):
                     raise UserError(_("Students can only modify or cancel pending requests."))
                 if 'state' in vals and vals['state'] in ('approved', 'rejected'):
@@ -486,10 +493,16 @@ class SchoolPermission(models.Model):
                     vals.pop('approval_date', None)
 
             if is_teacher_only and rec.applicant_type == 'teacher':
+                vals['applicant_type'] = 'teacher'
+                my_teacher = self.env['school.teacher'].search([('user_id', '=', self.env.uid)], limit=1)
+                if my_teacher:
+                    vals['teacher_id'] = my_teacher.id
                 if 'state' in vals and vals['state'] in ('approved', 'rejected'):
                     raise UserError(_("Teacher permission requests must be approved or rejected by an Administrator."))
                 if rec.state != 'draft' and 'state' in vals and vals['state'] not in ('draft', 'cancel'):
                     raise UserError(_("You can only modify or cancel pending permission requests."))
+            elif is_teacher_only and 'applicant_type' in vals:
+                vals.pop('applicant_type', None)
 
         return super().write(vals)
 

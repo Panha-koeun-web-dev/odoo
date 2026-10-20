@@ -6,18 +6,41 @@
         id="menu_school_holiday_root"
         name="School Holidays"
         sequence="22"
-        web_icon="school_holiday,static/description/icon.png"
-        groups="school_holiday.group_school_holiday_user"
+        groups="school_holiday.group_school_holiday_user,school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
     />
 
     <menuitem
         id="menu_school_public_holiday"
         name="Public Holidays"
         parent="menu_school_holiday_root"
-        action="action_school_public_holiday"
+        action="action_school_public_holiday_timeoff"
         sequence="10"
-        groups="school_holiday.group_school_holiday_user"
+        groups="school_holiday.group_school_holiday_user,school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
     />
+
+    <menuitem
+        id="menu_school_public_holiday_manage"
+        name="Manage Public Holidays"
+        parent="menu_school_holiday_root"
+        action="action_school_public_holiday"
+        sequence="15"
+        groups="school_holiday.group_school_holiday_manager,school_management.group_school_admin"
+    />
+
+    <menuitem
+        id="menu_time_off_public_holidays"
+        name="Public Holidays"
+        parent="hr_holidays.menu_hr_holidays_root"
+        action="action_school_public_holiday_timeoff"
+        sequence="12"
+        groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+    />
+
+    <!-- Keep the legacy menu record for upgrades, but retire the duplicate
+         entry so the public holiday calendar lives under School Holidays. -->
+    <record id="menu_time_off_public_holidays" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 
     <menuitem
         id="menu_import_school_holiday"

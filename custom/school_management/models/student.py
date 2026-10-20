@@ -298,7 +298,7 @@ class SchoolStudent(models.Model):
 
 
 
-# _compute_grade_stats
+#compute_grade_stats
 
     @api.depends(
         'grade_ids',

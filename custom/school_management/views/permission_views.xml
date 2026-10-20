@@ -142,7 +142,10 @@
 
                     <group>
                         <group string="Applicant Details">
-                            <field name="applicant_type" widget="radio" options="{'horizontal': true}" readonly="state != 'draft'"/>
+                            <field name="applicant_type" readonly="state != 'draft'"
+                                   groups="school_management.group_school_admin"/>
+                            <field name="applicant_type" readonly="1"
+                                   groups="school_management.group_school_student,!school_management.group_school_admin"/>
                             <field name="student_id" options="{'no_create': True}"
                                    invisible="applicant_type != 'student'"
                                    required="applicant_type == 'student'"
@@ -303,6 +306,15 @@
                 Teachers can request permission to administrators.
             </p>
         </field>
+    </record>
+
+    <!-- Personal requests are opened from the dedicated School Permission app. -->
+    <record id="action_school_permission_mine" model="ir.actions.act_window">
+        <field name="name">My School Permission Requests</field>
+        <field name="res_model">school.permission</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
+        <field name="search_view_id" ref="view_school_permission_search"/>
+        <field name="context">{'search_default_my_permissions': 1}</field>
     </record>
 
     <!-- Action 2: Student Permissions -->
