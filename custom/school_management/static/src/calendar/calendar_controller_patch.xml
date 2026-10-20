@@ -9,6 +9,9 @@
                 <i class="fa fa-calendar-check-o me-1"/>Choose Week
             </button>
         </xpath>
+        <xpath expr="//button[contains(@class, 'o_calendar_button_today')]" position="attributes">
+            <attribute name="t-on-click.stop">isSchoolTimetable ? () =&gt; this.onSchoolTimetableTodayClick() : () =&gt; this.setDate('today')</attribute>
+        </xpath>
         <xpath expr="//h5[contains(@class, 'd-inline-flex')]" position="replace">
             <h5 class="d-inline-flex ps-lg-2 ps-print-0 mb-0 align-items-center"
                 t-att-class="isSchoolTimetable ? 'o_school_calendar_title_wrap' : ''">

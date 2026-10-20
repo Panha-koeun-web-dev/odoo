@@ -21,4 +21,29 @@ patch(CalendarController.prototype, {
             });
         }
     },
+
+    async onSchoolTimetableTodayClick() {
+        await this.setDate("today");
+        if (!this.isSchoolTimetable || !this.env.searchModel) {
+            return;
+        }
+
+        // Week filters remain selected when navigating around the calendar. Clear
+        // those stale filters so they cannot hide the week we just navigated to.
+        const searchModel = this.env.searchModel;
+        const activeWeekFilters = searchModel.query
+            .map((queryItem) => searchModel.searchItems[queryItem.searchItemId])
+            .filter((item) => item?.type === "filter" && /^filter_week_\d+$/.test(item.name));
+        for (const filter of activeWeekFilters) {
+            searchModel.toggleSearchItem(filter.id);
+        }
+
+        const currentWeek = this.model.rangeStart.weekNumber;
+        const currentWeekFilter = Object.values(searchModel.searchItems).find(
+            (item) => item.type === "filter" && item.name === `filter_week_${currentWeek}`
+        );
+        if (currentWeekFilter && !searchModel.query.some((item) => item.searchItemId === currentWeekFilter.id)) {
+            searchModel.toggleSearchItem(currentWeekFilter.id);
+        }
+    },
 });

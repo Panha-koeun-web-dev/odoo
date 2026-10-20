@@ -209,6 +209,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 s_time, e_time = PERIOD_PRESETS.get(p_key, (8.0, 9.5))
                 matched_s = next((k for k, _ in START_TIME_SELECTION if abs(s_time - float(k)) < 0.02), False)
                 lines.append((0, 0, {
+                    'class_id': class_id.id if class_id else False,
                     'day_of_week': day_code,
                     'period': p_key,
                     'specific_start_time': matched_s,
@@ -219,6 +220,19 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     'room': room,
                     'notes': '',
                 }))
+        return lines
+
+    @api.model
+    def _build_curriculum_mon_fri_lines(self, class_id, period_keys=None):
+        """Build visible session rows already populated from the class curriculum."""
+        lines = self._build_empty_mon_fri_lines(class_id, period_keys=period_keys)
+        pool = self._get_class_curriculum_pool(class_id)
+        if not pool:
+            return lines
+        for index, (_command, _zero, vals) in enumerate(lines):
+            subject_id, teacher_id = pool[index % len(pool)]
+            vals['subject_id'] = subject_id
+            vals['teacher_id'] = teacher_id or (class_id.teacher_id.id if class_id.teacher_id else False)
         return lines
 
     def _parse_custom_weeks(self, input_str):
@@ -330,7 +344,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         primary_cls_id = res.get('class_id') or (res.get('class_ids')[0][2][0] if res.get('class_ids') and len(res.get('class_ids')[0]) > 2 and res.get('class_ids')[0][2] else False)
         if primary_cls_id and not res.get('line_ids'):
             cls = self.env['school.class'].browse(primary_cls_id)
-            res['line_ids'] = self._build_empty_mon_fri_lines(cls)
+            res['line_ids'] = self._build_curriculum_mon_fri_lines(cls)
 
         return res
 
@@ -349,6 +363,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
             # Auto-calculate and select the correct week based on term dates
             self._auto_select_week()
+            self._load_or_build_week_schedule()
 
     def _auto_select_week(self):
         """Automatically select the correct week based on the selected academic term's dates.
@@ -452,7 +467,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                 '2_morning': ['p1', 'p2'],
             }
             period_keys = preset_map.get(self.mon_fri_periods, ['p_m1', 'p_m2', 'p_a1', 'p_a2'])
-            self.line_ids = [(5, 0, 0)] + self._build_empty_mon_fri_lines(target_cls, period_keys=period_keys)
+            self.line_ids = [(5, 0, 0)] + self._build_curriculum_mon_fri_lines(target_cls, period_keys=period_keys)
 
     @api.onchange('single_period')
     def _onchange_single_period(self):
@@ -492,6 +507,58 @@ class SchoolTermScheduleWizard(models.TransientModel):
             'context': dict(self.env.context),
         }
 
+    def _create_timetable_sessions_with_teacher_fallback(self, vals_list):
+        """Create sessions and retry teacher-only conflicts with subject staff."""
+        self.ensure_one()
+        Timetable = self.env['school.timetable']
+        try:
+            with self.env.cr.savepoint():
+                return Timetable.create(vals_list)
+        except ValidationError as batch_error:
+            if "Teacher Conflict Detected" not in str(batch_error):
+                raise
+
+        created = Timetable.browse()
+        for vals in vals_list:
+            try:
+                with self.env.cr.savepoint():
+                    created |= Timetable.create(vals)
+                continue
+            except ValidationError as session_error:
+                if "Teacher Conflict Detected" not in str(session_error):
+                    raise
+
+            subject = self.env['school.subject'].browse(vals.get('subject_id'))
+            assignment_teachers = self.env['school.teaching.assignment'].search([
+                ('class_id', '=', vals.get('class_id')),
+                ('subject_id', '=', subject.id),
+                ('active', '=', True),
+            ]).mapped('teacher_id')
+            alternatives = (assignment_teachers | subject.teacher_ids).filtered(
+                lambda teacher: teacher.id != vals.get('teacher_id') and teacher.active
+            )
+            created_with_alternative = False
+            for teacher in alternatives:
+                retry_vals = dict(vals, teacher_id=teacher.id)
+                try:
+                    with self.env.cr.savepoint():
+                        created |= Timetable.create(retry_vals)
+                    created_with_alternative = True
+                    break
+                except ValidationError as retry_error:
+                    if "Teacher Conflict Detected" not in str(retry_error):
+                        raise
+            if not created_with_alternative:
+                raise UserError(_(
+                    "No conflict-free teacher is available for %(subject)s on %(day)s at %(start)s. "
+                    "Assign another teacher to this subject or free the existing teacher's slot."
+                ) % {
+                    'subject': subject.display_name or _('this subject'),
+                    'day': dict(DAY_SELECTION).get(vals.get('day_of_week'), vals.get('day_of_week')),
+                    'start': Timetable._format_time(vals.get('start_time')),
+                }) from session_error
+        return created
+
     # -------------------------------------------------------------------------
     # QUICK ACTIONS
     # -------------------------------------------------------------------------
@@ -506,9 +573,12 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         pool = []
         for asg in assignments:
-            slots_needed = max(1, int(round(asg.weekly_hours or 2.0)))
+            # weekly_sessions is the actual timetable target. weekly_hours is a
+            # duration estimate and can be fractional, so it must not decide
+            # how many separate class periods are generated.
+            slots_needed = max(1, asg.weekly_sessions or 1)
             for _slot_idx in range(slots_needed):
-                pool.append((asg.subject_id.id, asg.teacher_id.id if asg.teacher_id else (cls.teacher_id.id if cls.teacher_id else False)))
+                pool.append((asg.subject_id.id, asg.teacher_id.id))
 
         if not pool and cls.subject_ids:
             for sub in cls.subject_ids:
@@ -522,7 +592,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         return self.action_populate_empty_mon_fri()
 
     def action_populate_empty_mon_fri(self):
-        """Prepare Monday to Friday standard slots (8h daily) and auto-fill weekly schedule."""
+        """Build the weekly schedule from the selected class curriculum."""
         self.ensure_one()
         preset_map = {
             '8h_standard': ['p_m1', 'p_m2', 'p_a1', 'p_a2'],
@@ -532,18 +602,278 @@ class SchoolTermScheduleWizard(models.TransientModel):
         }
         period_keys = preset_map.get(self.mon_fri_periods, ['p_m1', 'p_m2', 'p_a1', 'p_a2'])
         target_cls = self.class_id or (self.class_ids[0] if self.class_ids else False)
-        pool = self._get_class_curriculum_pool(target_cls)
-        pool_len = len(pool) if pool else 0
-        empty_slots = self._build_empty_mon_fri_lines(target_cls, period_keys=period_keys)
+        if not target_cls:
+            raise UserError(_("Please select a target class before generating its schedule."))
+        target_classes = self.class_ids or target_cls
 
+        selected_days = [
+            (code, enabled) for code, enabled in (
+                ('0', self.include_mon), ('1', self.include_tue), ('2', self.include_wed),
+                ('3', self.include_thu), ('4', self.include_fri),
+            ) if enabled
+        ]
+        if not selected_days:
+            raise UserError(_("Select at least one weekday to generate the schedule."))
+
+        pool = self._get_class_curriculum_pool(target_cls)
+        if not pool:
+            raise UserError(_("No active teaching assignments or class subjects were found for '%s'.") % target_cls.name)
+        if not any(teacher_id or target_cls.teacher_id for _subject_id, teacher_id in pool):
+            raise UserError(_("Assign a teacher to the class or its teaching assignments before generating the schedule for '%s'.") % target_cls.name)
+
+        # Match teacher availability against the same term/week/date rules used
+        # by school.timetable's conflict constraint. This catches clashes with
+        # sessions already saved for other classes and overlapping terms.
+        Timetable = self.env['school.timetable']
+        PublicHoliday = self.env.get('school.public.holiday')
+
+        def _is_public_holiday(check_date):
+            return bool(PublicHoliday and PublicHoliday.is_holiday(
+                check_date, company_id=self.env.company.id
+            ))
+        recorded_holidays = Timetable.search([
+            ('is_holiday', '=', True), ('active', '=', True),
+        ])
+        recorded_holiday_dates = {
+            holiday_date for holiday in recorded_holidays
+            if (holiday_date := holiday._get_session_calendar_date())
+        }
+
+        def _is_school_holiday(session_date):
+            return bool(
+                session_date in recorded_holiday_dates
+                or _is_public_holiday(session_date)
+            )
+
+        if self.week_apply_mode == 'this_week':
+            weeks_to_check = [int(self.target_week)]
+        elif self.week_apply_mode == 'custom_weeks':
+            weeks_to_check = self._parse_custom_weeks(self.custom_weeks_input)
+        elif self.week_apply_mode == 'selected_weeks':
+            weeks_to_check = [w for w in range(1, 13) if getattr(self, f'apply_w{w}', False)]
+        else:
+            weeks_to_check = list(range(1, (self.term_id.duration_weeks or 12) + 1))
+        if not weeks_to_check:
+            weeks_to_check = [int(self.target_week)]
+
+        term_start = self.term_id.date_start or fields.Date.context_today(self)
+        first_monday = term_start - timedelta(days=term_start.weekday())
+
+        def _session_date(week_no, day_no):
+            if week_no > 20:
+                try:
+                    return date.fromisocalendar(term_start.year, week_no, day_no + 1)
+                except ValueError:
+                    pass
+            return first_monday + timedelta(weeks=week_no - 1, days=day_no)
+
+        assignment_records = self.env['school.teaching.assignment'].search([
+            ('class_id', '=', target_cls.id), ('active', '=', True),
+        ], order='weekly_hours desc, id asc')
+
+        def _available_teacher(subject_id, preferred_teacher_id, day_code, start_time, end_time):
+            subject = self.env['school.subject'].browse(subject_id)
+            choices = [preferred_teacher_id]
+            choices += assignment_records.filtered(lambda a: a.subject_id.id == subject_id).mapped('teacher_id').ids
+            choices += subject.teacher_ids.ids
+            if target_cls.teacher_id:
+                choices.append(target_cls.teacher_id.id)
+            # Keep the curriculum's assigned teacher first, then try another
+            # teacher qualified for the same subject if that teacher is busy.
+            for teacher_id in dict.fromkeys(tid for tid in choices if tid):
+                conflict_found = False
+                for week_no in weeks_to_check:
+                    session_date = _session_date(week_no, int(day_code))
+                    # Holidays are closed days; they do not make a teacher
+                    # unavailable for the recurring slot on other weeks.
+                    if _is_school_holiday(session_date):
+                        continue
+                    probe = Timetable.new({
+                        'term_id': self.term_id.id,
+                        'week_number': week_no,
+                        'class_id': target_cls.id,
+                        'day_of_week': day_code,
+                        'start_time': start_time,
+                        'end_time': end_time,
+                        'start_datetime': Timetable._local_to_utc(session_date, start_time),
+                        'end_datetime': Timetable._local_to_utc(session_date, end_time),
+                        'teacher_id': teacher_id,
+                        'active': True,
+                    })
+                    domain = [
+                        ('active', '=', True), ('is_holiday', '=', False),
+                        ('teacher_id', '=', teacher_id), ('day_of_week', '=', day_code),
+                        ('start_time', '<', end_time), ('end_time', '>', start_time),
+                    ]
+                    for existing in Timetable.search(domain):
+                        if (self.overwrite_existing and existing.term_id == self.term_id
+                                and existing.class_id in target_classes):
+                            continue
+                        if not existing._is_session_finished() and probe._is_term_conflict(existing):
+                            conflict_found = True
+                            break
+                    if conflict_found:
+                        break
+                if not conflict_found:
+                    return teacher_id
+            return False
+
+        def _validate_slot(vals, subject_id, teacher_id):
+            """Run the timetable's normal conflict checks before exposing a slot."""
+            day_no = int(vals['day_of_week'])
+            days = dict(DAY_SELECTION)
+            for week_no in weeks_to_check:
+                session_date = _session_date(week_no, day_no)
+                # Do not validate a normal class session against a day when
+                # classes are prohibited. Applying the schedule skips it too.
+                if _is_school_holiday(session_date):
+                    continue
+                probe = Timetable.new({
+                    'term_id': self.term_id.id,
+                    'week_number': week_no,
+                    'class_id': target_cls.id,
+                    'day_of_week': vals['day_of_week'],
+                    'start_time': vals['start_time'],
+                    'end_time': vals['end_time'],
+                    'start_datetime': Timetable._local_to_utc(session_date, vals['start_time']),
+                    'end_datetime': Timetable._local_to_utc(session_date, vals['end_time']),
+                    'teacher_id': teacher_id,
+                    'subject_id': subject_id,
+                    'room': vals.get('room'),
+                    'active': True,
+                })
+                domain = [
+                    ('active', '=', True), ('is_holiday', '=', False),
+                    ('day_of_week', '=', vals['day_of_week']),
+                    ('start_time', '<', vals['end_time']), ('end_time', '>', vals['start_time']),
+                ]
+                overlapping = [
+                    existing for existing in Timetable.search(domain)
+                    if not (self.overwrite_existing and existing.term_id == self.term_id
+                            and existing.class_id in target_classes)
+                    and not existing._is_session_finished()
+                    and probe._is_term_conflict(existing)
+                ]
+                try:
+                    Timetable._check_holiday_conflict_single(probe, days)
+                    Timetable._check_teacher_conflict_single(probe, overlapping, days)
+                    Timetable._check_class_conflict_single(probe, overlapping, days)
+                    Timetable._check_student_conflict_single(probe, overlapping, days)
+                    Timetable._check_room_conflict_single(probe, overlapping, days)
+                    Timetable._check_subject_conflict_single(probe, overlapping, days)
+                except ValidationError as exc:
+                    # The timetable holiday constraint resolves the calendar
+                    # date using its own timezone/company context. If that
+                    # authoritative check finds a holiday that the preliminary
+                    # date probe missed, omit this occurrence and keep checking
+                    # the remaining weeks for real scheduling conflicts.
+                    holiday_error = any(
+                        marker in str(exc).casefold()
+                        for marker in ('holiday', 'no regular classes are allowed')
+                    )
+                    if holiday_error and self.env.context.get('repair_schedule_conflicts'):
+                        continue
+                    raise UserError(_("Cannot generate a conflict-free schedule. Resolve this slot first:\n%s") % str(exc))
+
+        # Each grid row is a distinct, non-overlapping time slot for this class.
+        # Rotate the curriculum pool across rows and persist the one2many commands
+        # directly so the generated subject/teacher values are visible at once.
+        templates = self._build_empty_mon_fri_lines(target_cls, period_keys=period_keys)
         built_lines = []
-        for idx, (_, _, vals) in enumerate(empty_slots):
-            if pool:
-                sub_id, tch_id = pool[idx % pool_len]
-                vals['subject_id'] = sub_id
-                vals['teacher_id'] = tch_id or (target_cls.teacher_id.id if target_cls and target_cls.teacher_id else False)
+        pool_idx = 0
+        for _cmd, _zero, vals in templates:
+            if vals['day_of_week'] not in {code for code, _enabled in selected_days}:
+                continue
+            sub_id, teacher_id = pool[pool_idx % len(pool)]
+            pool_idx += 1
+            selected_teacher = _available_teacher(
+                sub_id, teacher_id or (target_cls.teacher_id.id if target_cls.teacher_id else False),
+                vals['day_of_week'], vals['start_time'], vals['end_time'],
+            )
+            if not selected_teacher:
+                subject = self.env['school.subject'].browse(sub_id)
+                raise UserError(_(
+                    "No conflict-free teacher is available for %(subject)s on %(day)s, %(start)s-%(end)s. "
+                    "Adjust the existing timetable or assign another teacher to this subject, then generate again."
+                ) % {
+                    'subject': subject.display_name,
+                    'day': dict(DAY_SELECTION).get(vals['day_of_week'], vals['day_of_week']),
+                    'start': Timetable._format_time(vals['start_time']),
+                    'end': Timetable._format_time(vals['end_time']),
+                })
+            vals['subject_id'] = sub_id
+            vals['teacher_id'] = selected_teacher
+            try:
+                _validate_slot(vals, sub_id, selected_teacher)
+            except UserError as initial_error:
+                if not (
+                    self.env.context.get('repair_schedule_conflicts')
+                    and 'Student Schedule Conflict Detected' in str(initial_error)
+                ):
+                    raise
+
+                duration = vals['end_time'] - vals['start_time']
+                repaired = False
+                # Try quarter-hour start times during the same school day.
+                # Keep earlier generated rows fixed and never introduce a new
+                # overlap with them or any persisted timetable session.
+                candidate_step = 0
+                while 8.0 + candidate_step * 0.25 + duration <= 17.5:
+                    candidate_start = round(8.0 + candidate_step * 0.25, 2)
+                    candidate_step += 1
+                    if abs(candidate_start - vals['start_time']) < 0.01:
+                        continue
+                    candidate_end = round(candidate_start + duration, 2)
+                    if any(
+                        line_vals['day_of_week'] == vals['day_of_week']
+                        and line_vals['start_time'] < candidate_end
+                        and line_vals['end_time'] > candidate_start
+                        for _line_cmd, _line_zero, line_vals in built_lines
+                    ):
+                        continue
+
+                    candidate_vals = dict(vals)
+                    candidate_vals.update({
+                        'start_time': candidate_start,
+                        'end_time': candidate_end,
+                        'period': 'custom',
+                        'specific_start_time': next((
+                            key for key, _label in START_TIME_SELECTION
+                            if abs(candidate_start - float(key)) < 0.01
+                        ), False),
+                    })
+                    candidate_teacher = _available_teacher(
+                        sub_id, selected_teacher, vals['day_of_week'],
+                        candidate_start, candidate_end,
+                    )
+                    if not candidate_teacher:
+                        continue
+                    candidate_vals['teacher_id'] = candidate_teacher
+                    try:
+                        _validate_slot(candidate_vals, sub_id, candidate_teacher)
+                    except UserError:
+                        continue
+
+                    vals.update(candidate_vals)
+                    selected_teacher = candidate_teacher
+                    vals['notes'] = (vals.get('notes') + ' | ' if vals.get('notes') else '') + _(
+                        'Moved automatically to avoid a student schedule conflict'
+                    )
+                    repaired = True
+                    break
+
+                if not repaired:
+                    raise UserError(_(
+                        "The student conflict could not be repaired automatically because no free time slot "
+                        "was found for %(day)s. Move a session or update the student's class enrollment.\n\n%(details)s"
+                    ) % {
+                        'day': dict(DAY_SELECTION).get(vals['day_of_week'], vals['day_of_week']),
+                        'details': str(initial_error),
+                    })
             built_lines.append((0, 0, vals))
-        self.line_ids = [(5, 0, 0)] + built_lines
+        if not built_lines:
+            raise UserError(_("No session slots were generated. Check the selected weekdays and period preset."))
+        self.write({'line_ids': [(5, 0, 0)] + built_lines})
         return self._reopen_wizard()
 
     def action_clear_all_lines(self):
@@ -625,6 +955,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         lines = []
         for s in w1_sessions:
             lines.append((0, 0, {
+                'class_id': target_cls.id,
                 'day_of_week': s.day_of_week,
                 'period': s.period,
                 'specific_start_time': s.specific_start_time,
@@ -648,6 +979,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         for day_code in ['1', '2', '3', '4']:
             for m in monday_lines:
                 new_lines.append((0, 0, {
+                    'class_id': m.class_id.id if m.class_id else False,
                     'day_of_week': day_code,
                     'period': m.period,
                     'specific_start_time': m.specific_start_time,
@@ -662,37 +994,8 @@ class SchoolTermScheduleWizard(models.TransientModel):
         return self._reopen_wizard()
 
     def action_prefill_from_class_curriculum(self):
-        self.ensure_one()
-        target_cls = self.class_id or (self.class_ids[0] if self.class_ids else False)
-        if not target_cls:
-            raise UserError(_("Please select a Class first."))
-
-        pool = self._get_class_curriculum_pool(target_cls)
-        if not pool:
-            raise UserError(_("No subjects or teaching assignments found for Class '%s'.") % target_cls.name)
-
-        if not self.line_ids:
-            preset_map = {
-                '8h_standard': ['p_m1', 'p_m2', 'p_a1', 'p_a2'],
-                '4_morning': ['p1', 'p2', 'p3', 'p4'],
-                '6_fullday': ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'],
-                '2_morning': ['p1', 'p2'],
-            }
-            period_keys = preset_map.get(self.mon_fri_periods, ['p_m1', 'p_m2', 'p_a1', 'p_a2'])
-            self.line_ids = [(5, 0, 0)] + self._build_empty_mon_fri_lines(target_cls, period_keys=period_keys)
-
-        pool_idx = 0
-        pool_len = len(pool)
-        for line in self.line_ids:
-            if not line.is_holiday:
-                sub_id, tch_id = pool[pool_idx % pool_len]
-                line.write({
-                    'subject_id': sub_id,
-                    'teacher_id': tch_id or (target_cls.teacher_id.id if target_cls.teacher_id else False),
-                    'room': target_cls.room or '',
-                })
-                pool_idx += 1
-        return self._reopen_wizard()
+        """Keep the curriculum shortcut consistent with the full generator."""
+        return self.action_populate_empty_mon_fri()
 
     def action_load_source_term_sessions(self):
         self.ensure_one()
@@ -716,6 +1019,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
         lines = []
         for s in source_sessions:
             lines.append((0, 0, {
+                'class_id': target_cls.id,
                 'subject_id': s.subject_id.id if s.subject_id else False,
                 'teacher_id': s.teacher_id.id if s.teacher_id else False,
                 'day_of_week': s.day_of_week,
@@ -745,6 +1049,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
 
         Timetable = self.env['school.timetable']
         PublicHoliday = self.env.get('school.public.holiday')
+
+        def _is_public_holiday(check_date):
+            return bool(PublicHoliday and PublicHoliday.is_holiday(
+                check_date, company_id=self.env.company.id
+            ))
 
         # Clean up any orphaned timetable sessions belonging to finished terms or finished classes
         Timetable.action_cleanup_finished_class_schedules()
@@ -814,7 +1123,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     continue
                 is_hol = False
                 if PublicHoliday:
-                    is_hol = bool(PublicHoliday.is_holiday(curr))
+                    is_hol = _is_public_holiday(curr)
                 if not is_hol and curr in existing_holiday_dates:
                     is_hol = True
                 if is_hol:
@@ -853,7 +1162,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                         t_date = _get_target_date(w_num, int(s.day_of_week))
                         is_pub = False
                         if PublicHoliday:
-                            is_pub = bool(PublicHoliday.is_holiday(t_date))
+                            is_pub = _is_public_holiday(t_date)
                         if not is_pub and t_date in existing_holiday_dates:
                             is_pub = True
 
@@ -916,18 +1225,21 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     ))
 
             for target_class in target_classes:
+                class_lines = active_lines.filtered(lambda line: not line.class_id or line.class_id == target_class)
+                if not class_lines:
+                    raise UserError(_("No schedule rows are assigned to '%s'. Generate a schedule for each selected class before applying.") % target_class.name)
                 target_name = target_class.name or ""
                 target_students = [(6, 0, target_class.student_ids.ids)] if target_class.student_ids else False
                 holiday_created_weeks = set()
 
                 for w_num in target_weeks:
-                    for line in active_lines:
+                    for line in class_lines:
                         day_idx = int(line.day_of_week)
                         target_date = _get_target_date(w_num, day_idx)
 
                         is_pub = False
                         if PublicHoliday:
-                            is_pub = bool(PublicHoliday.is_holiday(target_date))
+                            is_pub = _is_public_holiday(target_date)
                         if not is_pub and target_date in existing_holiday_dates:
                             is_pub = True
 
@@ -962,10 +1274,11 @@ class SchoolTermScheduleWizard(models.TransientModel):
                             })
                         else:
                             if is_pub:
-                                # Skip holiday and move to next school day after holiday finishes!
-                                eff_date = _get_next_school_day(target_date)
-                            else:
-                                eff_date = target_date
+                                # Public holidays are closed days. Skip this
+                                # occurrence instead of moving it into another
+                                # weekday's already-planned timetable.
+                                continue
+                            eff_date = target_date
 
                             sub_name = line.subject_id.name or ""
                             custom_title = f"{line.notes} - {target_name}" if line.notes else (f"{sub_name} - {target_name}" if target_name else sub_name)
@@ -1017,7 +1330,7 @@ class SchoolTermScheduleWizard(models.TransientModel):
                     t_date = _get_target_date(w_num, int(self.single_day_of_week))
                     is_pub = False
                     if PublicHoliday:
-                        is_pub = bool(PublicHoliday.is_holiday(t_date))
+                        is_pub = _is_public_holiday(t_date)
                     if not is_pub and t_date in existing_holiday_dates:
                         is_pub = True
 
@@ -1057,7 +1370,16 @@ class SchoolTermScheduleWizard(models.TransientModel):
                         'notes': self.single_notes,
                     })
 
-        created = Timetable.create(vals_list) if vals_list else Timetable.browse()
+        if self.mode == 'create_slots' and not vals_list:
+            raise UserError(_("No schedule rows match the selected target classes. Generate a schedule for each class or select the class the rows belong to."))
+        created = self._create_timetable_sessions_with_teacher_fallback(vals_list) if vals_list else Timetable.browse()
+
+        # Imported public holidays are stored separately from academic terms.
+        # Mirror every applicable holiday into the planned term so the timetable
+        # calendar shows it even when that term is still in draft.
+        HolidayService = self.env.get('school.holiday.timetable.service')
+        if HolidayService:
+            HolidayService.ensure_public_holidays_for_term(self.term_id)
 
         for target_class in target_classes:
             if target_class not in self.term_id.class_ids:
@@ -1087,7 +1409,10 @@ class SchoolTermScheduleWizard(models.TransientModel):
             'type': 'ir.actions.act_window',
             'res_model': 'school.timetable',
             'view_mode': 'calendar,kanban,list,form',
-            'domain': [('term_id', '=', self.term_id.id), ('class_id', 'in', target_classes.ids)],
+            'domain': [
+                ('term_id', '=', self.term_id.id),
+                '|', ('class_id', 'in', target_classes.ids), ('is_holiday', '=', True),
+            ],
             'context': ctx,
         }
 
@@ -1098,6 +1423,7 @@ class SchoolTermScheduleWizardLine(models.TransientModel):
     _order = 'day_of_week, start_time'
 
     wizard_id = fields.Many2one('school.term.schedule.wizard', string='Wizard', ondelete='cascade', required=True)
+    class_id = fields.Many2one('school.class', string='Class', index=True)
     day_of_week = fields.Selection(DAY_SELECTION, string='Day of Week', default='0', required=True)
     period = fields.Selection(PERIOD_SELECTION, string='Period', default='p_m1', required=True)
     specific_start_time = fields.Selection(START_TIME_SELECTION, string='Start Hour')

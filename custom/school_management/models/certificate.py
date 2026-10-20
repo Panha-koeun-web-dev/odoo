@@ -160,7 +160,6 @@ class SchoolCertificate(models.Model):
             and not self.env.is_admin()
             and not self.env.su
         )
-
     def _can_review_print_requests(self):
         """Return True if current user is an admin or teacher capable of reviewing print requests."""
         return (

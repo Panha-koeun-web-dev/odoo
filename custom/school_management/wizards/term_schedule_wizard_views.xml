@@ -123,11 +123,18 @@
                             <span class="fw-bold text-primary"><i class="fa fa-clock-o me-1"/>Study Day Preset:</span>
                             <field name="mon_fri_periods" class="oe_inline fw-bold" style="min-width: 250px;"/>
                             <button name="action_populate_empty_mon_fri"
-                                    string="Auto-Fill Monday to Friday Slots"
+                                    string="Generate Full Weekly Schedule"
                                     type="object"
                                     class="btn btn-sm btn-primary"
                                     icon="fa-th"
-                                    help="Instantly prepares Monday to Friday slots (e.g. 8-hour day: Morning 1:30h + 1h break + 1:30h, Afternoon 1:30h + 1h break + 1:30h) so you can assign subjects and teachers."/>
+                                    help="Creates every selected weekday and period, filling each session with a subject and teacher from the selected class curriculum. The schedule is checked for teacher overlaps before it is saved."/>
+                            <button name="action_populate_empty_mon_fri"
+                                    string="Fix Holiday Conflicts"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-warning"
+                                    icon="fa-calendar-times-o"
+                                    context="{'repair_schedule_conflicts': True}"
+                                    help="Regenerates the weekly schedule, skips holiday occurrences, and moves sessions to a free same-day time when enrolled students are already booked."/>
                             <button name="action_copy_from_week_1"
                                     string="Copy from Week 1"
                                     type="object"
@@ -162,7 +169,7 @@
                         <h6 class="text-primary m-0 fw-bold">
                             <i class="fa fa-list-ol me-2" title="Schedule"/>Weekly Schedule Sessions (Monday - Friday)
                         </h6>
-                        <span class="text-muted small">Assign subjects and teachers for each period slot below.</span>
+                        <span class="text-muted small">Subjects, teachers, times, and rooms are prefilled from the selected class. Review and adjust any session before applying.</span>
                     </div>
                     <!-- Holiday Fast Action Bar -->
                     <div class="d-flex align-items-center justify-content-between p-2 mb-2 border rounded bg-warning-light" style="background-color: #fff9e6; border-color: #ffe58f !important;">
@@ -188,6 +195,7 @@
                     <field name="line_ids">
                         <list editable="bottom" default_order="day_of_week, start_time"
                               decoration-warning="is_holiday">
+                            <field name="class_id" optional="show" options="{'no_create': True}"/>
                             <field name="day_of_week"/>
                             <field name="period"/>
                             <field name="specific_start_time" optional="show"/>
