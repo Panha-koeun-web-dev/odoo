@@ -21,7 +21,7 @@ access_admin_student_year_payment_deadline_wizard,admin.student.year.payment.dea
 access_admin_student_stop_wizard,admin.student.stop.wizard,model_school_student_stop_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_exam_student_schedule_wizard,admin.exam.student.schedule.wizard,model_school_exam_student_schedule_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_exam_select_student_wizard,admin.exam.select.student.wizard,model_school_exam_select_student_wizard,school_management.group_school_admin,1,1,1,1
-access_teacher_student,teacher.student,model_school_student,school_management.group_school_teacher,1,1,0,0
+access_teacher_student,teacher.student,model_school_student,school_management.group_school_teacher,1,0,0,0
 access_teacher_teacher,teacher.teacher,model_school_teacher,school_management.group_school_teacher,1,0,0,0
 access_teacher_class,teacher.class,model_school_class,school_management.group_school_teacher,1,0,0,0
 access_teacher_subject,teacher.subject,model_school_subject,school_management.group_school_teacher,1,0,0,0

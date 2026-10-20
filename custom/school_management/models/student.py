@@ -251,6 +251,43 @@ class SchoolStudent(models.Model):
     def _compute_timetable_count(self):
         return self._compute_timetable_ids()
 
+    @api.model
+    def action_open_my_school_profile(self):
+        """Open the current user's own student or teacher profile read-only."""
+        user = self.env.user
+        if user.has_group('school_management.group_school_teacher'):
+            teacher = self.env['school.teacher'].search([('user_id', '=', user.id)], limit=1)
+            if teacher:
+                return {
+                    'name': _('My Teacher Profile'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'school.teacher',
+                    'views': [(self.env.ref('school_management.view_teacher_form').id, 'form')],
+                    'view_mode': 'form',
+                    'res_id': teacher.id,
+                    'target': 'current',
+                    'context': {'form_view_initial_mode': 'readonly'},
+                }
+
+        if user.has_group('school_management.group_school_student'):
+            student = self.search([('user_id', '=', user.id)], limit=1)
+            if student:
+                return {
+                    'name': _('My Student Profile'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'school.student',
+                    'views': [(self.env.ref('school_management.view_student_form').id, 'form')],
+                    'view_mode': 'form',
+                    'res_id': student.id,
+                    'target': 'current',
+                    'context': {'form_view_initial_mode': 'readonly'},
+                }
+
+        raise UserError(_(
+            'No student or teacher profile is linked to your login. '
+            'Please contact a school administrator to link your user account.'
+        ))
+
     def action_view_timetable(self):
         self.ensure_one()
         domain = [

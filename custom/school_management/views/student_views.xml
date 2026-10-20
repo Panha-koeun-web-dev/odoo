@@ -1377,4 +1377,43 @@
             </p>
         </field>
     </record>
+
+    <record id="action_school_my_profile" model="ir.actions.server">
+        <field name="name">My School Profile</field>
+        <field name="model_id" ref="model_school_student"/>
+        <field name="group_ids" eval="[(4, ref('school_management.group_school_student')), (4, ref('school_management.group_school_teacher'))]"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+user = env.user
+action = False
+if user.has_group('school_management.group_school_teacher'):
+    teacher = env['school.teacher'].search([('user_id', '=', user.id)], limit=1)
+    if teacher:
+        action = {
+            'name': 'My Teacher Profile',
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.teacher',
+            'views': [(env.ref('school_management.view_teacher_form').id, 'form')],
+            'view_mode': 'form',
+            'res_id': teacher.id,
+            'target': 'current',
+            'context': {'form_view_initial_mode': 'readonly'},
+        }
+if not action and user.has_group('school_management.group_school_student'):
+    student = env['school.student'].search([('user_id', '=', user.id)], limit=1)
+    if student:
+        action = {
+            'name': 'My Student Profile',
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.student',
+            'views': [(env.ref('school_management.view_student_form').id, 'form')],
+            'view_mode': 'form',
+            'res_id': student.id,
+            'target': 'current',
+            'context': {'form_view_initial_mode': 'readonly'},
+        }
+if not action:
+    raise UserError('No student or teacher profile is linked to your login. Please contact a school administrator.')
+        ]]></field>
+    </record>
 </odoo>

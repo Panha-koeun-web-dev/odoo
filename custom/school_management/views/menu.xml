@@ -13,6 +13,13 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="5"/>
 
+    <menuitem id="menu_school_my_profile"
+              name="My Profile"
+              parent="menu_school_root"
+              action="action_school_my_profile"
+              groups="school_management.group_school_student,school_management.group_school_teacher"
+              sequence="7"/>
+
     <!-- ================= 2. Students ================= -->
     <record id="menu_school_student_parent" model="ir.ui.menu">
         <field name="name">Students</field>
@@ -52,26 +59,40 @@
     <menuitem id="menu_school_teacher_parent"
               name="Teachers"
               parent="menu_school_root"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              groups="school_management.group_school_admin"
               sequence="20"/>
     <menuitem id="menu_school_teacher"
               name="Teacher Profiles"
               parent="menu_school_teacher_parent"
               action="action_teacher"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              groups="school_management.group_school_admin"
               sequence="10"/>
     <menuitem id="menu_school_teacher_assign_wizard"
               name="Assign Subjects &amp; Students"
               parent="menu_school_teacher_parent"
               action="action_school_assign_subject_wizard"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              groups="school_management.group_school_admin"
               sequence="15"/>
     <menuitem id="menu_school_teacher_teaching_assignments"
               name="Teaching Assignments &amp; Load"
               parent="menu_school_teacher_parent"
               action="action_school_teaching_assignment"
-              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              groups="school_management.group_school_admin"
               sequence="20"/>
+
+    <!-- Replace stored menu groups explicitly; menuitem groups are additive on upgrade. -->
+    <record id="menu_school_teacher_parent" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin')])]"/>
+    </record>
+    <record id="menu_school_teacher" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin')])]"/>
+    </record>
+    <record id="menu_school_teacher_assign_wizard" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin')])]"/>
+    </record>
+    <record id="menu_school_teacher_teaching_assignments" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin')])]"/>
+    </record>
 
     <!-- ================= 4. Schedules & Timetable ================= -->
     <menuitem id="menu_school_schedule_root"
