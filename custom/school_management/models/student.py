@@ -197,6 +197,7 @@ class SchoolStudent(models.Model):
     teacher_feedback_count = fields.Integer(string='Teacher Feedback', compute='_compute_feedback_counts')
     teaching_report_count = fields.Integer(string='Teaching Reports', compute='_compute_feedback_counts')
 
+
     @api.depends_context('company')
     def _compute_currency_id(self):
         currency = self.env.company.currency_id
@@ -295,6 +296,10 @@ class SchoolStudent(models.Model):
         for rec in self:
             rec.fee_count = len(rec.fee_ids)
 
+
+
+# _compute_grade_stats
+
     @api.depends(
         'grade_ids',
         'grade_ids.marks_obtained',
@@ -388,6 +393,8 @@ class SchoolStudent(models.Model):
                 rec.passed_exam_count = 0
                 rec.failed_exam_count = 0
                 rec.academic_performance = 'No Exams Yet'
+
+#GPA compute END condition
 
     @api.depends('grade_ids', 'grade_ids.exam_id', 'grade_ids.exam_datetime')
     def _compute_student_exam_stats(self):

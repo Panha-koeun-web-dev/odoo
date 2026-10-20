@@ -257,6 +257,12 @@ class SchoolTimetableWeekSelectorWizard(models.TransientModel):
         mon_str = target_monday.strftime('%Y-%m-%d 00:00:00')
         sun_str = target_sunday.strftime('%Y-%m-%d 23:59:59')
 
+        # Holidays imported from the public holiday app may not yet have a
+        # timetable row for this term. Mirror them before opening the calendar
+        # so they appear alongside the term's study sessions.
+        if self.term_id and 'school.holiday.timetable.service' in self.env.registry.models:
+            self.env['school.holiday.timetable.service'].sudo().ensure_public_holidays_for_term(self.term_id)
+
         ctx = {
             'search_default_filter_mon_fri': 1,
             'initial_date': target_monday.isoformat(),
@@ -276,15 +282,13 @@ class SchoolTimetableWeekSelectorWizard(models.TransientModel):
         if self.teacher_id:
             domain.append(('teacher_id', '=', self.teacher_id.id))
 
-        if self.view_mode == 'calendar':
-            ctx[f'search_default_filter_week_{w_num}'] = 1
-        else:
-            domain.extend([
-                '|', '|',
-                ('week_number', '=', w_num),
-                ('iso_week_number', '=', w_num),
-                '&', ('start_datetime', '>=', mon_str), ('start_datetime', '<=', sun_str),
-            ])
+        # Use the actual selected week's date range for every view. Week-number
+        # filters can mix academic week numbers with ISO week numbers and hide
+        # a holiday or class whose stored academic week label differs.
+        domain.extend([
+            ('start_datetime', '>=', mon_str),
+            ('start_datetime', '<=', sun_str),
+        ])
 
         target_title = self.class_id.name or self.teacher_id.name or (self.term_id.name if self.term_id else '')
         title_prefix = f" - {target_title}" if target_title else ""
