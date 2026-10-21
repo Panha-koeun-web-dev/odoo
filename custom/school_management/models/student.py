@@ -1261,9 +1261,19 @@ class SchoolStudent(models.Model):
             rec.total_weekly_study_hours = sum(active_studies.mapped('weekly_hours'))
             rec.total_weekly_study_sessions = sum(active_studies.mapped('weekly_sessions'))
             rec.total_scheduled_study_hours = sum(active_studies.mapped('scheduled_hours'))
-            teachers = active_studies.mapped('teacher_id')
-            rec.study_teacher_ids = [(6, 0, teachers.ids)]
-            rec.study_teacher_count = len(teachers)
+            # Teacher accounts may read their assigned students, but they must not
+            # gain access to other teacher profiles through this computed M2M.
+            is_teacher_viewer = (
+                self.env.user.has_group('school_management.group_school_teacher')
+                and not self.env.user.has_group('school_management.group_school_admin')
+            )
+            if is_teacher_viewer:
+                rec.study_teacher_ids = False
+                rec.study_teacher_count = 0
+            else:
+                teachers = active_studies.mapped('teacher_id')
+                rec.study_teacher_ids = [(6, 0, teachers.ids)]
+                rec.study_teacher_count = len(teachers)
             subjects = active_studies.mapped('subject_id')
             rec.study_subject_all_ids = [(6, 0, subjects.ids)]
 
