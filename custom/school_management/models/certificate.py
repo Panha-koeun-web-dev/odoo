@@ -601,15 +601,38 @@ class SchoolCertificate(models.Model):
         student = self_sudo.student_id
         if not student:
             return []
-        grades = student.grade_ids
+        grades = student.grade_ids.sorted(lambda grade: (
+            grade.subject_id.name or '', grade.exam_datetime or fields.Datetime.now(), grade.id
+        ))
         courses = []
-        for grade in grades:
+        grade_point = lambda percentage: (
+            4.0 if percentage >= 90 else
+            3.0 + (percentage - 80) * 0.1 if percentage >= 80 else
+            2.0 + (percentage - 70) * 0.1 if percentage >= 70 else
+            1.0 + (percentage - 60) * 0.1 if percentage >= 60 else 0.0
+        )
+        for index, grade in enumerate(grades, start=1):
             subject = grade.subject_id
+            department = dict(subject._fields['department'].selection).get(
+                subject.department, _('General')
+            ) if subject else _('General')
+            grade_label = dict(grade._fields['grade_letter'].selection).get(
+                grade.grade_letter, _('N/A')
+            )
+            percentage = grade.percentage or 0.0
             courses.append({
+                'index': index,
+                'code': subject.code if subject else '',
                 'name': subject.name if subject else _('Unknown Subject'),
-                'grade': grade.grade_letter or _('N/A'),
-                'percentage': grade.percentage or 0.0,
+                'department': department,
+                'credits': subject.credits if subject else 0,
+                'marks_obtained': grade.marks_obtained or 0.0,
+                'total_marks': grade.total_marks or 0,
+                'percentage': percentage,
+                'grade_letter': grade_label,
+                'grade_point': f"{grade_point(percentage):.2f}",
                 'result': grade.result or _('N/A'),
+                'remarks': grade.remarks or '',
             })
         return courses
 
