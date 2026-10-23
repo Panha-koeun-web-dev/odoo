@@ -274,7 +274,7 @@
               name="Fees &amp; Structure"
               parent="menu_school_finance_parent"
               action="action_fee"
-              groups="school_management.group_school_admin"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="10"/>
     <menuitem id="menu_school_year_payment"
               name="Student Year Payments"
@@ -286,8 +286,15 @@
               name="Export Fees (XLSX)"
               parent="menu_school_finance_parent"
               action="action_school_report_fee_xlsx"
-              groups="school_management.group_school_admin"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="30"/>
+
+    <record id="menu_school_fee" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
+    <record id="menu_school_fee_export_xlsx" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('school_management.group_school_admin'), ref('school_management.group_school_teacher')])]"/>
+    </record>
     <menuitem id="menu_school_year_payment_export_xlsx"
               name="Export Tuition &amp; Payments (XLSX)"
               parent="menu_school_finance_parent"
