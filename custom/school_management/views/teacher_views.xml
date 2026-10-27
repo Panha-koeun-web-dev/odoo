@@ -5,7 +5,7 @@
         <field name="name">school.teacher.tree</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
-            <list class="o_school_list" decoration-muted="not active" sample="1" multi_edit="1">
+            <list class="o_school_list" decoration-muted="not active" multi_edit="1">
                 <field name="photo" widget="image" nolabel="1" width="44"
                        options="{'size': [36, 36], 'img_class': 'rounded-circle object-fit-cover shadow-sm'}"/>
                 <field name="employee_id" string="Teacher ID" decoration-bf="1"/>
@@ -588,8 +588,7 @@
                                         <list decoration-success="state == 'approved'"
                                               decoration-warning="state == 'draft'"
                                               decoration-danger="state == 'rejected'"
-                                              decoration-muted="state == 'cancel'"
-                                              sample="1">
+                                              decoration-muted="state == 'cancel'">
                                             <field name="name" string="Reference" decoration-bf="1"/>
                                             <field name="permission_type" string="Type" widget="badge"
                                                    decoration-info="permission_type == 'leave'"
@@ -619,7 +618,7 @@
                                 <button name="action_view_student_feedback" type="object" string="New Feedback Report" class="btn btn-sm btn-outline-primary" icon="fa-plus"/>
                             </div>
                             <field name="student_feedback_ids" readonly="1">
-                                <list string="Student Feedback" sample="1">
+                                <list string="Student Feedback">
                                     <field name="date"/>
                                     <field name="name" decoration-bf="1"/>
                                     <field name="title"/>
@@ -641,7 +640,7 @@
                                 <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-star-half-o me-2" title="Evaluations"/>Student Teaching Quality Reports (Admin Oversight)</h6>
                             </div>
                             <field name="teaching_evaluation_ids" readonly="1">
-                                <list string="Teaching Evaluations" sample="1">
+                                <list string="Teaching Evaluations">
                                     <field name="date"/>
                                     <field name="name" decoration-bf="1"/>
                                     <field name="title"/>

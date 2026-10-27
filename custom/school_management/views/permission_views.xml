@@ -56,8 +56,7 @@
                   decoration-success="state == 'approved'"
                   decoration-warning="state == 'draft'"
                   decoration-danger="state == 'rejected'"
-                  decoration-muted="state == 'cancel'"
-                  sample="1">
+                  decoration-muted="state == 'cancel'">
                 <field name="name" string="Reference" decoration-bf="1"/>
                 <field name="applicant_type" widget="badge"
                        decoration-info="applicant_type == 'teacher'"

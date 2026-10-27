@@ -63,7 +63,7 @@
         <field name="name">school.feedback.kanban</field>
         <field name="model">school.feedback</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_dashboard" sample="1">
+            <kanban class="o_kanban_dashboard">
                 <field name="name"/>
                 <field name="title"/>
                 <field name="report_type"/>

@@ -30,8 +30,7 @@
         <field name="arch" type="xml">
             <list class="o_school_list"
                   decoration-muted="study_status == 'stopped' or not active"
-                  multi_edit="1"
-                  sample="1">
+                  multi_edit="1">
                 <header>
                     <button name="action_recompute_academic_metrics" type="object"
                             string="Recalculate GPA &amp; Average" class="btn-outline-primary" icon="fa-calculator" display="always"
@@ -1196,8 +1195,7 @@
                                         <list decoration-success="state == 'approved'"
                                               decoration-warning="state == 'draft'"
                                               decoration-danger="state == 'rejected'"
-                                              decoration-muted="state == 'cancel'"
-                                              sample="1">
+                                              decoration-muted="state == 'cancel'">
                                             <field name="name" string="Reference" decoration-bf="1"/>
                                             <field name="permission_type" string="Type" widget="badge"
                                                    decoration-info="permission_type == 'leave'"
@@ -1250,7 +1248,7 @@
                                 <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-commenting-o me-2" title="Feedback"/>Academic Guidance &amp; Feedback Received from Teachers</h6>
                             </div>
                             <field name="teacher_feedback_ids" readonly="1">
-                                <list string="Teacher Feedback" sample="1">
+                                <list string="Teacher Feedback">
                                     <field name="date"/>
                                     <field name="name" decoration-bf="1"/>
                                     <field name="title"/>
@@ -1273,7 +1271,7 @@
                                 <button name="action_view_teaching_reports" type="object" string="Submit New Evaluation" class="btn btn-sm btn-outline-primary" icon="fa-plus"/>
                             </div>
                             <field name="teaching_report_ids" readonly="1">
-                                <list string="Teaching Reports" sample="1">
+                                <list string="Teaching Reports">
                                     <field name="date"/>
                                     <field name="name" decoration-bf="1"/>
                                     <field name="title"/>

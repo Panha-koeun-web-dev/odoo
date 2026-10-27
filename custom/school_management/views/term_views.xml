@@ -32,7 +32,7 @@
         <field name="name">school.term.kanban</field>
         <field name="model">school.term</field>
         <field name="arch" type="xml">
-            <kanban class="o_school_term_kanban" sample="1">
+            <kanban class="o_school_term_kanban">
                 <field name="name"/>
                 <field name="academic_year"/>
                 <field name="term_number"/>

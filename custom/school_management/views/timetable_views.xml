@@ -38,7 +38,7 @@
         <field name="name">school.timetable.list</field>
         <field name="model">school.timetable</field>
         <field name="arch" type="xml">
-            <list string="Class &amp; Student Timetable" sample="1" multi_edit="1" default_order="day_of_week, start_time, class_id"
+            <list string="Class &amp; Student Timetable" multi_edit="1" default_order="day_of_week, start_time, class_id"
                   decoration-warning="is_holiday"
                   decoration-danger="schedule_status == 'exam'">
                 <field name="schedule_status" widget="badge"
@@ -82,7 +82,7 @@
         <field name="name">school.timetable.kanban</field>
         <field name="model">school.timetable</field>
         <field name="arch" type="xml">
-            <kanban class="o_school_timetable_kanban" default_group_by="day_of_week" sample="1">
+            <kanban class="o_school_timetable_kanban" default_group_by="day_of_week">
                 <field name="display_name"/>
                 <field name="name"/>
                 <field name="is_holiday"/>
