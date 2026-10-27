@@ -42,6 +42,15 @@ package-lock.json
 package.json
 .husky
 
+#Test
+test_csv_import.py
+test_import.csv
+test_odoo_date.py
+test_output.txt
+test_output2.txt
+test_parse.py
+verify_holiday_integration.ps1
+
 # various virtualenv
 /bin/
 /build/
