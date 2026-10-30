@@ -1037,6 +1037,11 @@ class SchoolStudent(models.Model):
             return certs.action_print_certificate()
         return self.env.ref('school_management.action_report_school_certificate_student').report_action(self)
 
+
+
+#User creating
+
+
     def action_create_user(self):
         self.ensure_one()
         if not self.email:
