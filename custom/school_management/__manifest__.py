@@ -5,7 +5,10 @@
     'description': 'Complete school management system for Odoo 19',
     'author': 'Panha Koeun',
     'category': 'School',
-    'depends': ['base', 'web', 'mail'],
+
+    #Integration Purchase & Inventory modules
+
+    'depends': ['base', 'web', 'mail', 'purchase', 'stock'],
     'data': [
         'security/school_security.xml',
         'security/ir.model.access.csv',
@@ -14,6 +17,7 @@
         'data/permission_data.xml',
         'data/feedback_data.xml',
         'data/email_templates.xml',
+        'data/material_data.xml',
         'wizards/enroll_students_views.xml',
         'wizards/daily_attendance_views.xml',
         'wizards/select_exam_students_views.xml',
@@ -24,6 +28,8 @@
         'wizards/reject_certificate_wizard_views.xml',
         'wizards/term_schedule_wizard_views.xml',
         'wizards/week_selector_wizard_views.xml',
+        'wizards/material_assignment_views.xml',
+        'wizards/class_material_assignment_views.xml',
         'views/term_views.xml',
         'views/student_views.xml',
         'views/teacher_views.xml',
@@ -43,6 +49,7 @@
         'views/enrollment_views.xml',
         'views/certificate_views.xml',
         'views/year_payment_views.xml',
+        'views/material_views.xml',
         'views/export_xlsx_actions.xml',
         'views/menu.xml',
         'report/fee_report.xml',
@@ -51,6 +58,8 @@
         'report/transcript_report.xml',
         'report/receipt_report.xml',
         'report/student_id_card_report.xml',
+        'report/purchase_quotation_report.xml',
+        'report/stock_picking_report.xml',
     ],
     'assets': {
         'web.assets_backend': [

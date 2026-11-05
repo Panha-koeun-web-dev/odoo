@@ -7,3 +7,5 @@ from . import reject_permission_wizard
 from . import reject_certificate_wizard
 from . import term_schedule_wizard
 from . import week_selector_wizard
+from . import material_assignment
+from . import class_material_assignment

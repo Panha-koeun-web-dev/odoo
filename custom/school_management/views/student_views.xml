@@ -350,6 +350,12 @@
                                 <span class="o_stat_text">Weekly Subjects</span>
                             </div>
                         </button>
+                        <button name="action_view_material_holdings" type="object" class="oe_stat_button" icon="fa-bookmark" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="material_total_quantity"/> Units</span>
+                                <span class="o_stat_text">Books &amp; Materials Held (<field name="material_holding_count"/> records)</span>
+                            </div>
+                        </button>
                         <button name="action_view_permissions" type="object" class="oe_stat_button" icon="fa-id-card-o">
                             <div class="o_stat_info">
                                 <span class="o_stat_value"><field name="permission_count"/></span>

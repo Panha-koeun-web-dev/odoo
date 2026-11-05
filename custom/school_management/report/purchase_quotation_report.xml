@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Use the official Purchase RFQ action with a clean School Management layout. -->
+    <record id="purchase.report_purchase_quotation" model="ir.actions.report">
+        <field name="report_name">school_management.report_purchasequotation</field>
+        <field name="report_file">school_management.report_purchasequotation</field>
+    </record>
+
+    <template id="report_purchasequotation">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.company_id"/>
+                <div class="page" style="font-family: Arial, sans-serif; color: #25324a; font-size: 11px;">
+                    <style>
+                        .school-rfq-title { color: #183b66; font-size: 26px; font-weight: 700; letter-spacing: .2px; }
+                        .school-rfq-label { color: #667085; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+                        .school-rfq-card { border: 1px solid #d9e1ec; border-radius: 5px; padding: 10px 12px; min-height: 82px; }
+                        .school-rfq-card strong { color: #183b66; }
+                        .school-rfq-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        .school-rfq-table th { background: #183b66; color: white; padding: 8px 7px; font-size: 10px; }
+                        .school-rfq-table td { border-bottom: 1px solid #e4e8ef; padding: 8px 7px; vertical-align: top; }
+                        .school-rfq-table tr:nth-child(even) td { background: #f7f9fc; }
+                        .school-rfq-total { width: 320px; margin-left: auto; margin-top: 16px; }
+                        .school-rfq-total td { padding: 4px 7px; }
+                        .school-rfq-total .grand-total td { border-top: 2px solid #183b66; color: #183b66; font-size: 14px; font-weight: 700; padding-top: 8px; }
+                        .school-rfq-footer { border-top: 1px solid #d9e1ec; color: #667085; margin-top: 28px; padding-top: 8px; font-size: 9px; }
+                    </style>
+
+                    <table style="width: 100%; border-bottom: 3px solid #e13b82; padding-bottom: 12px;">
+                        <tr>
+                            <td style="width: 60%; vertical-align: middle;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company Logo" style="max-height: 58px; max-width: 220px;"/>
+                                <div t-if="not company.logo" style="font-size: 22px; font-weight: 700; color: #183b66;"><span t-field="company.name"/></div>
+                            </td>
+                            <td style="width: 40%; text-align: right; vertical-align: middle;">
+                                <div class="school-rfq-title">REQUEST FOR QUOTATION</div>
+                                <div style="font-size: 15px; color: #e13b82; font-weight: 700; margin-top: 3px;"><span t-field="o.name"/></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table style="width: 100%; margin-top: 16px;">
+                        <tr>
+                            <td style="width: 50%; padding-right: 8px; vertical-align: top;">
+                                <div class="school-rfq-card">
+                                    <div class="school-rfq-label">Supplier</div>
+                                    <div style="margin-top: 5px; font-size: 13px; font-weight: 700;"><span t-field="o.partner_id.name"/></div>
+                                    <div t-field="o.partner_id" t-options='{"widget": "contact", "fields": ["address", "phone", "email", "vat"], "no_marker": true, "phone_icons": true}'/>
+                                </div>
+                            </td>
+                            <td style="width: 50%; padding-left: 8px; vertical-align: top;">
+                                <div class="school-rfq-card">
+                                    <div class="school-rfq-label">RFQ Information</div>
+                                    <table style="width: 100%; margin-top: 5px;">
+                                        <tr><td><strong>RFQ Date</strong></td><td style="text-align: right;"><span t-field="o.date_order" t-options="{'date_only': true}"/></td></tr>
+                                        <tr t-if="o.date_planned"><td><strong>Expected Arrival</strong></td><td style="text-align: right;"><span t-field="o.date_planned" t-options="{'date_only': true}"/></td></tr>
+                                        <tr t-if="o.user_id"><td><strong>Buyer</strong></td><td style="text-align: right;"><span t-field="o.user_id"/></td></tr>
+                                        <tr t-if="o.partner_ref"><td><strong>Vendor Reference</strong></td><td style="text-align: right;"><span t-field="o.partner_ref"/></td></tr>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div t-if="o.dest_address_id" class="school-rfq-card" style="margin-top: 12px; min-height: 0;">
+                        <span class="school-rfq-label">Shipping Address</span>
+                        <span t-field="o.dest_address_id" t-options='{"widget": "contact", "fields": ["name", "address", "phone"], "no_marker": true, "phone_icons": true}' style="margin-left: 12px;"/>
+                    </div>
+
+                    <table class="school-rfq-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%; text-align: left;">Item</th>
+                                <th style="width: 42%; text-align: left;">Description</th>
+                                <th style="width: 15%; text-align: center;">Expected Date</th>
+                                <th style="width: 10%; text-align: right;">Quantity</th>
+                                <th style="width: 10%; text-align: right;">Unit Price</th>
+                                <th style="width: 15%; text-align: right;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="item_number" t-value="0"/>
+                            <t t-foreach="o.order_line.filtered(lambda line: line.display_type or line.product_qty != 0)" t-as="line">
+                                <t t-if="not line.display_type">
+                                    <t t-set="item_number" t-value="item_number + 1"/>
+                                    <tr>
+                                        <td><span t-out="item_number"/></td>
+                                        <td>
+                                            <strong t-if="line.product_id"><span t-field="line.product_id.display_name"/></strong>
+                                            <div t-if="line.name and line.name != line.product_id.display_name" class="text-muted"><span t-field="line.name"/></div>
+                                            <div t-if="line.product_id.default_code" class="text-muted" style="font-size: 9px;">Code: <span t-field="line.product_id.default_code"/></div>
+                                        </td>
+                                        <td style="text-align: center;"><span t-field="line.date_planned" t-options="{'date_only': true}"/></td>
+                                        <td style="text-align: right;"><span t-field="line.product_qty"/> <span t-field="line.product_uom_id" groups="uom.group_uom"/></td>
+                                        <td style="text-align: right;"><span t-field="line.price_unit"/></td>
+                                        <td style="text-align: right;"><span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
+                                    </tr>
+                                </t>
+                                <t t-else="">
+                                    <tr><td colspan="6"><strong><span t-field="line.name"/></strong></td></tr>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <table class="school-rfq-total">
+                        <tr><td>Untaxed Amount</td><td style="text-align: right;"><span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td></tr>
+                        <tr><td>Taxes</td><td style="text-align: right;"><span t-field="o.amount_tax" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td></tr>
+                        <tr class="grand-total"><td>Total</td><td style="text-align: right;"><span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td></tr>
+                    </table>
+
+                    <div t-if="o.note" style="margin-top: 22px;">
+                        <div class="school-rfq-label">Terms and Conditions</div>
+                        <div t-field="o.note" style="margin-top: 5px; white-space: pre-line;"/>
+                    </div>
+
+                    <div class="school-rfq-footer">
+                        <span t-field="company.name"/> · Request for Quotation <span t-field="o.name"/> · Please include this reference on your quotation.
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

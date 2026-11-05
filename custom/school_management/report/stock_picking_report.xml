@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Replace the standard Inventory receipt/delivery report with a clean layout. -->
+    <record id="stock.action_report_picking" model="ir.actions.report">
+        <field name="report_name">school_management.report_picking_school</field>
+        <field name="report_file">school_management.report_picking_school</field>
+    </record>
+
+    <template id="report_picking_school">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.company_id"/>
+                <t t-set="is_receipt" t-value="o.picking_type_id.code == 'incoming'"/>
+                <t t-set="is_delivery" t-value="o.picking_type_id.code == 'outgoing'"/>
+                <div class="page" style="font-family: Arial, sans-serif; color: #25324a; font-size: 11px;">
+                    <style>
+                        .school-stock-title { color: #183b66; font-size: 25px; font-weight: 700; }
+                        .school-stock-label { color: #667085; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+                        .school-stock-card { border: 1px solid #d9e1ec; border-radius: 5px; padding: 10px 12px; min-height: 75px; }
+                        .school-stock-card strong { color: #183b66; }
+                        .school-stock-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        .school-stock-table th { background: #183b66; color: white; padding: 8px 7px; font-size: 10px; }
+                        .school-stock-table td { border-bottom: 1px solid #e4e8ef; padding: 9px 7px; vertical-align: top; }
+                        .school-stock-table tr:nth-child(even) td { background: #f7f9fc; }
+                        .school-stock-status { display: inline-block; color: #176b45; background: #e7f5ed; border-radius: 12px; padding: 4px 10px; font-weight: 700; }
+                        .school-stock-footer { border-top: 1px solid #d9e1ec; color: #667085; margin-top: 28px; padding-top: 8px; font-size: 9px; }
+                    </style>
+
+                    <table style="width: 100%; border-bottom: 3px solid #e13b82; padding-bottom: 12px;">
+                        <tr>
+                            <td style="width: 58%; vertical-align: middle;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company Logo" style="max-height: 58px; max-width: 220px;"/>
+                                <div t-if="not company.logo" style="font-size: 22px; font-weight: 700; color: #183b66;"><span t-field="company.name"/></div>
+                            </td>
+                            <td style="width: 42%; text-align: right; vertical-align: middle;">
+                                <div class="school-stock-title">
+                                    <t t-if="is_receipt">GOODS RECEIPT</t>
+                                    <t t-elif="is_delivery">DELIVERY SLIP</t>
+                                    <t t-else="">INTERNAL TRANSFER</t>
+                                </div>
+                                <div style="font-size: 15px; color: #e13b82; font-weight: 700; margin-top: 3px;"><span t-field="o.name"/></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table style="width: 100%; margin-top: 16px;">
+                        <tr>
+                            <td style="width: 50%; padding-right: 8px; vertical-align: top;">
+                                <div class="school-stock-card">
+                                    <div class="school-stock-label"><t t-if="is_receipt">Vendor</t><t t-elif="is_delivery">Deliver To</t><t t-else="">Contact</t></div>
+                                    <div t-if="o.partner_id" t-field="o.partner_id" t-options='{"widget": "contact", "fields": ["name", "address", "phone"], "no_marker": true, "phone_icons": true}' style="margin-top: 5px;"/>
+                                    <div t-else="" style="margin-top: 5px;">Internal warehouse movement</div>
+                                </div>
+                            </td>
+                            <td style="width: 50%; padding-left: 8px; vertical-align: top;">
+                                <div class="school-stock-card">
+                                    <div class="school-stock-label">Operation Details</div>
+                                    <table style="width: 100%; margin-top: 5px;">
+                                        <tr t-if="o.origin"><td><strong>Source Document</strong></td><td style="text-align: right;"><span t-field="o.origin"/></td></tr>
+                                        <tr><td><strong>Warehouse</strong></td><td style="text-align: right;"><span t-field="o.picking_type_id.warehouse_id.name"/></td></tr>
+                                        <tr><td><strong>Status</strong></td><td style="text-align: right;"><span class="school-stock-status"><span t-field="o.state"/></span></td></tr>
+                                        <tr><td><strong>Date</strong></td><td style="text-align: right;"><span t-if="o.date_done" t-field="o.date_done" t-options="{'date_only': true}"/><span t-else="" t-field="o.scheduled_date" t-options="{'date_only': true}"/></td></tr>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="school-stock-card" style="margin-top: 12px; min-height: 0;">
+                        <span class="school-stock-label">Locations</span>
+                        <span style="margin-left: 12px;"><strong>From:</strong> <span t-field="o.location_id.complete_name"/></span>
+                        <span style="margin-left: 25px;"><strong>To:</strong> <span t-field="o.location_dest_id.complete_name"/></span>
+                    </div>
+
+                    <table class="school-stock-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%; text-align: left;">Item</th>
+                                <th style="width: 47%; text-align: left;">Product</th>
+                                <th style="width: 15%; text-align: right;">Ordered</th>
+                                <th style="width: 15%; text-align: right;"><t t-if="is_receipt">Received</t><t t-elif="is_delivery">Delivered</t><t t-else="">Processed</t></th>
+                                <th style="width: 15%; text-align: right;">Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="item_number" t-value="0"/>
+                            <t t-foreach="o.move_ids.filtered(lambda move: move.state != 'cancel' and (move.product_uom_qty or move.quantity))" t-as="move">
+                                <t t-set="item_number" t-value="item_number + 1"/>
+                                <tr>
+                                    <td><span t-out="item_number"/></td>
+                                    <td>
+                                        <strong><span t-field="move.product_id.display_name"/></strong>
+                                        <div t-if="move.description_picking and move.description_picking != move.product_id.display_name" class="text-muted"><span t-field="move.description_picking"/></div>
+                                        <div t-if="move.product_id.default_code" class="text-muted" style="font-size: 9px;">Code: <span t-field="move.product_id.default_code"/></div>
+                                    </td>
+                                    <td style="text-align: right;"><span t-field="move.product_uom_qty"/> <span t-field="move.product_uom" groups="uom.group_uom"/></td>
+                                    <td style="text-align: right;"><span t-field="move.quantity"/> <span t-field="move.product_uom" groups="uom.group_uom"/></td>
+                                    <td style="text-align: right;"><span t-field="move.product_uom" groups="uom.group_uom"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div t-if="o.note" style="margin-top: 22px;">
+                        <div class="school-stock-label">Notes</div>
+                        <div t-field="o.note" style="margin-top: 5px; white-space: pre-line;"/>
+                    </div>
+
+                    <div class="school-stock-footer">
+                        <span t-field="company.name"/> · <span t-field="o.name"/> · This document was generated from Odoo Inventory.
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

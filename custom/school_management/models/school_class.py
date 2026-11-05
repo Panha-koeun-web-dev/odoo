@@ -27,6 +27,14 @@ class SchoolClass(models.Model):
         ('active', 'Active (In Progress)'),
         ('finished', 'Finished / Completed'),
     ], string='Status', default='active', index=True)
+    enrollment_closed = fields.Boolean(string='Enrollment Closed', copy=False)
+    enrollment_closed_date = fields.Date(string='Enrollment Closed Date', copy=False, readonly=True)
+    material_request_count = fields.Integer(string='Enrollment Material Requests', compute='_compute_material_request_count')
+    material_assignment_status = fields.Selection(
+        [('pending', 'Materials Pending'), ('full', 'Full Material')],
+        string='Material Enrollment Status',
+        compute='_compute_material_assignment_status',
+    )
 
     is_finished = fields.Boolean(
         string='Is Class Finished',
@@ -128,6 +136,47 @@ class SchoolClass(models.Model):
                 ('class_id', '=', rec.id),
                 ('study_status', '=', 'studying'),
             ])
+
+    def _compute_material_request_count(self):
+        Request = self.env['school.material.request']
+        for rec in self:
+            rec.material_request_count = Request.search_count([('student_id.class_id', '=', rec.id)])
+
+    @api.depends(
+        'student_ids',
+        'student_ids.active',
+        'student_ids.study_status',
+        'student_ids.enrollment_ids',
+        'student_ids.material_holding_ids.quantity_held',
+    )
+    def _compute_material_assignment_status(self):
+        """Show whether every active student has admin-completed materials."""
+        Holding = self.env['school.material.holding'].sudo()
+        for rec in self:
+            students = rec.student_ids.filtered(
+                lambda student: student.active and student.study_status == 'studying'
+            )
+            if not students:
+                rec.material_assignment_status = 'pending'
+                continue
+            completed_holdings = Holding.search([
+                ('student_id', 'in', students.ids),
+                ('quantity_held', '>', 0),
+                ('request_id.state', '=', 'assigned'),
+            ])
+            completed_admin_holdings = completed_holdings.filtered(
+                lambda holding: holding.request_id.requested_by.has_group('school_management.group_school_admin')
+            )
+            assigned_students = set(completed_admin_holdings.mapped('student_id').ids)
+            enrolled_students = {
+                student.id for student in students
+                if student.enrollment_ids.filtered(lambda enrollment: enrollment.class_id == rec)
+            }
+            rec.material_assignment_status = (
+                'full' if assigned_students >= set(students.ids)
+                and enrolled_students >= set(students.ids)
+                else 'pending'
+            )
 
     def _compute_timetable_count(self):
         for rec in self:
@@ -276,6 +325,50 @@ class SchoolClass(models.Model):
                 'sticky': False,
             }
         }
+
+    def action_close_enrollment(self):
+        for rec in self:
+            if not self.env.user.has_group('school_management.group_school_admin'):
+                raise UserError(_('Only an administrator can close class enrollment after verifying all materials.'))
+            students = rec.student_ids.filtered(lambda student: student.active and student.study_status == 'studying')
+            if not students:
+                raise UserError(_('This class has no active studying students.'))
+            missing_enrollment = students.filtered(
+                lambda student: not student.enrollment_ids.filtered(lambda enrollment: enrollment.class_id == rec)
+            )
+            if missing_enrollment:
+                raise UserError(_('These students are not enrolled in this class: %s') % ', '.join(missing_enrollment.mapped('name')))
+            completed_holdings = self.env['school.material.holding'].sudo().search([
+                ('student_id', 'in', students.ids),
+                ('quantity_held', '>', 0),
+                ('request_id.state', '=', 'assigned'),
+            ])
+            admin_holdings = completed_holdings.filtered(
+                lambda holding: holding.request_id.requested_by.has_group('school_management.group_school_admin')
+            )
+            assigned_student_ids = set(admin_holdings.mapped('student_id').ids)
+            missing_material = students.filtered(lambda student: student.id not in assigned_student_ids)
+            if missing_material:
+                raise UserError(_(
+                    'These students do not have completed material assignments made by an administrator: %s'
+                ) % ', '.join(missing_material.mapped('name')))
+            rec.write({'enrollment_closed': True, 'enrollment_closed_date': fields.Date.today()})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Enrollment Closed'),
+                'message': _('All active students are enrolled and have completed material assignments.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_reopen_enrollment(self):
+        if not self.env.user.has_group('school_management.group_school_admin'):
+            raise UserError(_('Only an administrator can reopen class enrollment.'))
+        self.write({'enrollment_closed': False, 'enrollment_closed_date': False})
+        return True
 
     def action_set_active(self):
         """Reactivate class to active status."""
@@ -466,6 +559,113 @@ class SchoolClass(models.Model):
                 'default_class_id': self.id,
                 'default_teacher_id': self.teacher_id.id if self.teacher_id else False,
             }
+        }
+
+    def action_open_enroll_students_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Enroll Students in %s') % self.name,
+            'res_model': 'school.enroll.students.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_class_id': self.id},
+        }
+
+    def action_open_class_material_assignment_wizard(self):
+        self.ensure_one()
+        if not (self.env.user.has_group('school_management.group_school_admin') or self.env.user.has_group('school_management.group_school_teacher')):
+            raise UserError(_('Only administrators and teachers can assign class materials.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assign Materials to %s') % self.name,
+            'res_model': 'school.class.material.assignment.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_class_id': self.id},
+        }
+
+    def action_auto_assign_subject_materials(self):
+        """Assign all subject-linked school materials to every active student."""
+        self.ensure_one()
+        if not (self.env.user.has_group('school_management.group_school_admin') or self.env.user.has_group('school_management.group_school_teacher')):
+            raise UserError(_('Only administrators and teachers can assign class materials.'))
+
+        students = self.student_ids.filtered(
+            lambda student: student.active and student.study_status == 'studying'
+        )
+        if not students:
+            raise UserError(_('This class has no active studying students.'))
+        # Some classes store the curriculum on each student's active study
+        # subject lines instead of on class.subject_ids. Use both sources so
+        # existing enrolled subjects are respected.
+        student_subjects = students.mapped('study_subject_ids').filtered(
+            lambda line: line.active and line.study_status == 'active'
+        ).mapped('subject_id')
+        subjects = self.subject_ids | student_subjects
+        if not subjects:
+            raise UserError(_('Enroll subjects for this class or its students before assigning materials automatically.'))
+
+        products = self.env['product.product'].sudo().search([
+            ('school_material', '=', True),
+            ('school_subject_ids', 'in', subjects.ids),
+        ], order='id')
+        line_values = []
+        for subject in subjects:
+            subject_products = products.filtered(lambda product: subject in product.school_subject_ids)
+            for product in subject_products:
+                line_values.append((0, 0, {
+                    'subject_id': subject.id,
+                    'product_id': product.id,
+                    'quantity': 1.0,
+                }))
+        if not line_values:
+            raise UserError(_(
+                'No School Material products are linked to the subjects in this class. '
+                'Link books/materials to the class subjects first.'
+            ))
+
+        wizard = self.env['school.class.material.assignment.wizard'].with_context(
+            school_material_reassignment=True,
+        ).create({
+            'class_id': self.id,
+            'student_ids': [(6, 0, students.ids)],
+            'line_ids': line_values,
+            'reassignment_mode': True,
+        })
+        return wizard.action_assign_to_class()
+
+    def action_reassign_class_materials(self):
+        """Open the material assignment flow for an already enrolled class.
+
+        This is intentionally separate from student re-enrollment: it lets an
+        administrator or teacher issue additional books/materials after class
+        enrollment has been closed, without reopening student enrollment.
+        """
+        self.ensure_one()
+        if not (self.env.user.has_group('school_management.group_school_admin') or self.env.user.has_group('school_management.group_school_teacher')):
+            raise UserError(_('Only administrators and teachers can re-enroll class materials.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Re-enroll Materials for %s') % self.name,
+            'res_model': 'school.class.material.assignment.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_class_id': self.id,
+                'school_material_reassignment': True,
+            },
+        }
+
+    def action_view_class_material_requests(self):
+        self.ensure_one()
+        return {
+            'name': _('Enrollment Materials - %s') % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.material.request',
+            'view_mode': 'list,form',
+            'domain': [('student_id.class_id', '=', self.id)],
+            'context': {'default_student_id': False},
         }
 
     def action_open_term_schedule_wizard(self):

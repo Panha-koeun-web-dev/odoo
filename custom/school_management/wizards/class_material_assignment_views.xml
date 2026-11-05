@@ -1,0 +1,37 @@
+<odoo>
+    <record id="view_class_material_assignment_wizard_form" model="ir.ui.view">
+        <field name="name">school.class.material.assignment.wizard.form</field>
+        <field name="model">school.class.material.assignment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Materials to Class Students">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Select several books or materials once. A separate material request will be created for every selected student.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not reassignment_mode">
+                        This is an additional material assignment. Class enrollment stays closed, and the selected enrolled students will receive these materials through the normal stock workflow.
+                    </div>
+                    <group>
+                        <field name="class_id"/>
+                        <field name="reassignment_mode" invisible="1"/>
+                        <field name="student_ids" widget="many2many_tags" domain="[('class_id', '=', class_id), ('study_status', '=', 'studying')]"/>
+                        <label for="student_count" string="Students Selected"/>
+                        <field name="student_count" nolabel="1"/>
+                    </group>
+                    <separator string="Materials for Every Selected Student"/>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="subject_id"/>
+                            <field name="product_id" domain="[('school_material', '=', True), ('school_subject_ids', 'in', subject_id)]"/>
+                            <field name="quantity"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_assign_to_class" type="object" string="Assign to Students" class="btn-primary" icon="fa-users"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

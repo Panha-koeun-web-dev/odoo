@@ -109,6 +109,13 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_open_enroll_students_wizard" string="Enroll Students" type="object" class="btn-primary" icon="fa-users" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_open_class_material_assignment_wizard" string="Assign Materials to Class" type="object" class="btn-primary" icon="fa-bookmark" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_auto_assign_subject_materials" string="Auto-Assign Subject Materials" type="object" class="btn-primary" icon="fa-magic" groups="school_management.group_school_admin,school_management.group_school_teacher" confirm="Automatically assign every material linked to this class's subjects to all active students?"/>
+                    <button name="action_view_class_material_requests" string="Enrollment Materials" type="object" class="btn-outline-primary" icon="fa-list" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_reassign_class_materials" string="Re-enroll Materials" type="object" class="btn-outline-success" icon="fa-refresh" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
+                    <button name="action_close_enrollment" string="Close Enrollment" type="object" class="btn-warning" icon="fa-lock" invisible="enrollment_closed or material_assignment_status != 'full'" groups="school_management.group_school_admin" confirm="Close enrollment only after every student is enrolled and has completed administrator-assigned materials?"/>
+                    <button name="action_reopen_enrollment" string="Reopen Enrollment" type="object" class="btn-outline-success" icon="fa-unlock" invisible="not enrollment_closed" groups="school_management.group_school_admin"/>
                     <button name="action_open_term_schedule_wizard" string="Plan Term Schedule" type="object" class="btn-primary" icon="fa-calendar-plus-o" groups="school_management.group_school_admin"/>
                     <button name="action_open_assign_wizard" string="Assign Staff &amp; Curriculum" type="object" class="btn-primary" icon="fa-graduation-cap" groups="school_management.group_school_admin"/>
                     <button name="action_take_attendance" string="Take Attendance" type="object" class="btn-primary" icon="fa-calendar-check-o" groups="school_management.group_school_admin,school_management.group_school_teacher"/>
@@ -356,6 +363,24 @@
                             </field>
                         </page>
                         <page string="Enrollments" name="enrollments" groups="school_management.group_school_admin,school_management.group_school_teacher">
+                            <div class="alert alert-warning" role="alert" invisible="not enrollment_closed">
+                                Enrollment is closed. All active students were verified as enrolled and holding completed materials.
+                            </div>
+                            <div class="d-flex justify-content-end mb-2">
+                                <button name="action_view_class_material_requests" type="object"
+                                        string="View Assigned Materials" class="btn btn-outline-primary me-2"
+                                        icon="fa-list"/>
+                                <button name="action_open_class_material_assignment_wizard" type="object"
+                                        string="Assign Materials to Enrolled Students" class="btn btn-primary"
+                                        icon="fa-bookmark" invisible="enrollment_closed"/>
+                            </div>
+                            <group>
+                                <field name="enrollment_closed"/>
+                                <field name="enrollment_closed_date" invisible="not enrollment_closed"/>
+                                <field name="material_assignment_status" widget="badge"
+                                       decoration-success="material_assignment_status == 'full'"
+                                       decoration-warning="material_assignment_status == 'pending'"/>
+                            </group>
                             <field name="enrollment_ids"/>
                         </page>
                         <page string="Curriculum &amp; Teaching Staff" name="subjects">

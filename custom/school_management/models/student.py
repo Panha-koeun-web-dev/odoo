@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.orm.identifiers import NewId
 from datetime import timedelta
 
 def _open_records(self, model_name, domain):
@@ -177,6 +178,19 @@ class SchoolStudent(models.Model):
     study_teacher_ids = fields.Many2many('school.teacher', string='Instructing Teachers', compute='_compute_study_stats')
     study_teacher_count = fields.Integer(string='Teachers Count', compute='_compute_study_stats')
     study_subject_all_ids = fields.Many2many('school.subject', string='Enrolled Subjects', compute='_compute_study_stats')
+    material_holding_ids = fields.One2many(
+        'school.material.holding',
+        'student_id',
+        string='Books and Materials Held',
+    )
+    material_holding_count = fields.Integer(
+        string='Material Records',
+        compute='_compute_material_totals',
+    )
+    material_total_quantity = fields.Float(
+        string='Total Materials Held',
+        compute='_compute_material_totals',
+    )
     permission_ids = fields.One2many('school.permission', 'student_id', string='Permission Requests')
     permission_count = fields.Integer(string='Permissions', compute='_compute_permission_count')
     permission_approved_count = fields.Integer(string='Approved Leaves', compute='_compute_permission_count')
@@ -196,6 +210,40 @@ class SchoolStudent(models.Model):
     )
     teacher_feedback_count = fields.Integer(string='Teacher Feedback', compute='_compute_feedback_counts')
     teaching_report_count = fields.Integer(string='Teaching Reports', compute='_compute_feedback_counts')
+
+    @api.depends('material_holding_ids.quantity_held')
+    def _compute_material_totals(self):
+        for rec in self:
+            active_holdings = rec.material_holding_ids.filtered(lambda holding: holding.quantity_held > 0)
+            rec.material_holding_count = len(active_holdings)
+            rec.material_total_quantity = sum(active_holdings.mapped('quantity_held'))
+
+    def action_view_material_holdings(self):
+        self.ensure_one()
+        return {
+            'name': _('Books and Materials Held - %s') % (self.name or _('Student')),
+            'type': 'ir.actions.act_window',
+            'res_model': 'school.material.holding',
+            'view_mode': 'kanban,list,form',
+            'domain': [
+                ('student_id', '=', self.id),
+                ('quantity_held', '>', 0),
+            ],
+            'context': {'default_student_id': self.id},
+        }
+
+    def action_open_material_assignment_wizard(self):
+        self.ensure_one()
+        if not (self.env.user.has_group('school_management.group_school_admin') or self.env.user.has_group('school_management.group_school_teacher')):
+            raise UserError(_('Only administrators and teachers can assign materials.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assign Books and Materials'),
+            'res_model': 'school.material.assignment.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_student_id': self.id},
+        }
 
 
     @api.depends_context('company')
@@ -523,6 +571,13 @@ class SchoolStudent(models.Model):
     def _compute_timetable_ids(self):
         Timetable = self.env['school.timetable']
         for student in self:
+            # The student form computes fields on an unsaved NewId record.
+            # Database domains cannot adapt that temporary identifier.
+            if not student.id or isinstance(student.id, NewId):
+                student.timetable_ids = [(5, 0, 0)]
+                student.timetable_count = 0
+                student.holiday_count = 0
+                continue
             domain = [('active', '=', True), ('is_holiday', '=', False)]
             if student.class_id:
                 domain.extend([
@@ -688,8 +743,12 @@ class SchoolStudent(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         students = super().create(vals_list)
-        students._sync_year_payment_with_class()
-        students.action_sync_subjects_from_class()
+        # Teachers may create the student profile, but the automatic related
+        # payment and subject setup must use the same controlled service path
+        # as administrators because teachers do not directly create those
+        # accounting/academic records.
+        students.sudo()._sync_year_payment_with_class()
+        students.sudo().action_sync_subjects_from_class()
         return students
 
     def write(self, vals):

@@ -22,6 +22,14 @@ class SchoolEnrollStudentsWizard(models.TransientModel):
         compute='_compute_student_count',
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        values = super().default_get(fields_list)
+        class_id = values.get('class_id') or self.env.context.get('active_id')
+        if class_id and 'subject_ids' in fields_list:
+            values['subject_ids'] = [(6, 0, self.env['school.class'].browse(class_id).subject_ids.ids)]
+        return values
+
     @api.depends('student_ids')
     def _compute_student_count(self):
         for rec in self:
@@ -34,6 +42,8 @@ class SchoolEnrollStudentsWizard(models.TransientModel):
 
     def action_enroll(self):
         self.ensure_one()
+        if self.class_id.enrollment_closed:
+            raise UserError(_('Enrollment is closed for this class. Reopen it before adding students.'))
         if not self.student_ids:
             raise UserError(_('Please select at least one student to enroll.'))
         

@@ -1,0 +1,280 @@
+<odoo>
+    <!-- Add school classification to the standard Odoo product form. Purchases still use the official Purchase app. -->
+    <record id="product_template_form_view_school_material" model="ir.ui.view">
+        <field name="name">product.template.form.school.material</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="school_material"/>
+                <field name="school_subject_ids" widget="many2many_tags" invisible="not school_material"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_school_material_products" model="ir.actions.act_window">
+        <field name="name">School Materials</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('school_material', '=', True)]</field>
+        <field name="context">{'default_school_material': True}</field>
+    </record>
+
+    <record id="view_school_material_product_list" model="ir.ui.view">
+        <field name="name">product.template.list.school.material</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <list string="School Materials">
+                <field name="name"/>
+                <field name="default_code"/>
+                <field name="school_subject_ids" widget="many2many_tags"/>
+                <field name="qty_available"/>
+                <field name="uom_id"/>
+                <field name="purchase_ok"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_school_material_request" model="ir.actions.act_window">
+        <field name="name">Material Requests</field>
+        <field name="res_model">school.material.request</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'default_student_id': False}</field>
+    </record>
+
+    <record id="view_school_material_request_kanban" model="ir.ui.view">
+        <field name="name">school.material.request.kanban</field>
+        <field name="model">school.material.request</field>
+        <field name="arch" type="xml">
+            <kanban string="Material Requests" default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="requested_by"/>
+                <field name="state"/>
+                <field name="stock_picking_id"/>
+                <field name="create_date"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <strong class="fs-5"><field name="name"/></strong>
+                                <field name="state" widget="badge"/>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted">Student</span>
+                                <div class="fw-semibold"><field name="student_id"/></div>
+                            </div>
+                            <div class="text-muted">
+                                <span>Requested by: </span><field name="requested_by"/>
+                            </div>
+                            <div class="text-muted mt-1" t-if="record.stock_picking_id.raw_value">
+                                <span>Issue Transfer: </span><field name="stock_picking_id"/>
+                            </div>
+                            <div class="text-muted mt-2 small">
+                                <field name="create_date"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_school_material_request_list" model="ir.ui.view">
+        <field name="name">school.material.request.list</field>
+        <field name="model">school.material.request</field>
+        <field name="arch" type="xml">
+            <list string="Material Requests">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="requested_by"/>
+                <field name="state" widget="badge"/>
+                <field name="stock_picking_id" groups="school_management.group_school_admin,stock.group_stock_user"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_material_request_form" model="ir.ui.view">
+        <field name="name">school.material.request.form</field>
+        <field name="model">school.material.request</field>
+        <field name="arch" type="xml">
+            <form string="Material Request">
+                <header>
+                    <button name="action_submit" type="object" string="Submit" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Confirm" class="btn-primary" groups="school_management.group_school_admin" invisible="state != 'submitted'"/>
+                    <button name="action_create_purchase_order" type="object" string="Create Official RFQ" groups="school_management.group_school_admin" invisible="state not in ('submitted', 'approved')"/>
+                    <button name="action_view_purchase_orders" type="object" string="Purchase Orders" groups="school_management.group_school_admin,purchase.group_purchase_user" invisible="not purchase_order_ids"/>
+                    <button name="action_prepare_delivery" type="object" string="Prepare Delivery" class="btn-primary" groups="school_management.group_school_admin" invisible="state not in ('approved', 'purchasing', 'ready')"/>
+                    <button name="action_view_picking" type="object" string="Open Delivery" groups="school_management.group_school_admin,stock.group_stock_user" invisible="not stock_picking_id"/>
+                    <button name="action_mark_delivered" type="object" string="Mark Done" class="btn-primary" groups="school_management.group_school_admin" invisible="state != 'delivery'"/>
+                    <button name="action_reject" type="object" string="Reject" groups="school_management.group_school_admin" invisible="state not in ('submitted', 'approved', 'purchasing')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,purchasing,delivery,assigned"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="student_id" readonly="state != 'draft'"/>
+                            <field name="requested_by"/>
+                        </group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="stock_picking_id" groups="school_management.group_school_admin,stock.group_stock_user"/>
+                            <field name="purchase_order_ids" widget="many2many_tags" groups="school_management.group_school_admin,purchase.group_purchase_user"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Requested Materials">
+                            <field name="line_ids" readonly="state not in ('draft', 'submitted', 'approved')">
+                                <list editable="bottom">
+                                    <field name="student_id" column_invisible="True"/>
+                                    <field name="subject_id"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="available_qty" readonly="1"/>
+                                    <field name="shortage_qty" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Rejection" invisible="not rejection_reason">
+                            <field name="rejection_reason" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_material_holding" model="ir.actions.act_window">
+        <field name="name">Materials Held by Students</field>
+        <field name="res_model">school.material.holding</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'group_by': ['student_id']}</field>
+    </record>
+
+    <record id="view_school_material_holding_list" model="ir.ui.view">
+        <field name="name">school.material.holding.list</field>
+        <field name="model">school.material.holding</field>
+        <field name="arch" type="xml">
+            <list string="Materials Held by Students" create="0" delete="0">
+                <field name="student_id"/>
+                <field name="subject_id"/>
+                <field name="product_id"/>
+                <field name="quantity_assigned" sum="Assigned"/>
+                <field name="quantity_returned" sum="Returned"/>
+                <field name="quantity_held" sum="Currently Held"/>
+                <field name="request_id"/>
+                <field name="picking_id" groups="school_management.group_school_admin,stock.group_stock_user"/>
+                <field name="assigned_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_material_holding_kanban" model="ir.ui.view">
+        <field name="name">school.material.holding.kanban</field>
+        <field name="model">school.material.holding</field>
+        <field name="arch" type="xml">
+            <kanban string="Materials Held by Students">
+                <field name="student_id"/>
+                <field name="subject_id"/>
+                <field name="product_id"/>
+                <field name="quantity_held"/>
+                <field name="quantity_assigned"/>
+                <field name="quantity_returned"/>
+                <field name="assigned_date"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="fw-bold fs-5"><field name="product_id"/></div>
+                            <div class="text-muted"><field name="subject_id"/></div>
+                            <div class="mt-2">
+                                <strong>Student:</strong> <field name="student_id"/>
+                            </div>
+                            <div class="mt-2 d-flex justify-content-between">
+                                <span>Assigned: <strong><field name="quantity_assigned"/></strong></span>
+                                <span>Held: <strong><field name="quantity_held"/></strong></span>
+                            </div>
+                            <div class="text-muted mt-2">
+                                Returned: <field name="quantity_returned"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_school_material_holding_form" model="ir.ui.view">
+        <field name="name">school.material.holding.form</field>
+        <field name="model">school.material.holding</field>
+        <field name="arch" type="xml">
+            <form string="Student Material Holding">
+                <sheet>
+                    <group>
+                        <field name="student_id"/>
+                        <field name="subject_id"/>
+                        <field name="product_id"/>
+                        <field name="quantity_assigned"/>
+                        <field name="quantity_returned" groups="school_management.group_school_admin"/>
+                        <field name="quantity_held"/>
+                    </group>
+                    <group>
+                        <field name="request_id"/>
+                        <field name="picking_id" groups="school_management.group_school_admin,stock.group_stock_user"/>
+                        <field name="assigned_date"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_form_material_holdings" model="ir.ui.view">
+        <field name="name">school.student.form.material.holdings</field>
+        <field name="model">school.student</field>
+        <field name="inherit_id" ref="school_management.view_student_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='notes']" position="before">
+                <page name="material_holdings" string="Books &amp; Materials" groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student">
+                    <div class="alert alert-info" role="alert" invisible="material_holding_count != 0">
+                        This student has no books or materials currently assigned.
+                    </div>
+                    <group string="Current Material Summary" class="o_group_col_4">
+                        <field name="material_total_quantity" string="Total Units Held" readonly="1"/>
+                        <field name="material_holding_count" string="Active Material Records" readonly="1"/>
+                    </group>
+                    <field name="material_holding_ids" readonly="1">
+                        <kanban string="Books &amp; Materials Held">
+                            <field name="student_id"/>
+                            <field name="subject_id"/>
+                            <field name="product_id"/>
+                            <field name="quantity_assigned"/>
+                            <field name="quantity_returned"/>
+                            <field name="quantity_held"/>
+                            <field name="assigned_date"/>
+                            <templates>
+                                <t t-name="card">
+                                    <div class="oe_kanban_global_click o_kanban_record">
+                                        <div class="fw-bold fs-5"><field name="product_id"/></div>
+                                        <div class="text-muted"><field name="subject_id"/></div>
+                                        <div class="mt-2 d-flex justify-content-between">
+                                            <span>Assigned: <strong><field name="quantity_assigned"/></strong></span>
+                                            <span>Currently Held: <strong><field name="quantity_held"/></strong></span>
+                                        </div>
+                                        <div class="text-muted mt-2">Returned: <field name="quantity_returned"/></div>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_school_material_root" name="Materials &amp; Requests" parent="menu_school_root" sequence="65" groups="school_management.group_school_admin,school_management.group_school_student"/>
+    <menuitem id="menu_school_material_products" name="School Materials / Stock" parent="menu_school_material_root" action="action_school_material_products" sequence="10" groups="school_management.group_school_admin"/>
+    <menuitem id="menu_school_material_requests" name="Material Requests" parent="menu_school_material_root" action="action_school_material_request" sequence="20" groups="school_management.group_school_admin,school_management.group_school_student"/>
+    <menuitem id="menu_school_material_holding" name="Materials Held by Students" parent="menu_school_material_root" action="action_school_material_holding" sequence="30" groups="school_management.group_school_admin"/>
+</odoo>
