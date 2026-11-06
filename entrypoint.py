@@ -59,6 +59,24 @@ try:
             """)
             print("Ensured school_permission.timetable_id column exists in database.")
 
+        # Defensive migration: older databases may not have the enrollment
+        # closure fields added to school.class.  Odoo reads every model field
+        # during startup/list rendering, so let the database catch up before
+        # the module upgrade runs.
+        cur.execute("""
+            SELECT 1 FROM information_schema.tables WHERE table_name='school_class'
+        """)
+        if cur.fetchone():
+            cur.execute("""
+                ALTER TABLE school_class
+                ADD COLUMN IF NOT EXISTS enrollment_closed BOOLEAN DEFAULT FALSE;
+            """)
+            cur.execute("""
+                ALTER TABLE school_class
+                ADD COLUMN IF NOT EXISTS enrollment_closed_date DATE;
+            """)
+            print("Ensured school_class enrollment closure columns exist in database.")
+
         # 4B. Defensive migration: Ensure res_partner partner columns are nullable to prevent insert errors
         for col in ('group_rfq', 'group_on'):
             cur.execute(f"SELECT is_nullable FROM information_schema.columns WHERE table_name='res_partner' AND column_name='{col}'")
