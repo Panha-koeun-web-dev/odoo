@@ -412,15 +412,15 @@
                                 <div class="d-flex flex-wrap align-items-center gap-3 o_school_quick_info">
                                     <div class="d-flex align-items-center" invisible="not email">
                                         <i class="fa fa-envelope fa-fw me-1 text-primary" title="Email"/>
-                                        <field name="email" widget="email" placeholder="student@school.edu"/>
+                                        <field name="email" widget="email" placeholder="student@school.edu" required="1"/>
                                     </div>
                                     <div class="d-flex align-items-center" invisible="not phone">
                                         <i class="fa fa-phone fa-fw me-1 text-primary" title="Phone"/>
-                                        <field name="phone" widget="phone" placeholder="Phone"/>
+                                        <field name="phone" widget="phone" placeholder="Phone" required="1"/>
                                     </div>
                                     <div class="d-flex align-items-center" invisible="not parent_phone">
                                         <i class="fa fa-users fa-fw me-1 text-primary" title="Parent Contact"/>
-                                        <span>Parent: </span><field name="parent_phone" class="ms-1"/>
+                                        <span>Parent: </span><field name="parent_phone" class="ms-1" required="1"/>
                                     </div>
                                     <div class="d-flex align-items-center" invisible="not study_period">
                                         <i class="fa fa-calendar fa-fw me-1 text-primary" title="Academic Year"/>
@@ -623,6 +623,8 @@
                                             <field name="gender"/>
                                             <field name="date_of_birth"/>
                                             <field name="age" readonly="1"/>
+                                            <field name="email" widget="email" required="1" placeholder="student@school.edu"/>
+                                            <field name="phone" widget="phone" required="1" placeholder="Phone"/>
                                             <field name="blood_group"/>
                                             <field name="address"/>
                                             <field name="user_id" string="User Account" groups="school_management.group_school_admin"/>
@@ -637,9 +639,9 @@
                                             <h6 class="mb-0 fw-bold">Parent / Guardian Contact</h6>
                                         </div>
                                         <group>
-                                            <field name="parent_name"/>
-                                            <field name="parent_phone" widget="phone"/>
-                                            <field name="parent_email" widget="email"/>
+                                            <field name="parent_name" required="1"/>
+                                            <field name="parent_phone" widget="phone" required="1"/>
+                                            <field name="parent_email" widget="email" required="1"/>
                                         </group>
                                     </div>
                                 </div>

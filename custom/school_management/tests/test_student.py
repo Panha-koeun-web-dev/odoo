@@ -1,5 +1,6 @@
 from odoo.tests.common import TransactionCase
 from odoo import fields
+from odoo.exceptions import ValidationError
 
 
 class TestSchoolStudent(TransactionCase):
@@ -23,6 +24,10 @@ class TestSchoolStudent(TransactionCase):
             'date_of_birth': fields.Date.from_string('2008-05-15'),
             'gender': 'male',
             'email': 'test.student.one@example.com',
+            'phone': '0123456789',
+            'parent_name': 'Test Parent',
+            'parent_phone': '0987654321',
+            'parent_email': 'test.parent@example.com',
             'class_id': cls.test_class.id,
         })
 
@@ -32,6 +37,25 @@ class TestSchoolStudent(TransactionCase):
         self.assertEqual(self.student.name, 'Test Student One')
         self.assertEqual(self.student.class_id.id, self.test_class.id)
         self.assertTrue(self.student.age > 0)
+
+    def test_contact_information_is_required(self):
+        """New students cannot be created without complete contact information."""
+        contact_fields = ('email', 'phone', 'parent_name', 'parent_phone', 'parent_email')
+        for field_name in contact_fields:
+            values = {
+                'name': 'Incomplete Student',
+                'student_id': 'STU_INCOMPLETE',
+                'gender': 'male',
+                'date_of_birth': fields.Date.from_string('2008-05-15'),
+                'email': 'student@example.com',
+                'phone': '0123456789',
+                'parent_name': 'Parent',
+                'parent_phone': '0987654321',
+                'parent_email': 'parent@example.com',
+            }
+            values[field_name] = False
+            with self.assertRaises(ValidationError):
+                self.Student.create(values)
 
     def test_student_attendance_stats(self):
         """Test student attendance calculation."""

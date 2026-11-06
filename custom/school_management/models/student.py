@@ -17,8 +17,8 @@ class SchoolStudent(models.Model):
 
     name = fields.Char(string='Full Name', required=True)
     student_id = fields.Char(string='Student ID', required=True)
-    email = fields.Char(string='Email')
-    phone = fields.Char(string='Phone')
+    email = fields.Char(string='Email', required=True)
+    phone = fields.Char(string='Phone', required=True)
     gender = fields.Selection([
         ('male', 'Male'),
         ('female', 'Female'),
@@ -27,9 +27,9 @@ class SchoolStudent(models.Model):
     date_of_birth = fields.Date(string='Date of Birth', required=True)
     age = fields.Integer(string='Age', compute='_compute_age', store=True, compute_sudo=True)
     class_id = fields.Many2one('school.class', string='Class')
-    parent_name = fields.Char(string='Parent/Guardian Name')
-    parent_phone = fields.Char(string='Parent Phone')
-    parent_email = fields.Char(string='Parent Email')
+    parent_name = fields.Char(string='Parent/Guardian Name', required=True)
+    parent_phone = fields.Char(string='Parent Phone', required=True)
+    parent_email = fields.Char(string='Parent Email', required=True)
     address = fields.Text(string='Address')
     enrollment_date = fields.Date(string='Enrollment Date', default=fields.Date.today)
     study_start_date = fields.Date(string='Study Start Date', default=fields.Date.today)
