@@ -592,7 +592,7 @@
             <field name="domain_force">[
                 '|',
                 '&amp;', ('report_type', '=', 'student_to_teacher'), ('student_id.user_id', '=', user.id),
-                '&amp;', ('report_type', '=', 'teacher_to_student'), '&amp;', ('student_id.user_id', '=', user.id), ('state', '!=', 'draft')
+                '&amp;', ('report_type', '=', 'teacher_to_student'), ('student_id.user_id', '=', user.id)
             ]</field>
             <field name="groups" eval="[(4, ref('group_school_student'))]"/>
             <field name="perm_read" eval="1"/>
@@ -601,12 +601,12 @@
             <field name="perm_unlink" eval="0"/>
         </record>
 
-        <!-- Student: Create & Edit only own teaching reports in draft -->
+        <!-- Student: Create & Edit only own draft reports -->
         <record id="rule_school_feedback_student_write" model="ir.rule">
-            <field name="name">Student: Create/Edit Own Draft Teaching Reports Only</field>
+            <field name="name">Student: Create/Edit Own Draft Reports Only</field>
             <field name="model_id" ref="model_school_feedback"/>
             <field name="domain_force">[
-                ('report_type', '=', 'student_to_teacher'),
+                ('report_type', 'in', ['student_to_teacher', 'teacher_to_student']),
                 ('student_id.user_id', '=', user.id),
                 ('state', '=', 'draft')
             ]</field>

@@ -231,6 +231,31 @@
               groups="school_management.group_school_admin,school_management.group_school_teacher"
               sequence="20"/>
 
+    <!-- ================= 8A. Permission Requests ================= -->
+    <menuitem id="menu_school_permission_root"
+              name="Permission Requests"
+              parent="menu_school_root"
+              groups="school_management.group_school_admin,school_management.group_school_teacher,school_management.group_school_student"
+              sequence="51"/>
+    <menuitem id="menu_school_permission_mine"
+              name="My Permission Requests"
+              parent="menu_school_permission_root"
+              action="action_school_permission_mine"
+              groups="school_management.group_school_teacher,school_management.group_school_student"
+              sequence="10"/>
+    <menuitem id="menu_school_permission_pending"
+              name="Pending Approval"
+              parent="menu_school_permission_root"
+              action="action_school_permission_pending"
+              groups="school_management.group_school_admin,school_management.group_school_teacher"
+              sequence="20"/>
+    <menuitem id="menu_school_permission_all"
+              name="All Permission Requests"
+              parent="menu_school_permission_root"
+              action="action_school_permission"
+              groups="school_management.group_school_admin"
+              sequence="30"/>
+
     <!-- ================= 8B. Reports & Feedback ================= -->
     <menuitem id="menu_school_feedback_root"
               name="Reports &amp; Feedback"

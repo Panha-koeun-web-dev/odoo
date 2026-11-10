@@ -145,6 +145,8 @@
                                    groups="school_management.group_school_admin"/>
                             <field name="applicant_type" readonly="1"
                                    groups="school_management.group_school_student,!school_management.group_school_admin"/>
+                            <field name="applicant_type" readonly="1"
+                                   groups="school_management.group_school_teacher,!school_management.group_school_admin"/>
                             <field name="student_id" options="{'no_create': True}"
                                    invisible="applicant_type != 'student'"
                                    required="applicant_type == 'student'"

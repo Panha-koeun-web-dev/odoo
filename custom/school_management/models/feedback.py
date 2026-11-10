@@ -262,8 +262,6 @@ class SchoolFeedback(models.Model):
             user_keys = set(vals.keys()) - allowed_system_keys
             if user_keys:
                 for rec in self:
-                    if rec.report_type == 'teacher_to_student':
-                        raise AccessError(_("Students cannot modify feedback provided by teachers."))
                     if rec.state != 'draft':
                         raise AccessError(_("You cannot modify a teaching report once it has been submitted to Administration."))
         return super().write(vals)
