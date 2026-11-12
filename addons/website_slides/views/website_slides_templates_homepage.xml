@@ -101,7 +101,50 @@
     <t t-call="website.layout">
         <div id="wrap" class="wrap o_wslides_wrap">
             <div class="oe_structure oe_empty"/>
-            <div class="container">
+            <!-- School eLearning Hero Banner -->
+            <div class="o_wslides_school_hero text-white position-relative py-5 mb-4">
+                <div class="container position-relative py-3">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <span class="badge rounded-pill bg-white text-primary px-3 py-2 fw-semibold mb-3 shadow-sm">
+                                <i class="fa fa-graduation-cap me-1"/> School Learning Portal
+                            </span>
+                            <h1 class="display-5 fw-bold mb-3 text-white">Empower Your Learning Journey</h1>
+                            <p class="lead mb-4 text-white-50">
+                                Explore interactive lessons, video tutorials, articles, and quizzes designed to advance your skills anytime, anywhere.
+                            </p>
+                            <div class="d-flex flex-wrap gap-3">
+                                <a href="#courses_list_section" class="btn btn-light btn-lg px-4 shadow-sm fw-medium">
+                                    <i class="fa fa-book me-2 text-primary"/>Browse Courses
+                                </a>
+                                <a t-if="not is_public_user" href="/slides?my=1" class="btn btn-outline-light btn-lg px-4 fw-medium">
+                                    <i class="fa fa-user me-2"/>My Courses
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 d-none d-lg-block text-center">
+                            <div class="o_wslides_hero_card p-4 rounded-4 shadow-lg text-start bg-white text-dark">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-primary-subtle text-primary p-3 me-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                                        <i class="fa fa-mortar-board fa-lg"/>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">Active Learning</h6>
+                                        <small class="text-muted">Courses &amp; Quizzes</small>
+                                    </div>
+                                </div>
+                                <hr class="my-3"/>
+                                <div class="d-flex justify-content-between align-items-center text-muted small">
+                                    <span><i class="fa fa-clock-o me-1"/> Self-Paced</span>
+                                    <span><i class="fa fa-certificate me-1"/> Certified</span>
+                                    <span><i class="fa fa-users me-1"/> Interactive</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container" id="courses_list_section">
                 <t t-call="website_slides.courses_search_bar"/>
                 <div class="row">
                     <div t-attf-class="#{'col-12 col-lg-8 col-xl-9 pe-lg-5' if has_side_column else 'col-12'}">

@@ -772,3 +772,97 @@ li.o_wslides_fs_sidebar_list_item.active {
 .oe_show_footer {
     z-index: $MAX-Z-INDEX; // Looks terrible but seems necessary due to fullscreen & canvas in PDFSlidesViewer
 }
+
+
+/* ==========================================================================
+   School eLearning UI Modernization
+   ========================================================================== */
+
+.o_wslides_school_hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%);
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.15);
+    margin-bottom: 2rem;
+
+    h1 {
+        letter-spacing: -0.02em;
+    }
+
+    .o_wslides_hero_card {
+        background: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+}
+
+.o_wslides_course_card {
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.22s ease-in-out, box-shadow 0.22s ease-in-out;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.09) !important;
+    }
+
+    .o_wslides_background_image {
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        transition: transform 0.3s ease;
+    }
+
+    &:hover .o_wslides_background_image {
+        transform: scale(1.02);
+    }
+
+    .card-body {
+        padding: 1.25rem;
+
+        .card-title {
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.4;
+            transition: color 0.2s ease;
+        }
+    }
+
+    &:hover .card-title {
+        color: #2563eb;
+    }
+
+    .card-footer {
+        background: #f8fafc;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 0.85rem 1.25rem;
+        border-bottom-left-radius: 16px !important;
+        border-bottom-right-radius: 16px !important;
+
+        .btn-primary {
+            border-radius: 50rem;
+            padding: 0.35rem 1rem;
+            font-weight: 500;
+            font-size: 0.825rem;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+    }
+
+    .progress {
+        background-color: #e2e8f0;
+        border-radius: 9999px;
+        overflow: hidden;
+
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
+            border-radius: 9999px;
+        }
+    }
+}
+
+.o_wslides_home_aside_loggedin {
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}

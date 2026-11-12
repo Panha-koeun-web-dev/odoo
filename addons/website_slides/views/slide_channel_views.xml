@@ -10,6 +10,7 @@
                     <header>
                         <button name="action_channel_enroll" string="Add Attendees" type="object" class="oe_highlight"/>
                         <button name="action_channel_invite" string="Invite" type="object" class="oe_highlight btn btn-secondary"/>
+                        <button name="action_enroll_school_students" string="Enroll School Students" type="object" class="btn btn-outline-primary" icon="fa-graduation-cap"/>
                     </header>
                     <sheet>
                         <div class="oe_button_box" name="button_box">

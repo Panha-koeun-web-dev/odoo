@@ -662,6 +662,68 @@ class SlideChannel(models.Model):
         template = self.env.ref('website_slides.mail_template_slide_channel_invite', raise_if_not_found=False)
         return self._action_channel_open_invite_wizard(template)
 
+    def action_enroll_school_students(self):
+        """ Enroll school students into this course.
+        Safely checks if 'school.student' exists in environment without hard dependency.
+        """
+        self.ensure_one()
+        if 'school.student' not in self.env:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('School Module Not Installed'),
+                    'message': _('The School Management module is not installed.'),
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+
+        students = self.env['school.student'].search([
+            ('active', '=', True),
+            ('study_status', '=', 'studying'),
+        ])
+        if not students:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('No Active Students'),
+                    'message': _('No active studying students found to enroll.'),
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+
+        partners = self.env['res.partner']
+        for student in students:
+            if student.user_id and student.user_id.partner_id:
+                partners |= student.user_id.partner_id
+            elif student.email:
+                clean_email = student.email.strip()
+                partner = self.env['res.partner'].search([('email', '=ilike', clean_email)], limit=1)
+                if not partner:
+                    partner = self.env['res.partner'].create({
+                        'name': student.name,
+                        'email': clean_email,
+                        'phone': student.phone or False,
+                    })
+                partners |= partner
+
+        if partners:
+            self._action_add_members(partners, member_status='joined')
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Students Enrolled'),
+                'message': _('%(count)s school student(s) successfully enrolled in this course.', count=len(partners)),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
     def _action_channel_open_invite_wizard(self, mail_template, enroll_mode=False):
         """ Open the invitation wizard to invite and add attendees to the course(s) in self.
 
