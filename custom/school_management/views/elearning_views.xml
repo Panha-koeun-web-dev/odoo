@@ -1,0 +1,31 @@
+<odoo>
+    <record id="view_slide_channel_form_school_enroll_selected" model="ir.ui.view">
+        <field name="name">slide.channel.form.school.enroll.selected</field>
+        <field name="model">slide.channel</field>
+        <field name="inherit_id" ref="website_slides.view_slide_channel_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_enroll_school_students']" position="after">
+                <button name="action_open_school_enroll_students" string="Enroll Selected Students"
+                        type="object" class="btn btn-outline-success" icon="fa-users"
+                        groups="school_management.group_school_admin"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_slide_channel_form_school_attendee_stats" model="ir.ui.view">
+        <field name="name">slide.channel.form.school.attendee.stats</field>
+        <field name="model">slide.channel</field>
+        <field name="inherit_id" ref="website_slides.view_slide_channel_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']/button[@name='action_redirect_to_members']" position="after">
+                <button name="action_redirect_to_members" type="object" icon="fa-users"
+                        class="oe_stat_button" groups="school_management.group_school_admin">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value"><field name="members_count" nolabel="1"/></span>
+                        <span class="o_stat_text">Enrolled Students</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -8,9 +8,13 @@
 
     #Integration Purchase & Inventory modules
 
-    'depends': ['base', 'web', 'mail', 'purchase', 'stock'],
+    'depends': [
+        'base', 'web', 'mail', 'purchase', 'stock',
+        'website_slides', 'website_slides_survey',
+    ],
     'data': [
         'security/school_security.xml',
+        'security/elearning_security.xml',
         'security/ir.model.access.csv',
         'data/term_data.xml',
         'data/certificate_data.xml',
@@ -30,6 +34,7 @@
         'wizards/week_selector_wizard_views.xml',
         'wizards/material_assignment_views.xml',
         'wizards/class_material_assignment_views.xml',
+        'wizards/elearning_enroll_students_views.xml',
         'views/term_views.xml',
         'views/student_views.xml',
         'views/teacher_views.xml',
@@ -50,6 +55,7 @@
         'views/certificate_views.xml',
         'views/year_payment_views.xml',
         'views/material_views.xml',
+        'views/elearning_views.xml',
         'views/export_xlsx_actions.xml',
         'views/menu.xml',
         'report/fee_report.xml',

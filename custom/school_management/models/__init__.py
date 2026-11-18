@@ -19,3 +19,4 @@ from . import student_subject
 from . import permission
 from . import feedback
 from . import material
+from . import elearning

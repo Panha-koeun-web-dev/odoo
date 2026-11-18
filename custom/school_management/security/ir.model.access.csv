@@ -7,6 +7,7 @@ access_admin_subject,admin.subject,model_school_subject,school_management.group_
 access_admin_attendance,admin.attendance,model_school_attendance,school_management.group_school_admin,1,1,1,1
 access_admin_enrollment,admin.enrollment,model_school_enrollment,school_management.group_school_admin,1,1,1,1
 access_admin_enroll_students_wizard,admin.enroll.students.wizard,model_school_enroll_students_wizard,school_management.group_school_admin,1,1,1,1
+access_admin_elearning_enroll_students_wizard,admin.elearning.enroll.students.wizard,model_school_elearning_enroll_students_wizard,school_management.group_school_admin,1,1,1,1
 access_admin_exam,admin.exam,model_school_exam,school_management.group_school_admin,1,1,1,1
 access_admin_grade,admin.grade,model_school_grade,school_management.group_school_admin,1,1,1,1
 access_admin_fee,admin.fee,model_school_fee,school_management.group_school_admin,1,1,1,1

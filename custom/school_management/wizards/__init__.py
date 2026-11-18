@@ -9,3 +9,4 @@ from . import term_schedule_wizard
 from . import week_selector_wizard
 from . import material_assignment
 from . import class_material_assignment
+from . import elearning_enroll_students

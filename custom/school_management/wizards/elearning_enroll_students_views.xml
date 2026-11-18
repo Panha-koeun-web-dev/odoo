@@ -1,0 +1,30 @@
+<odoo>
+    <record id="action_elearning_enroll_students" model="ir.actions.act_window">
+        <field name="name">Enroll Selected Students</field>
+        <field name="res_model">school.elearning.enroll.students.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_elearning_enroll_students_wizard_form" model="ir.ui.view">
+        <field name="name">school.elearning.enroll.students.wizard.form</field>
+        <field name="model">school.elearning.enroll.students.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Enroll Students in eLearning Course">
+                <group>
+                    <field name="course_id"/>
+                    <field name="student_ids" widget="many2many_tags" options="{'no_create': True}"
+                           placeholder="Select students..."/>
+                    <label for="student_count" string="Selected Students"/>
+                    <field name="student_count" readonly="1"/>
+                </group>
+                <p class="text-muted">Only active students with a linked login account can be enrolled.</p>
+                <footer>
+                    <button name="action_enroll" type="object" string="Enroll Students"
+                            class="btn-primary" icon="fa-graduation-cap"/>
+                    <button special="cancel" string="Cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
