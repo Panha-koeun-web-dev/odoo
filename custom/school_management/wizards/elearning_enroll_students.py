@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 
 class ElearningEnrollStudentsWizard(models.TransientModel):
     _name = 'school.elearning.enroll.students.wizard'
-    _description = 'Enroll School Students in an eLearning Course'
+    _description = 'Enroll Selected Students in an eLearning Course'
 
     course_id = fields.Many2one('slide.channel', string='eLearning Course', required=True, readonly=True)
     student_ids = fields.Many2many(

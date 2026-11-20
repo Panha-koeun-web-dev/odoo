@@ -4,7 +4,7 @@
         <field name="model">slide.channel</field>
         <field name="inherit_id" ref="website_slides.view_slide_channel_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='action_enroll_school_students']" position="after">
+            <xpath expr="//button[@name='action_channel_invite']" position="after">
                 <button name="action_open_school_enroll_students" string="Enroll Selected Students"
                         type="object" class="btn btn-outline-success" icon="fa-users"
                         groups="school_management.group_school_admin"/>
